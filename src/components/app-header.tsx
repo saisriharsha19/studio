@@ -28,12 +28,14 @@ export function AppHeader() {
         <Image src="/NavGAI-19.png" width={25} height={25} alt="NaviGator Logo" />
         <h1 className="text-xl font-bold tracking-tight">NaviGator Sailor</h1>
       </div>
-      <nav className="ml-6 hidden items-center gap-6 text-sm font-medium md:flex">
+      <nav className="ml-6 hidden items-center gap-4 text-sm font-medium md:flex">
         <Link
           href="/"
           className={cn(
             "transition-colors hover:text-foreground",
-            pathname === '/' ? 'text-primary font-bold' : 'text-muted-foreground'
+            pathname === '/'
+              ? 'rounded-full bg-accent px-3 py-1.5 text-accent-foreground'
+              : 'text-muted-foreground'
           )}
         >
           Generator
@@ -42,7 +44,9 @@ export function AppHeader() {
           href="/library"
           className={cn(
             "transition-colors hover:text-foreground",
-            pathname === '/library' ? 'text-primary font-bold' : 'text-muted-foreground'
+            pathname === '/library'
+              ? 'rounded-full bg-accent px-3 py-1.5 text-accent-foreground'
+              : 'text-muted-foreground'
           )}
         >
           Library
