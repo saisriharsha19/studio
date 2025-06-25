@@ -30,17 +30,28 @@ import { db } from '@/lib/db';
 import type { Prompt } from '@/hooks/use-prompts';
 import { revalidatePath } from 'next/cache';
 
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) {
+    // Genkit/Google AI errors often have more details in the 'cause' property
+    const cause = (error as any).cause;
+    if (cause && typeof cause.message === 'string') {
+      return cause.message;
+    }
+    return error.message;
+  }
+  return String(error);
+};
 
 export async function handleGenerateInitialPrompt(input: GenerateInitialPromptInput): Promise<GenerateInitialPromptOutput> {
   try {
     const output = await generateInitialPrompt(input);
     if (!output) {
-      throw new Error('Failed to generate initial prompt.');
+      throw new Error('No output received from AI.');
     }
     return output;
   } catch (error) {
     console.error('Error in handleGenerateInitialPrompt:', error);
-    throw new Error('An error occurred while generating the prompt.');
+    throw new Error(`An error occurred while generating the prompt: ${getErrorMessage(error)}`);
   }
 }
 
@@ -48,12 +59,12 @@ export async function handleEvaluateAndIterate(input: EvaluateAndIteratePromptIn
   try {
     const output = await evaluateAndIteratePrompt(input);
     if (!output) {
-      throw new Error('Failed to evaluate and iterate prompt.');
+      throw new Error('No output received from AI.');
     }
     return output;
   } catch (error) {
     console.error('Error in handleEvaluateAndIterate:', error);
-    throw new Error('An error occurred while evaluating the prompt.');
+    throw new Error(`An error occurred while evaluating the prompt: ${getErrorMessage(error)}`);
   }
 }
 
@@ -61,12 +72,12 @@ export async function handleOptimizeWithContext(input: OptimizePromptWithContext
   try {
     const output = await optimizePromptWithContext(input);
     if (!output) {
-      throw new Error('Failed to optimize prompt with context.');
+      throw new Error('No output received from AI.');
     }
     return output;
   } catch (error) {
     console.error('Error in handleOptimizeWithContext:', error);
-    throw new Error('An error occurred while optimizing the prompt.');
+    throw new Error(`An error occurred while optimizing the prompt: ${getErrorMessage(error)}`);
   }
 }
 
@@ -74,12 +85,12 @@ export async function handleGetPromptSuggestions(input: GeneratePromptSuggestion
     try {
       const output = await generatePromptSuggestions(input);
       if (!output) {
-        throw new Error('Failed to generate prompt suggestions.');
+        throw new Error('No output received from AI.');
       }
       return output;
     } catch (error) {
       console.error('Error in handleGetPromptSuggestions:', error);
-      throw new Error('An error occurred while generating suggestions.');
+      throw new Error(`An error occurred while generating suggestions: ${getErrorMessage(error)}`);
     }
   }
 
@@ -87,12 +98,12 @@ export async function handleIterateOnPrompt(input: IterateOnPromptInput): Promis
   try {
     const output = await iterateOnPrompt(input);
     if (!output) {
-      throw new Error('Failed to iterate on prompt.');
+      throw new Error('No output received from AI.');
     }
     return output;
   } catch (error) {
     console.error('Error in handleIterateOnPrompt:', error);
-    throw new Error('An error occurred while iterating on the prompt.');
+    throw new Error(`An error occurred while iterating on the prompt: ${getErrorMessage(error)}`);
   }
 }
 
