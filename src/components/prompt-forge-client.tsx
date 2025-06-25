@@ -316,7 +316,7 @@ export function PromptForgeClient() {
 
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">
-      <div className="space-y-8 lg:col-span-3">
+      <div className="space-y-10 lg:col-span-3">
         <Card>
           <CardHeader>
             <CardTitle>Describe Your Assistant</CardTitle>
@@ -324,9 +324,9 @@ export function PromptForgeClient() {
               What are the primary goals and functionalities of your AI assistant? You can also provide a knowledge base to ground the assistant.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
             <div>
-              <Label htmlFor="user-needs">User Needs</Label>
+              <Label htmlFor="user-needs" className="mb-2 block">User Needs</Label>
               <Textarea
                 id="user-needs"
                 placeholder="e.g., An assistant that helps university students find course information, check deadlines, and book appointments with advisors..."
@@ -336,7 +336,7 @@ export function PromptForgeClient() {
               />
             </div>
              <div>
-              <Label htmlFor="knowledge-base">Knowledge Base</Label>
+              <Label htmlFor="knowledge-base" className="mb-2 block">Knowledge Base</Label>
               <Textarea
                 id="knowledge-base"
                 placeholder="Paste relevant web-scraped data, FAQs, or knowledge base articles here."
@@ -366,7 +366,7 @@ export function PromptForgeClient() {
             </CardDescription>
           </CardHeader>
           <CardContent className="relative">
-            <Label htmlFor="system-prompt">Prompt</Label>
+            <Label htmlFor="system-prompt" className="mb-2 block">Prompt</Label>
             <Textarea
               id="system-prompt"
               placeholder="Your generated or refined prompt will appear here."
@@ -403,9 +403,9 @@ export function PromptForgeClient() {
                   <p className="mt-4 text-muted-foreground">Please log in to use advanced tools.</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div>
-                  <Label>Knowledge Base URLs</Label>
+                  <Label className="mb-2 block">Knowledge Base URLs</Label>
                   <div className="space-y-2">
                     {knowledgeBaseUrls.map((url, index) => (
                       <div key={index} className="flex items-center gap-2">
@@ -430,7 +430,7 @@ export function PromptForgeClient() {
                       </div>
                     ))}
                   </div>
-                  <div className="mt-2 flex gap-2">
+                  <div className="mt-4 flex gap-2">
                     <Button
                       type="button"
                       variant="outline"
@@ -448,7 +448,7 @@ export function PromptForgeClient() {
                 </div>
 
                 <div>
-                  <Label htmlFor="file-upload">Upload Knowledge File</Label>
+                  <Label htmlFor="file-upload" className="mb-2 block">Upload Knowledge File</Label>
                     <Label 
                       htmlFor="file-upload" 
                       className={cn(
@@ -483,7 +483,7 @@ export function PromptForgeClient() {
                 </div>
 
                 <div>
-                  <Label htmlFor="few-shot-examples">Few-shot Examples</Label>
+                  <Label htmlFor="few-shot-examples" className="mb-2 block">Few-shot Examples</Label>
                   <Textarea
                     id="few-shot-examples"
                     placeholder="e.g., 'The deadline for Fall 2024 registration is August 15th.' or 'Prof. Smith's office is in Room 301.'"
@@ -492,7 +492,7 @@ export function PromptForgeClient() {
                     className="min-h-[100px]"
                   />
                 </div>
-                 <div className="flex flex-col items-start gap-4">
+                 <div className="flex flex-col items-start gap-4 pt-2">
                     <p className="text-sm text-muted-foreground">
                       This information will be used by the LLM Judge to evaluate and score the prompt's effectiveness.
                     </p>
@@ -509,7 +509,7 @@ export function PromptForgeClient() {
         </Card>
       </div>
 
-      <div className="space-y-8 lg:col-span-2">
+      <div className="space-y-10 lg:col-span-2">
         <Card>
           <CardHeader>
             <CardTitle>Prompt Refinement</CardTitle>
@@ -517,10 +517,10 @@ export function PromptForgeClient() {
               Provide feedback on the current prompt to get AI-generated suggestions for improvement.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
             {(loadingSuggestions || suggestions.length > 0) && (
-              <div className="mb-4 rounded-md border bg-muted/50 p-4">
-                <p className="mb-3 text-sm font-medium">AI Suggestions:</p>
+              <div className="mb-6 rounded-md border bg-muted/50 p-4">
+                <p className="mb-4 text-sm font-medium">AI Suggestions:</p>
                 {loadingSuggestions ? (
                   <div className="flex flex-wrap gap-2">
                     <Skeleton className="h-7 w-24 rounded-full" />
@@ -547,7 +547,7 @@ export function PromptForgeClient() {
               </div>
             )}
             <div>
-              <Label htmlFor="iteration-comments">Your Feedback &amp; Comments</Label>
+              <Label htmlFor="iteration-comments" className="mb-2 block">Your Feedback &amp; Comments</Label>
               <Textarea
                 id="iteration-comments"
                 placeholder="e.g., 'Make it more concise' or 'Add a rule to always ask for the user's name.'"
@@ -581,7 +581,7 @@ export function PromptForgeClient() {
                 Review the results from our AI evaluator and deploy your agent.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               {loading.evaluating ? <Skeleton className="h-40 w-full" /> : evaluationResult && (
                 <Card>
                   <CardHeader>
@@ -605,7 +605,7 @@ export function PromptForgeClient() {
                 </div>
               )}
             </CardContent>
-            <CardFooter className="flex flex-col gap-2">
+            <CardFooter className="flex flex-col gap-4">
               <Button
                 className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
                 disabled={isLoading || !currentPrompt}
