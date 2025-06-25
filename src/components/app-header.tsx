@@ -1,3 +1,5 @@
+'use client';
+
 import { UserCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -8,8 +10,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useAuth } from '@/hooks/use-auth';
 
 export function AppHeader() {
+  const { isAuthenticated, login, logout } = useAuth();
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-4 sm:px-6">
       <div className="flex items-center gap-2">
@@ -27,10 +31,16 @@ export function AppHeader() {
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>University Profile</DropdownMenuItem>
-            <DropdownMenuItem>Settings</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>Sign Out</DropdownMenuItem>
+            {isAuthenticated ? (
+              <>
+                <DropdownMenuItem>University Profile</DropdownMenuItem>
+                <DropdownMenuItem>Settings</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={logout}>Sign Out</DropdownMenuItem>
+              </>
+            ) : (
+              <DropdownMenuItem onClick={login}>Sign In</DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

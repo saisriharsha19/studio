@@ -9,6 +9,8 @@ import {
   Clipboard,
   Check,
   Lightbulb,
+  Lock,
+  Globe,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -29,6 +31,8 @@ import {
 } from '@/app/actions';
 import { Badge } from './ui/badge';
 import { Skeleton } from './ui/skeleton';
+import { useAuth } from '@/hooks/use-auth';
+import { Input } from './ui/input';
 
 type LoadingStates = {
   generating: boolean;
@@ -37,10 +41,13 @@ type LoadingStates = {
 };
 
 export function PromptForgeClient() {
+  const { isAuthenticated } = useAuth();
   const [userNeeds, setUserNeeds] = useState('');
   const [currentPrompt, setCurrentPrompt] = useState('');
-  const [retrievedContent, setRetrievedContent] = useState('');
-  const [groundTruths, setGroundTruths] = useState('');
+  const [knowledgeBase, setKnowledgeBase] = useState('');
+  const [fewShotExamples, setFewShotExamples] = useState('');
+  const [knowledgeBaseUrl, setKnowledgeBaseUrl] = useState('');
+
 
   const [evaluationResult, setEvaluationResult] = useState<{
     improvedPrompt: string;
@@ -97,7 +104,7 @@ export function PromptForgeClient() {
   };
 
   const onEvaluate = () => {
-    if (!currentPrompt || !userNeeds || !retrievedContent || !groundTruths) {
+    if (!currentPrompt || !userNeeds || !knowledgeBase || !fewShotExamples) {
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -112,8 +119,8 @@ export function PromptForgeClient() {
         const result = await handleEvaluateAndIterate({
           prompt: currentPrompt,
           userNeeds,
-          retrievedContent,
-          groundTruths,
+          retrievedContent: knowledgeBase,
+          groundTruths: fewShotExamples,
         });
         setEvaluationResult(result);
         setCurrentPrompt(result.improvedPrompt);
@@ -131,11 +138,11 @@ export function PromptForgeClient() {
   };
   
   const onOptimize = () => {
-    if (!currentPrompt || !retrievedContent || !groundTruths) {
+    if (!currentPrompt || !knowledgeBase || !fewShotExamples) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Prompt, content, and ground truths are required for optimization.',
+        description: 'Prompt, knowledge base, and few-shot examples are required for optimization.',
       });
       return;
     }
@@ -145,8 +152,8 @@ export function PromptForgeClient() {
       try {
         const result = await handleOptimizeWithContext({
           prompt: currentPrompt,
-          retrievedContent,
-          groundTruths,
+          retrievedContent: knowledgeBase,
+          groundTruths: fewShotExamples,
         });
         setOptimizationResult(result);
         setCurrentPrompt(result.optimizedPrompt);
@@ -170,20 +177,32 @@ export function PromptForgeClient() {
       <div className="space-y-6 lg:col-span-3">
         <Card>
           <CardHeader>
-            <CardTitle>1. Describe Your Assistant</CardTitle>
+            <CardTitle>1. Describe Your Assistant & Provide Knowledge</CardTitle>
             <CardDescription>
-              What are the primary goals and functionalities of your AI assistant? Be specific.
+              What are the primary goals and functionalities of your AI assistant? You can also provide a knowledge base to ground the assistant.
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Label htmlFor="user-needs">User Needs</Label>
-            <Textarea
-              id="user-needs"
-              placeholder="e.g., An assistant that helps university students find course information, check deadlines, and book appointments with advisors..."
-              value={userNeeds}
-              onChange={(e) => setUserNeeds(e.target.value)}
-              className="min-h-[120px]"
-            />
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="user-needs">User Needs</Label>
+              <Textarea
+                id="user-needs"
+                placeholder="e.g., An assistant that helps university students find course information, check deadlines, and book appointments with advisors..."
+                value={userNeeds}
+                onChange={(e) => setUserNeeds(e.target.value)}
+                className="min-h-[120px]"
+              />
+            </div>
+             <div>
+              <Label htmlFor="knowledge-base">Knowledge Base</Label>
+              <Textarea
+                id="knowledge-base"
+                placeholder="Paste relevant web-scraped data, FAQs, or knowledge base articles here."
+                value={knowledgeBase}
+                onChange={(e) => setKnowledgeBase(e.target.value)}
+                className="min-h-[150px]"
+              />
+            </div>
           </CardContent>
           <CardFooter>
             <Button onClick={onGenerate} disabled={isLoading || loading.generating}>
@@ -228,48 +247,63 @@ export function PromptForgeClient() {
 
         <Card>
           <CardHeader>
-            <CardTitle>3. Context & Grounding</CardTitle>
+            <CardTitle>3. Advanced Tools</CardTitle>
             <CardDescription>
-              Provide web-scraped data or documentation that the prompt will be evaluated against.
+             Log in to access advanced features like evaluation, optimization, and web scraping.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="retrieved-content">Retrieved Content</Label>
-              <Textarea
-                id="retrieved-content"
-                placeholder="Paste relevant web-scraped data, FAQs, or knowledge base articles here."
-                value={retrievedContent}
-                onChange={(e) => setRetrievedContent(e.target.value)}
-                className="min-h-[150px]"
-              />
-            </div>
-            <div>
-              <Label htmlFor="ground-truths">Ground Truths</Label>
-              <Textarea
-                id="ground-truths"
-                placeholder="e.g., 'The deadline for Fall 2024 registration is August 15th.' or 'Prof. Smith's office is in Room 301.'"
-                value={groundTruths}
-                onChange={(e) => setGroundTruths(e.target.value)}
-                className="min-h-[100px]"
-              />
-            </div>
+          <CardContent>
+            {!isAuthenticated ? (
+               <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 text-center">
+                  <Lock className="h-10 w-10 text-muted-foreground" />
+                  <p className="mt-4 text-muted-foreground">Please log in to use advanced tools.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="knowledge-base-url">Knowledge Base URL</Label>
+                  <div className="flex gap-2">
+                    <Input 
+                      id="knowledge-base-url"
+                      placeholder="https://example.com/knowledge"
+                      value={knowledgeBaseUrl}
+                      onChange={(e) => setKnowledgeBaseUrl(e.target.value)}
+                    />
+                    <Button variant="outline" onClick={() => toast({ title: "Coming Soon!", description: "Web scraping functionality is not yet implemented."})}>
+                      <Globe/>
+                      Fetch
+                    </Button>
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="few-shot-examples">Few-shot Examples</Label>
+                  <Textarea
+                    id="few-shot-examples"
+                    placeholder="e.g., 'The deadline for Fall 2024 registration is August 15th.' or 'Prof. Smith's office is in Room 301.'"
+                    value={fewShotExamples}
+                    onChange={(e) => setFewShotExamples(e.target.value)}
+                    className="min-h-[100px]"
+                  />
+                </div>
+                 <div className="flex flex-col items-start gap-4">
+                    <p className="text-sm text-muted-foreground">
+                      This information will be used by the LLM Judge to evaluate and score the prompt's effectiveness.
+                    </p>
+                    <div className="flex gap-4">
+                      <Button onClick={onEvaluate} disabled={isLoading || loading.evaluating}>
+                        {loading.evaluating ? <Loader2 className="animate-spin" /> : <Bot />}
+                        Iterate & Evaluate
+                      </Button>
+                      <Button onClick={onOptimize} disabled={isLoading || loading.optimizing}>
+                        {loading.optimizing ? <Loader2 className="animate-spin" /> : <Lightbulb />}
+                        Optimize with Context
+                      </Button>
+                    </div>
+                </div>
+              </div>
+            )}
           </CardContent>
-          <CardFooter className="flex-col items-start gap-4">
-            <p className="text-sm text-muted-foreground">
-              This information will be used by the LLM Judge to evaluate and score the prompt's effectiveness.
-            </p>
-             <div className="flex gap-4">
-              <Button onClick={onEvaluate} disabled={isLoading || loading.evaluating}>
-                {loading.evaluating ? <Loader2 className="animate-spin" /> : <Bot />}
-                Iterate & Evaluate
-              </Button>
-              <Button onClick={onOptimize} disabled={isLoading || loading.optimizing}>
-                {loading.optimizing ? <Loader2 className="animate-spin" /> : <Lightbulb />}
-                Optimize with Context
-              </Button>
-            </div>
-          </CardFooter>
         </Card>
       </div>
 
