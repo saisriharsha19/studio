@@ -32,10 +32,10 @@ export function AppHeader() {
         <Link
           href="/"
           className={cn(
-            "transition-colors hover:text-foreground",
+            "rounded-full px-3 py-1.5 transition-colors",
             pathname === '/'
-              ? 'rounded-full bg-accent px-3 py-1.5 text-accent-foreground'
-              : 'text-muted-foreground'
+              ? 'bg-accent text-accent-foreground'
+              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
           )}
         >
           Generator
@@ -43,10 +43,10 @@ export function AppHeader() {
         <Link
           href="/library"
           className={cn(
-            "transition-colors hover:text-foreground",
+            "rounded-full px-3 py-1.5 transition-colors",
             pathname === '/library'
-              ? 'rounded-full bg-accent px-3 py-1.5 text-accent-foreground'
-              : 'text-muted-foreground'
+              ? 'bg-accent text-accent-foreground'
+              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
           )}
         >
           Library
