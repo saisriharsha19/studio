@@ -73,6 +73,7 @@ export function PromptForgeClient() {
   const [selectedSuggestions, setSelectedSuggestions] = useState<string[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const suggestionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [evaluationResult, setEvaluationResult] = useState<EvaluateAndIteratePromptOutput | null>(
     null
@@ -155,6 +156,14 @@ export function PromptForgeClient() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       processFile(e.target.files[0]);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setUploadedFileName('');
+    setUploadedFileContent('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -494,6 +503,7 @@ export function PromptForgeClient() {
                           <p className="text-xs text-muted-foreground">TXT, MD, JSON, or CSV</p>
                       </div>
                       <Input 
+                          ref={fileInputRef}
                           id="file-upload" 
                           type="file" 
                           className="hidden" 
@@ -502,9 +512,21 @@ export function PromptForgeClient() {
                       />
                   </Label>
                   {uploadedFileName && (
-                      <p className="mt-2 text-sm text-muted-foreground">
-                          Loaded: {uploadedFileName}
+                    <div className="mt-2 flex items-center justify-between rounded-lg border bg-muted/50 px-3 py-2">
+                      <p className="truncate pr-4 text-sm text-muted-foreground">
+                        {uploadedFileName}
                       </p>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleRemoveFile}
+                        className="h-6 w-6 shrink-0"
+                      >
+                        <X className="h-4 w-4" />
+                        <span className="sr-only">Remove file</span>
+                      </Button>
+                    </div>
                   )}
                 </div>
 
