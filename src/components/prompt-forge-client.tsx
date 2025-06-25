@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useTransition, useCallback, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import {
   Bot,
   Loader2,
@@ -86,6 +87,24 @@ export function PromptForgeClient() {
 
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
+
+  const containerVariants = {
+    hidden: { opacity: 1 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+    },
+  };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -329,7 +348,7 @@ export function PromptForgeClient() {
               What are the primary goals and functionalities of your AI assistant? You can also provide a knowledge base to ground the assistant.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-8">
             <div className="space-y-4">
               <Label htmlFor="user-needs">User Needs</Label>
               <Textarea
@@ -370,25 +389,27 @@ export function PromptForgeClient() {
               This is the generated system prompt. You can manually edit it before evaluation or optimization.
             </CardDescription>
           </CardHeader>
-          <CardContent className="relative space-y-4">
+          <CardContent className="space-y-4">
             <Label htmlFor="system-prompt">Prompt</Label>
-            <Textarea
-              id="system-prompt"
-              placeholder="Your generated or refined prompt will appear here."
-              value={currentPrompt}
-              onChange={(e) => setCurrentPrompt(e.target.value)}
-              className="min-h-[200px] pr-12 pb-8"
-            />
-            {currentPrompt && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute bottom-5 right-2"
-                onClick={() => copyToClipboard(currentPrompt)}
-              >
-                {copied ? <Check className="text-primary" /> : <Clipboard />}
-              </Button>
-            )}
+            <div className="relative">
+              <Textarea
+                id="system-prompt"
+                placeholder="Your generated or refined prompt will appear here."
+                value={currentPrompt}
+                onChange={(e) => setCurrentPrompt(e.target.value)}
+                className="min-h-[200px] pr-12 pb-8"
+              />
+              {currentPrompt && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute bottom-2 right-2"
+                  onClick={() => copyToClipboard(currentPrompt)}
+                >
+                  {copied ? <Check className="text-primary" /> : <Clipboard />}
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
 
@@ -522,7 +543,7 @@ export function PromptForgeClient() {
               Provide feedback on the current prompt to get AI-generated suggestions for improvement.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-8">
             {(loadingSuggestions || suggestions.length > 0) && (
               <div className="mb-6 rounded-md border bg-muted/50 p-4">
                 <p className="mb-4 flex items-center text-sm font-medium">
@@ -536,21 +557,28 @@ export function PromptForgeClient() {
                     <Skeleton className="h-7 w-28 rounded-full" />
                   </div>
                 ) : (
-                  <div className="flex flex-wrap gap-2">
+                  <motion.div
+                    className="flex flex-wrap gap-2"
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                  >
                     {suggestions.map((suggestion, index) => (
-                      <Badge
-                        key={index}
-                        variant={selectedSuggestions.includes(suggestion) ? 'default' : 'secondary'}
-                        onClick={() => handleSuggestionToggle(suggestion)}
-                        className="cursor-pointer items-center transition-all hover:opacity-80 text-sm px-3 py-1.5"
-                      >
-                        {selectedSuggestions.includes(suggestion) && (
-                          <Check className="mr-1.5 h-4 w-4" />
-                        )}
-                        {suggestion}
-                      </Badge>
+                      <motion.div key={index} variants={itemVariants}>
+                        <Badge
+                          key={index}
+                          variant={selectedSuggestions.includes(suggestion) ? 'default' : 'secondary'}
+                          onClick={() => handleSuggestionToggle(suggestion)}
+                          className="cursor-pointer items-center transition-all hover:opacity-80 text-sm px-3 py-1.5 font-normal"
+                        >
+                          {selectedSuggestions.includes(suggestion) && (
+                            <Check className="mr-1.5 h-4 w-4" />
+                          )}
+                          {suggestion}
+                        </Badge>
+                      </motion.div>
                     ))}
-                  </div>
+                  </motion.div>
                 )}
               </div>
             )}
