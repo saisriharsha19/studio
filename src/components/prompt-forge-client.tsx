@@ -171,7 +171,6 @@ export function PromptForgeClient() {
 
   const getSuggestions = useCallback(() => {
     if (!currentPrompt) {
-      setSuggestions([]);
       return;
     }
 
@@ -189,7 +188,7 @@ export function PromptForgeClient() {
           title: 'Suggestion Generation Failed',
           description: error.message,
         });
-        setSuggestions([]);
+        // NOTE: We don't clear suggestions on error, to avoid them disappearing.
       } finally {
         setLoadingSuggestions(false);
       }
@@ -385,7 +384,7 @@ export function PromptForgeClient() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute bottom-8 right-8"
+                className="absolute bottom-3 right-2"
                 onClick={() => copyToClipboard(currentPrompt)}
               >
                 {copied ? <Check className="text-primary" /> : <Clipboard />}
@@ -612,7 +611,7 @@ export function PromptForgeClient() {
             </CardContent>
             <CardFooter className="flex flex-col gap-2">
               <Button
-                className="w-full bg-accent text-accent-foreground text-white hover:bg-accent/90"
+                className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
                 disabled={isLoading || !currentPrompt}
                 onClick={() => toast({ title: "Onyx Integration", description: "This would trigger agent creation in the Onyx (Danswer) system." })}
               >
@@ -620,7 +619,7 @@ export function PromptForgeClient() {
                 Create NaviGator Assistant 
               </Button>
               <Button
-                className="w-full text-accent-foreground text-white hover:bg-accent/90"
+                className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
                 disabled={isLoading || !currentPrompt}
                 onClick={() => toast({ title: "Onyx Integration", description: "This would trigger agent creation in the Onyx (Danswer) system." })}
               >
@@ -636,7 +635,7 @@ export function PromptForgeClient() {
                 <CardDescription>
                     Log in to view evaluation results and deploy your agent.
                 </CardDescription>
-            </CardHeader>
+            </Header>
             <CardContent>
                 <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 text-center">
                     <Lock className="h-10 w-10 text-muted-foreground" />
@@ -649,5 +648,3 @@ export function PromptForgeClient() {
     </div>
   );
 }
-
-    
