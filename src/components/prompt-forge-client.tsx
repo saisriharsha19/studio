@@ -39,7 +39,6 @@ import { Badge } from './ui/badge';
 import { Skeleton } from './ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
 import { Input } from './ui/input';
-import { Checkbox } from './ui/checkbox';
 
 type LoadingStates = {
   generating: boolean;
@@ -171,7 +170,7 @@ export function PromptForgeClient() {
   };
 
   const getSuggestions = useCallback(() => {
-    if (!currentPrompt || !iterationComments) {
+    if (!currentPrompt) {
       setSuggestions([]);
       return;
     }
@@ -201,19 +200,21 @@ export function PromptForgeClient() {
     if (suggestionTimeoutRef.current) {
       clearTimeout(suggestionTimeoutRef.current);
     }
-    if (iterationComments.trim()) {
+    
+    if (currentPrompt) {
       suggestionTimeoutRef.current = setTimeout(() => {
         getSuggestions();
       }, 1000); // 1-second debounce
     } else {
-      setSuggestions([]);
+        setSuggestions([]);
     }
+
     return () => {
       if (suggestionTimeoutRef.current) {
         clearTimeout(suggestionTimeoutRef.current);
       }
     };
-  }, [iterationComments, getSuggestions]);
+  }, [currentPrompt, iterationComments, getSuggestions]);
 
   const onIterate = () => {
     if (!currentPrompt || (!iterationComments && selectedSuggestions.length === 0)) {
@@ -512,30 +513,27 @@ export function PromptForgeClient() {
           <CardContent className="space-y-4">
             {(loadingSuggestions || suggestions.length > 0) && (
               <div className="mb-4 rounded-md border bg-muted/50 p-4">
-                <p className="mb-2 text-sm font-medium">AI Suggestions:</p>
+                <p className="mb-3 text-sm font-medium">AI Suggestions:</p>
                 {loadingSuggestions ? (
-                  <div className="space-y-2">
-                    <Skeleton className="h-5 w-4/5" />
-                    <Skeleton className="h-5 w-full" />
-                    <Skeleton className="h-5 w-3/5" />
+                  <div className="flex flex-wrap gap-2">
+                    <Skeleton className="h-7 w-24 rounded-full" />
+                    <Skeleton className="h-7 w-32 rounded-full" />
+                    <Skeleton className="h-7 w-28 rounded-full" />
                   </div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="flex flex-wrap gap-2">
                     {suggestions.map((suggestion, index) => (
-                      <div key={index} className="flex items-start space-x-2">
-                        <Checkbox
-                          id={`suggestion-${index}`}
-                          checked={selectedSuggestions.includes(suggestion)}
-                          onCheckedChange={() => handleSuggestionToggle(suggestion)}
-                          className="mt-1"
-                        />
-                        <Label
-                          htmlFor={`suggestion-${index}`}
-                          className="cursor-pointer text-sm font-normal text-muted-foreground"
-                        >
-                          {suggestion}
-                        </Label>
-                      </div>
+                      <Badge
+                        key={index}
+                        variant={selectedSuggestions.includes(suggestion) ? 'default' : 'secondary'}
+                        onClick={() => handleSuggestionToggle(suggestion)}
+                        className="cursor-pointer items-center transition-all hover:opacity-80"
+                      >
+                        {selectedSuggestions.includes(suggestion) && (
+                          <Check className="mr-1.5 h-4 w-4" />
+                        )}
+                        {suggestion}
+                      </Badge>
                     ))}
                   </div>
                 )}
@@ -651,3 +649,5 @@ export function PromptForgeClient() {
     </div>
   );
 }
+
+    
