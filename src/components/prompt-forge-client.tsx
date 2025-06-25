@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useCallback, useEffect, useRef } from 'react';
 import {
   Bot,
   Loader2,
@@ -33,11 +33,13 @@ import {
   handleEvaluateAndIterate,
   handleOptimizeWithContext,
   handleIterateOnPrompt,
+  handleGetPromptSuggestions,
 } from '@/app/actions';
 import { Badge } from './ui/badge';
 import { Skeleton } from './ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
 import { Input } from './ui/input';
+import { Checkbox } from './ui/checkbox';
 
 type LoadingStates = {
   generating: boolean;
@@ -55,7 +57,11 @@ export function PromptForgeClient() {
   const [knowledgeBaseUrls, setKnowledgeBaseUrls] = useState(['']);
   const [uploadedFileName, setUploadedFileName] = useState('');
   const [iterationComments, setIterationComments] = useState('');
-
+  
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [selectedSuggestions, setSelectedSuggestions] = useState<string[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const suggestionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const [evaluationResult, setEvaluationResult] = useState<{
     improvedPrompt: string;
@@ -66,11 +72,6 @@ export function PromptForgeClient() {
   const [optimizationResult, setOptimizationResult] = useState<{
     optimizedPrompt: string;
     reasoning: string;
-  } | null>(null);
-  
-  const [iterationResult, setIterationResult] = useState<{
-    suggestions: string[];
-    newPrompt: string;
   } | null>(null);
 
   const [isPending, startTransition] = useTransition();
@@ -161,27 +162,83 @@ export function PromptForgeClient() {
     });
   };
   
-  const onIterate = () => {
+  const handleSuggestionToggle = (suggestion: string) => {
+    setSelectedSuggestions(prev =>
+      prev.includes(suggestion)
+        ? prev.filter(s => s !== suggestion)
+        : [...prev, suggestion]
+    );
+  };
+
+  const getSuggestions = useCallback(() => {
     if (!currentPrompt || !iterationComments) {
+      setSuggestions([]);
+      return;
+    }
+
+    setLoadingSuggestions(true);
+    startTransition(async () => {
+      try {
+        const result = await handleGetPromptSuggestions({
+          currentPrompt,
+          userComments: iterationComments,
+        });
+        setSuggestions(result.suggestions);
+      } catch (error: any) {
+        toast({
+          variant: 'destructive',
+          title: 'Suggestion Generation Failed',
+          description: error.message,
+        });
+        setSuggestions([]);
+      } finally {
+        setLoadingSuggestions(false);
+      }
+    });
+  }, [currentPrompt, iterationComments, toast]);
+
+  useEffect(() => {
+    if (suggestionTimeoutRef.current) {
+      clearTimeout(suggestionTimeoutRef.current);
+    }
+    if (iterationComments.trim()) {
+      suggestionTimeoutRef.current = setTimeout(() => {
+        getSuggestions();
+      }, 1000); // 1-second debounce
+    } else {
+      setSuggestions([]);
+    }
+    return () => {
+      if (suggestionTimeoutRef.current) {
+        clearTimeout(suggestionTimeoutRef.current);
+      }
+    };
+  }, [iterationComments, getSuggestions]);
+
+  const onIterate = () => {
+    if (!currentPrompt || (!iterationComments && selectedSuggestions.length === 0)) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Please provide a prompt and feedback before refining.',
+        description: 'Please provide feedback or select suggestions before refining.',
       });
       return;
     }
     setLoading((prev) => ({ ...prev, iterating: true }));
     setEvaluationResult(null);
     setOptimizationResult(null);
+    setSuggestions([]); // Clear old suggestions
     startTransition(async () => {
       try {
         const result = await handleIterateOnPrompt({
           currentPrompt,
           userComments: iterationComments,
+          selectedSuggestions,
         });
-        setIterationResult(result);
         setCurrentPrompt(result.newPrompt);
-        toast({ title: 'Success', description: 'Prompt refined with new suggestions.' });
+        setIterationComments(''); // Clear inputs on success
+        setSelectedSuggestions([]);
+        toast({ title: 'Success', description: 'Prompt refined with your feedback.' });
       } catch (error: any) {
         toast({
           variant: 'destructive',
@@ -205,7 +262,6 @@ export function PromptForgeClient() {
     }
     setLoading((prev) => ({ ...prev, evaluating: true }));
     setOptimizationResult(null);
-    setIterationResult(null);
     startTransition(async () => {
       try {
         const result = await handleEvaluateAndIterate({
@@ -240,7 +296,6 @@ export function PromptForgeClient() {
     }
     setLoading((prev) => ({ ...prev, optimizing: true }));
     setEvaluationResult(null);
-    setIterationResult(null);
     startTransition(async () => {
       try {
         const result = await handleOptimizeWithContext({
@@ -455,6 +510,37 @@ export function PromptForgeClient() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {(loadingSuggestions || suggestions.length > 0) && (
+              <div className="mb-4 rounded-md border bg-muted/50 p-4">
+                <p className="mb-2 text-sm font-medium">AI Suggestions:</p>
+                {loadingSuggestions ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-5 w-4/5" />
+                    <Skeleton className="h-5 w-full" />
+                    <Skeleton className="h-5 w-3/5" />
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {suggestions.map((suggestion, index) => (
+                      <div key={index} className="flex items-start space-x-2">
+                        <Checkbox
+                          id={`suggestion-${index}`}
+                          checked={selectedSuggestions.includes(suggestion)}
+                          onCheckedChange={() => handleSuggestionToggle(suggestion)}
+                          className="mt-1"
+                        />
+                        <Label
+                          htmlFor={`suggestion-${index}`}
+                          className="cursor-pointer text-sm font-normal text-muted-foreground"
+                        >
+                          {suggestion}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             <div>
               <Label htmlFor="iteration-comments">Your Feedback &amp; Comments</Label>
               <Textarea
@@ -465,23 +551,17 @@ export function PromptForgeClient() {
                 className="min-h-[100px]"
               />
             </div>
-            {loading.iterating ? (
-              <Skeleton className="h-40 w-full" />
-            ) : (
-              iterationResult && (
-                <div className="rounded-md border bg-muted/50 p-4">
-                  <p className="mb-2 text-sm font-medium">AI Suggestions:</p>
-                  <ul className="list-disc space-y-2 pl-5 text-sm text-muted-foreground">
-                    {iterationResult.suggestions.map((suggestion, index) => (
-                      <li key={index}>{suggestion}</li>
-                    ))}
-                  </ul>
-                </div>
-              )
-            )}
           </CardContent>
           <CardFooter>
-            <Button onClick={onIterate} disabled={isLoading || loading.iterating || !iterationComments || !currentPrompt}>
+            <Button
+              onClick={onIterate}
+              disabled={
+                isLoading ||
+                loading.iterating ||
+                !currentPrompt ||
+                (!iterationComments && selectedSuggestions.length === 0)
+              }
+            >
               {loading.iterating ? <Loader2 className="animate-spin" /> : <Sparkles />}
               Refine with AI
             </Button>

@@ -21,6 +21,11 @@ import {
   type IterateOnPromptInput,
   type IterateOnPromptOutput,
 } from '@/ai/flows/iterate-on-prompt';
+import {
+  generatePromptSuggestions,
+  type GeneratePromptSuggestionsInput,
+  type GeneratePromptSuggestionsOutput,
+} from '@/ai/flows/get-prompt-suggestions';
 
 
 export async function handleGenerateInitialPrompt(input: GenerateInitialPromptInput): Promise<GenerateInitialPromptOutput> {
@@ -61,6 +66,19 @@ export async function handleOptimizeWithContext(input: OptimizePromptWithContext
     throw new Error('An error occurred while optimizing the prompt.');
   }
 }
+
+export async function handleGetPromptSuggestions(input: GeneratePromptSuggestionsInput): Promise<GeneratePromptSuggestionsOutput> {
+    try {
+      const output = await generatePromptSuggestions(input);
+      if (!output) {
+        throw new Error('Failed to generate prompt suggestions.');
+      }
+      return output;
+    } catch (error) {
+      console.error('Error in handleGetPromptSuggestions:', error);
+      throw new Error('An error occurred while generating suggestions.');
+    }
+  }
 
 export async function handleIterateOnPrompt(input: IterateOnPromptInput): Promise<IterateOnPromptOutput> {
   try {
