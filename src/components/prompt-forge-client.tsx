@@ -57,6 +57,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { usePrompts } from '@/hooks/use-prompts';
+import { usePromptForge } from '@/hooks/use-prompt-forge';
 
 type LoadingStates = {
   generating: boolean;
@@ -67,26 +68,27 @@ type LoadingStates = {
 export function PromptForgeClient() {
   const { isAuthenticated } = useAuth();
   const { addPrompt } = usePrompts();
-  const [userNeeds, setUserNeeds] = useState('');
-  const [currentPrompt, setCurrentPrompt] = useState('');
-  const [promptsGenerated, setPromptsGenerated] = useState(0);
-  const [knowledgeBase, setKnowledgeBase] = useState('');
-  const [uploadedFileContent, setUploadedFileContent] = useState('');
-  const [fewShotExamples, setFewShotExamples] = useState('');
-  const [knowledgeBaseUrls, setKnowledgeBaseUrls] = useState(['']);
-  const [uploadedFileName, setUploadedFileName] = useState('');
+  const { toast } = useToast();
+
+  const {
+    userNeeds, setUserNeeds,
+    currentPrompt, setCurrentPrompt,
+    promptsGenerated, setPromptsGenerated,
+    knowledgeBase, setKnowledgeBase,
+    uploadedFileContent, setUploadedFileContent,
+    fewShotExamples, setFewShotExamples,
+    knowledgeBaseUrls, setKnowledgeBaseUrls,
+    uploadedFileName, setUploadedFileName,
+    iterationComments, setIterationComments,
+    suggestions, setSuggestions,
+    selectedSuggestions, setSelectedSuggestions,
+    evaluationResult, setEvaluationResult
+  } = usePromptForge();
+
   const [isDragging, setIsDragging] = useState(false);
-  const [iterationComments, setIterationComments] = useState('');
-  
-  const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [selectedSuggestions, setSelectedSuggestions] = useState<string[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const suggestionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const [evaluationResult, setEvaluationResult] = useState<EvaluateAndIteratePromptOutput | null>(
-    null
-  );
 
   const [isPending, startTransition] = useTransition();
   const [loading, setLoading] = useState<LoadingStates>({
@@ -95,7 +97,6 @@ export function PromptForgeClient() {
     iterating: false,
   });
 
-  const { toast } = useToast();
   const [copied, setCopied] = useState(false);
 
   const containerVariants = {
@@ -266,7 +267,7 @@ export function PromptForgeClient() {
         setLoadingSuggestions(false);
       }
     });
-  }, [currentPrompt, iterationComments, toast]);
+  }, [currentPrompt, iterationComments, toast, setSuggestions]);
 
   useEffect(() => {
     if (suggestionTimeoutRef.current) {
@@ -286,7 +287,7 @@ export function PromptForgeClient() {
         clearTimeout(suggestionTimeoutRef.current);
       }
     };
-  }, [currentPrompt, iterationComments, getSuggestions, promptsGenerated]);
+  }, [currentPrompt, iterationComments, getSuggestions, promptsGenerated, setSuggestions]);
 
   const onIterate = () => {
     if (!currentPrompt || (!iterationComments && selectedSuggestions.length === 0)) {
