@@ -13,6 +13,7 @@ import {
   Globe,
   Plus,
   X,
+  Upload,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -49,6 +50,7 @@ export function PromptForgeClient() {
   const [knowledgeBase, setKnowledgeBase] = useState('');
   const [fewShotExamples, setFewShotExamples] = useState('');
   const [knowledgeBaseUrls, setKnowledgeBaseUrls] = useState(['']);
+  const [uploadedFileName, setUploadedFileName] = useState('');
 
 
   const [evaluationResult, setEvaluationResult] = useState<{
@@ -91,6 +93,35 @@ export function PromptForgeClient() {
   const removeUrlField = (index: number) => {
     const newUrls = knowledgeBaseUrls.filter((_, i) => i !== index);
     setKnowledgeBaseUrls(newUrls);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadedFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        const content = event.target?.result as string;
+        setKnowledgeBase(prev => 
+            prev 
+            ? `${prev}\n\n--- From file: ${file.name} ---\n${content}`
+            : `--- From file: ${file.name} ---\n${content}`
+        );
+        toast({
+            title: "File Loaded",
+            description: `Content from ${file.name} has been added to the knowledge base.`
+        });
+    };
+    reader.onerror = () => {
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Failed to read the file.',
+        });
+        setUploadedFileName('');
+    };
+    reader.readAsText(file);
   };
 
   const onGenerate = () => {
@@ -321,12 +352,29 @@ export function PromptForgeClient() {
                 </div>
 
                 <div>
+                  <Label htmlFor="file-upload">Or Upload Knowledge File</Label>
+                  <div className="mt-2">
+                      <Input 
+                          id="file-upload" 
+                          type="file" 
+                          onChange={handleFileChange} 
+                          accept=".txt,.md,.json,.csv"
+                      />
+                  </div>
+                  {uploadedFileName && (
+                      <p className="mt-2 text-sm text-muted-foreground">
+                          Loaded: {uploadedFileName}
+                      </p>
+                  )}
+                </div>
+
+                <div>
                   <Label htmlFor="few-shot-examples">Few-shot Examples</Label>
                   <Textarea
                     id="few-shot-examples"
                     placeholder="e.g., 'The deadline for Fall 2024 registration is August 15th.' or 'Prof. Smith's office is in Room 301.'"
                     value={fewShotExamples}
-                    onChange={(e) => setFewShotExamples(e.g.target.value)}
+                    onChange={(e) => setFewShotExamples(e.target.value)}
                     className="min-h-[100px]"
                   />
                 </div>
