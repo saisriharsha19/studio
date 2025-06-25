@@ -219,7 +219,9 @@ export function PromptForgeClient() {
         const result = await handleGenerateInitialPrompt({ userNeeds });
         setCurrentPrompt(result.initialPrompt);
         setPromptsGenerated(prev => prev + 1);
-        addPrompt(result.initialPrompt);
+        if (isAuthenticated) {
+          addPrompt(result.initialPrompt);
+        }
         toast({ title: 'Success', description: 'Initial prompt generated.' });
       } catch (error: any) {
         toast({
@@ -306,7 +308,9 @@ export function PromptForgeClient() {
           selectedSuggestions,
         });
         setCurrentPrompt(result.newPrompt);
-        addPrompt(result.newPrompt);
+        if (isAuthenticated) {
+          addPrompt(result.newPrompt);
+        }
         setIterationComments(''); 
         setSelectedSuggestions([]);
         toast({ title: 'Success', description: 'Prompt refined with your feedback.' });
@@ -343,7 +347,9 @@ export function PromptForgeClient() {
         });
         setEvaluationResult(result);
         setCurrentPrompt(result.improvedPrompt);
-        addPrompt(result.improvedPrompt);
+        if (isAuthenticated) {
+          addPrompt(result.improvedPrompt);
+        }
         toast({ title: 'Success', description: 'Prompt evaluated and improved.' });
       } catch (error: any) {
         toast({
