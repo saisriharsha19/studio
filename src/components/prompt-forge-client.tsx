@@ -9,7 +9,7 @@ import {
   Sparkles,
   Clipboard,
   Check,
-  Lightbulb,
+  Wrench,
   Lock,
   Globe,
   Plus,
@@ -31,7 +31,6 @@ import { useToast } from '@/hooks/use-toast';
 import {
   handleGenerateInitialPrompt,
   handleEvaluateAndIterate,
-  handleOptimizeWithContext,
   handleIterateOnPrompt,
   handleGetPromptSuggestions,
 } from '@/app/actions';
@@ -39,11 +38,11 @@ import { Badge } from './ui/badge';
 import { Skeleton } from './ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
 import { Input } from './ui/input';
+import { cn } from '@/lib/utils';
 
 type LoadingStates = {
   generating: boolean;
   evaluating: boolean;
-  optimizing: boolean;
   iterating: boolean;
 };
 
@@ -51,10 +50,12 @@ export function PromptForgeClient() {
   const { isAuthenticated } = useAuth();
   const [userNeeds, setUserNeeds] = useState('');
   const [currentPrompt, setCurrentPrompt] = useState('');
+  const [initialPromptGenerated, setInitialPromptGenerated] = useState(false);
   const [knowledgeBase, setKnowledgeBase] = useState('');
   const [fewShotExamples, setFewShotExamples] = useState('');
   const [knowledgeBaseUrls, setKnowledgeBaseUrls] = useState(['']);
   const [uploadedFileName, setUploadedFileName] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
   const [iterationComments, setIterationComments] = useState('');
   
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -68,16 +69,10 @@ export function PromptForgeClient() {
     evaluationSummary: string;
   } | null>(null);
 
-  const [optimizationResult, setOptimizationResult] = useState<{
-    optimizedPrompt: string;
-    reasoning: string;
-  } | null>(null);
-
   const [isPending, startTransition] = useTransition();
   const [loading, setLoading] = useState<LoadingStates>({
     generating: false,
     evaluating: false,
-    optimizing: false,
     iterating: false,
   });
 
@@ -105,8 +100,7 @@ export function PromptForgeClient() {
     setKnowledgeBaseUrls(newUrls);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const processFile = (file: File) => {
     if (!file) return;
 
     setUploadedFileName(file.name);
@@ -132,6 +126,40 @@ export function PromptForgeClient() {
         setUploadedFileName('');
     };
     reader.readAsText(file);
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      processFile(e.target.files[0]);
+    }
+  };
+
+  const handleDragEnter = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processFile(e.dataTransfer.files[0]);
+      e.dataTransfer.clearData();
+    }
   };
 
   const onGenerate = () => {
@@ -148,6 +176,7 @@ export function PromptForgeClient() {
       try {
         const result = await handleGenerateInitialPrompt({ userNeeds });
         setCurrentPrompt(result.initialPrompt);
+        setInitialPromptGenerated(true);
         toast({ title: 'Success', description: 'Initial prompt generated.' });
       } catch (error: any) {
         toast({
@@ -225,7 +254,6 @@ export function PromptForgeClient() {
     }
     setLoading((prev) => ({ ...prev, iterating: true }));
     setEvaluationResult(null);
-    setOptimizationResult(null);
     setSuggestions([]); 
     startTransition(async () => {
       try {
@@ -260,7 +288,6 @@ export function PromptForgeClient() {
       return;
     }
     setLoading((prev) => ({ ...prev, evaluating: true }));
-    setOptimizationResult(null);
     startTransition(async () => {
       try {
         const result = await handleEvaluateAndIterate({
@@ -280,39 +307,6 @@ export function PromptForgeClient() {
         });
       } finally {
         setLoading((prev) => ({ ...prev, evaluating: false }));
-      }
-    });
-  };
-  
-  const onOptimize = () => {
-    if (!currentPrompt || !knowledgeBase || !fewShotExamples) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Prompt, knowledge base, and few-shot examples are required for optimization.',
-      });
-      return;
-    }
-    setLoading((prev) => ({ ...prev, optimizing: true }));
-    setEvaluationResult(null);
-    startTransition(async () => {
-      try {
-        const result = await handleOptimizeWithContext({
-          prompt: currentPrompt,
-          retrievedContent: knowledgeBase,
-          groundTruths: fewShotExamples,
-        });
-        setOptimizationResult(result);
-        setCurrentPrompt(result.optimizedPrompt);
-        toast({ title: 'Success', description: 'Prompt optimized with context.' });
-      } catch (error: any) {
-        toast({
-          variant: 'destructive',
-          title: 'Optimization Failed',
-          description: error.message,
-        });
-      } finally {
-        setLoading((prev) => ({ ...prev, optimizing: false }));
       }
     });
   };
@@ -352,7 +346,7 @@ export function PromptForgeClient() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button onClick={onGenerate} disabled={isLoading || loading.generating}>
+            <Button onClick={onGenerate} disabled={isLoading || loading.generating || initialPromptGenerated}>
               {loading.generating ? (
                 <Loader2 className="animate-spin" />
               ) : (
@@ -397,7 +391,7 @@ export function PromptForgeClient() {
             <CardTitle>Advanced Tools</CardTitle>
             {!isAuthenticated && (
               <CardDescription>
-               Log in to access advanced features like evaluation, optimization, and web scraping.
+               Log in to access advanced features.
               </CardDescription>
             )}
           </CardHeader>
@@ -454,14 +448,32 @@ export function PromptForgeClient() {
 
                 <div>
                   <Label htmlFor="file-upload">Or Upload Knowledge File</Label>
-                  <div className="mt-2">
+                    <Label 
+                      htmlFor="file-upload" 
+                      className={cn(
+                          "mt-2 flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted",
+                          isDragging ? "border-primary bg-muted" : "border-border"
+                      )}
+                      onDragEnter={handleDragEnter}
+                      onDragLeave={handleDragLeave}
+                      onDragOver={handleDragOver}
+                      onDrop={handleDrop}
+                    >
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                          <Upload className="w-8 h-8 mb-4 text-muted-foreground" />
+                          <p className="mb-2 text-sm text-muted-foreground">
+                              <span className="font-semibold">Click to upload</span> or drag and drop
+                          </p>
+                          <p className="text-xs text-muted-foreground">TXT, MD, JSON, or CSV</p>
+                      </div>
                       <Input 
                           id="file-upload" 
                           type="file" 
+                          className="hidden" 
                           onChange={handleFileChange} 
                           accept=".txt,.md,.json,.csv"
                       />
-                  </div>
+                  </Label>
                   {uploadedFileName && (
                       <p className="mt-2 text-sm text-muted-foreground">
                           Loaded: {uploadedFileName}
@@ -487,10 +499,6 @@ export function PromptForgeClient() {
                       <Button onClick={onEvaluate} disabled={isLoading || loading.evaluating}>
                         {loading.evaluating ? <Loader2 className="animate-spin" /> : <Bot />}
                         Iterate &amp; Evaluate
-                      </Button>
-                      <Button onClick={onOptimize} disabled={isLoading || loading.optimizing}>
-                        {loading.optimizing ? <Loader2 className="animate-spin" /> : <Lightbulb />}
-                        Optimize with Context
                       </Button>
                     </div>
                 </div>
@@ -558,7 +566,7 @@ export function PromptForgeClient() {
                 (!iterationComments && selectedSuggestions.length === 0)
               }
             >
-              {loading.iterating ? <Loader2 className="animate-spin" /> : <Sparkles />}
+              {loading.iterating ? <Loader2 className="animate-spin" /> : <Wrench />}
               Refine with AI
             </Button>
           </CardFooter>
@@ -590,19 +598,7 @@ export function PromptForgeClient() {
                 </Card>
               )}
 
-              {loading.optimizing ? <Skeleton className="h-40 w-full" /> : optimizationResult && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Optimization</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm font-medium">Reasoning:</p>
-                    <p className="text-sm text-muted-foreground">{optimizationResult.reasoning}</p>
-                  </CardContent>
-                </Card>
-              )}
-
-              {!loading.evaluating && !loading.optimizing && !evaluationResult && !optimizationResult && (
+              {!loading.evaluating && !evaluationResult && (
                 <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 text-center">
                     <p className="text-muted-foreground">Your evaluation results will appear here.</p>
                 </div>
@@ -624,6 +620,14 @@ export function PromptForgeClient() {
               >
                 <Upload />
                 Upload to Prompt Library 
+              </Button>
+              <Button
+                className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+                disabled={isLoading || !currentPrompt}
+                onClick={() => toast({ title: "Coming Soon!", description: "This would import the prompt into the NaviGator Builder." })}
+              >
+                <Rocket />
+                Import to NaviGator Builder
               </Button>
             </CardFooter>
           </Card>
