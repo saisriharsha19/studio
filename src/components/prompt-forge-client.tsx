@@ -220,7 +220,7 @@ export function PromptForgeClient() {
                 className="absolute right-6 top-16"
                 onClick={() => copyToClipboard(currentPrompt)}
               >
-                {copied ? <Check className="text-green-500" /> : <Clipboard />}
+                {copied ? <Check className="text-primary" /> : <Clipboard />}
               </Button>
             )}
           </CardContent>
@@ -287,7 +287,7 @@ export function PromptForgeClient() {
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
                     <span>Evaluation</span>
-                    <Badge variant={evaluationResult.relevancyScore > 0.7 ? "default" : "destructive"} className="bg-green-600 text-white">
+                    <Badge variant={evaluationResult.relevancyScore > 0.7 ? "default" : "destructive"}>
                       Score: {Math.round(evaluationResult.relevancyScore * 100)}%
                     </Badge>
                   </CardTitle>

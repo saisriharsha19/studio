@@ -3,8 +3,8 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
-  title: 'PromptForgeAI',
-  description: 'Create and iterate on prompts for AI assistants.',
+  title: 'NaviGator Sailor',
+  description: 'Create and iterate on prompts.',
 };
 
 export default function RootLayout({
