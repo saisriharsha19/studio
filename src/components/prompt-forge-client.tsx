@@ -61,6 +61,7 @@ export function PromptForgeClient() {
   const [currentPrompt, setCurrentPrompt] = useState('');
   const [promptsGenerated, setPromptsGenerated] = useState(0);
   const [knowledgeBase, setKnowledgeBase] = useState('');
+  const [uploadedFileContent, setUploadedFileContent] = useState('');
   const [fewShotExamples, setFewShotExamples] = useState('');
   const [knowledgeBaseUrls, setKnowledgeBaseUrls] = useState(['']);
   const [uploadedFileName, setUploadedFileName] = useState('');
@@ -110,18 +111,14 @@ export function PromptForgeClient() {
   const processFile = (file: File) => {
     if (!file) return;
 
-    setUploadedFileName(file.name);
     const reader = new FileReader();
     reader.onload = (event) => {
         const content = event.target?.result as string;
-        setKnowledgeBase(prev => 
-            prev 
-            ? `${prev}\n\n--- From file: ${file.name} ---\n${content}`
-            : `--- From file: ${file.name} ---\n${content}`
-        );
+        setUploadedFileContent(content);
+        setUploadedFileName(file.name);
         toast({
             title: "File Loaded",
-            description: `Content from ${file.name} has been added to the knowledge base.`
+            description: `${file.name} is ready to be used for evaluation.`
         });
     };
     reader.onerror = () => {
@@ -131,6 +128,7 @@ export function PromptForgeClient() {
             description: 'Failed to read the file.',
         });
         setUploadedFileName('');
+        setUploadedFileContent('');
     };
     reader.readAsText(file);
   }
@@ -297,10 +295,11 @@ export function PromptForgeClient() {
     setLoading((prev) => ({ ...prev, evaluating: true }));
     startTransition(async () => {
       try {
+        const combinedKnowledge = [knowledgeBase, uploadedFileContent].filter(Boolean).join('\n\n');
         const result = await handleEvaluateAndIterate({
           prompt: currentPrompt,
           userNeeds,
-          retrievedContent: knowledgeBase,
+          retrievedContent: combinedKnowledge,
           groundTruths: fewShotExamples,
         });
         setEvaluationResult(result);
@@ -331,7 +330,7 @@ export function PromptForgeClient() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="space-y-2">
+            <div className="space-y-4">
               <Label htmlFor="user-needs">User Needs</Label>
               <Textarea
                 id="user-needs"
@@ -341,8 +340,8 @@ export function PromptForgeClient() {
                 className="min-h-[120px]"
               />
             </div>
-             <div className="space-y-2">
-              <Label htmlFor="knowledge-base">Knowledge Base</Label>
+             <div className="space-y-4">
+              <Label htmlFor="knowledge-base">Knowledge Base (Optional)</Label>
               <Textarea
                 id="knowledge-base"
                 placeholder="Paste relevant web-scraped data, FAQs, or knowledge base articles here."
@@ -353,13 +352,13 @@ export function PromptForgeClient() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button onClick={onGenerate} disabled={isLoading || loading.generating || promptsGenerated > 0}>
+            <Button onClick={onGenerate} disabled={isLoading || loading.generating}>
               {loading.generating ? (
                 <Loader2 className="animate-spin" />
               ) : (
                 <Sparkles />
               )}
-              Generate Initial Prompt
+              {promptsGenerated === 0 ? 'Generate Initial Prompt' : 'Regenerate Initial Prompt'}
             </Button>
           </CardFooter>
         </Card>
@@ -371,7 +370,7 @@ export function PromptForgeClient() {
               This is the generated system prompt. You can manually edit it before evaluation or optimization.
             </CardDescription>
           </CardHeader>
-          <CardContent className="relative space-y-2">
+          <CardContent className="relative space-y-4">
             <Label htmlFor="system-prompt">Prompt</Label>
             <Textarea
               id="system-prompt"
@@ -409,9 +408,9 @@ export function PromptForgeClient() {
                   <p className="mt-4 text-muted-foreground">Please log in to use advanced tools.</p>
               </div>
             ) : (
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <Label>Knowledge Base URLs</Label>
+              <div className="space-y-8">
+                <div className="space-y-4">
+                  <Label>Knowledge Base URLs (Optional)</Label>
                   <div className="space-y-2">
                     {knowledgeBaseUrls.map((url, index) => (
                       <div key={index} className="flex items-center gap-2">
@@ -447,14 +446,14 @@ export function PromptForgeClient() {
                       Add URL
                     </Button>
                     <Button variant="outline" size="sm" onClick={() => toast({ title: "Coming Soon!", description: "Web scraping functionality is not yet implemented."})}>
-                        <Globe/>
+                        <Globe className="mr-2 h-4 w-4"/>
                         Fetch Content
                     </Button>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="file-upload">Upload Knowledge File</Label>
+                <div className="space-y-4">
+                  <Label htmlFor="file-upload">Upload Knowledge File (Optional)</Label>
                     <Label 
                       htmlFor="file-upload" 
                       className={cn(
@@ -488,8 +487,8 @@ export function PromptForgeClient() {
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="few-shot-examples">Few-shot Examples</Label>
+                <div className="space-y-4">
+                  <Label htmlFor="few-shot-examples">Few-shot Examples (Optional)</Label>
                   <Textarea
                     id="few-shot-examples"
                     placeholder="e.g., 'The deadline for Fall 2024 registration is August 15th.' or 'Prof. Smith's office is in Room 301.'"
@@ -543,7 +542,7 @@ export function PromptForgeClient() {
                         key={index}
                         variant={selectedSuggestions.includes(suggestion) ? 'default' : 'secondary'}
                         onClick={() => handleSuggestionToggle(suggestion)}
-                        className="cursor-pointer items-center transition-all hover:opacity-80 text-sm px-3 py-1"
+                        className="cursor-pointer items-center transition-all hover:opacity-80 text-sm px-3 py-1.5"
                       >
                         {selectedSuggestions.includes(suggestion) && (
                           <Check className="mr-1.5 h-4 w-4" />
@@ -555,7 +554,7 @@ export function PromptForgeClient() {
                 )}
               </div>
             )}
-            <div className="space-y-2">
+            <div className="space-y-4">
               <Label htmlFor="iteration-comments">Your Feedback &amp; Comments</Label>
               <Textarea
                 id="iteration-comments"
@@ -746,7 +745,7 @@ export function PromptForgeClient() {
                 Create NaviGator Assistant 
               </Button>
               <Button
-                className="w-full text-accent-foreground hover:bg-accent/90"
+                className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
                 disabled={isLoading || !currentPrompt}
                 onClick={() => toast({ title: "Onyx Integration", description: "This would trigger agent creation in the Onyx (Danswer) system." })}
               >
