@@ -188,7 +188,6 @@ export function PromptForgeClient() {
           title: 'Suggestion Generation Failed',
           description: error.message,
         });
-        // NOTE: We don't clear suggestions on error, to avoid them disappearing.
       } finally {
         setLoadingSuggestions(false);
       }
@@ -203,7 +202,7 @@ export function PromptForgeClient() {
     if (currentPrompt) {
       suggestionTimeoutRef.current = setTimeout(() => {
         getSuggestions();
-      }, 1000); // 1-second debounce
+      }, 1000); 
     } else {
         setSuggestions([]);
     }
@@ -227,7 +226,7 @@ export function PromptForgeClient() {
     setLoading((prev) => ({ ...prev, iterating: true }));
     setEvaluationResult(null);
     setOptimizationResult(null);
-    setSuggestions([]); // Clear old suggestions
+    setSuggestions([]); 
     startTransition(async () => {
       try {
         const result = await handleIterateOnPrompt({
@@ -236,7 +235,7 @@ export function PromptForgeClient() {
           selectedSuggestions,
         });
         setCurrentPrompt(result.newPrompt);
-        setIterationComments(''); // Clear inputs on success
+        setIterationComments(''); 
         setSelectedSuggestions([]);
         toast({ title: 'Success', description: 'Prompt refined with your feedback.' });
       } catch (error: any) {
@@ -635,7 +634,7 @@ export function PromptForgeClient() {
                 <CardDescription>
                     Log in to view evaluation results and deploy your agent.
                 </CardDescription>
-            </Header>
+            </CardHeader>
             <CardContent>
                 <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 text-center">
                     <Lock className="h-10 w-10 text-muted-foreground" />
