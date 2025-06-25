@@ -16,6 +16,12 @@ import {
   type OptimizePromptWithContextInput, 
   type OptimizePromptWithContextOutput 
 } from '@/ai/flows/optimize-prompt-with-context';
+import {
+  iterateOnPrompt,
+  type IterateOnPromptInput,
+  type IterateOnPromptOutput,
+} from '@/ai/flows/iterate-on-prompt';
+
 
 export async function handleGenerateInitialPrompt(input: GenerateInitialPromptInput): Promise<GenerateInitialPromptOutput> {
   try {
@@ -53,5 +59,18 @@ export async function handleOptimizeWithContext(input: OptimizePromptWithContext
   } catch (error) {
     console.error('Error in handleOptimizeWithContext:', error);
     throw new Error('An error occurred while optimizing the prompt.');
+  }
+}
+
+export async function handleIterateOnPrompt(input: IterateOnPromptInput): Promise<IterateOnPromptOutput> {
+  try {
+    const output = await iterateOnPrompt(input);
+    if (!output) {
+      throw new Error('Failed to iterate on prompt.');
+    }
+    return output;
+  } catch (error) {
+    console.error('Error in handleIterateOnPrompt:', error);
+    throw new Error('An error occurred while iterating on the prompt.');
   }
 }

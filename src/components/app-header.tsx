@@ -2,6 +2,7 @@
 
 import { UserCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import Image from 'next/image'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +19,7 @@ export function AppHeader() {
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-4 sm:px-6">
       <div className="flex items-center gap-2">
         {/* <Logo className="h-6 w-6 text-primary" /> */}
+        <Image src="/NavGAI-19.png" width={25} height={25} alt="NaviGator Logo" />
         <h1 className="text-xl font-bold tracking-tight">NaviGator Sailor</h1>
       </div>
       <div className="ml-auto flex items-center gap-4">

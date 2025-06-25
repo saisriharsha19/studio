@@ -31,6 +31,7 @@ import {
   handleGenerateInitialPrompt,
   handleEvaluateAndIterate,
   handleOptimizeWithContext,
+  handleIterateOnPrompt,
 } from '@/app/actions';
 import { Badge } from './ui/badge';
 import { Skeleton } from './ui/skeleton';
@@ -41,6 +42,7 @@ type LoadingStates = {
   generating: boolean;
   evaluating: boolean;
   optimizing: boolean;
+  iterating: boolean;
 };
 
 export function PromptForgeClient() {
@@ -51,6 +53,7 @@ export function PromptForgeClient() {
   const [fewShotExamples, setFewShotExamples] = useState('');
   const [knowledgeBaseUrls, setKnowledgeBaseUrls] = useState(['']);
   const [uploadedFileName, setUploadedFileName] = useState('');
+  const [iterationComments, setIterationComments] = useState('');
 
 
   const [evaluationResult, setEvaluationResult] = useState<{
@@ -63,12 +66,18 @@ export function PromptForgeClient() {
     optimizedPrompt: string;
     reasoning: string;
   } | null>(null);
+  
+  const [iterationResult, setIterationResult] = useState<{
+    suggestions: string[];
+    newPrompt: string;
+  } | null>(null);
 
   const [isPending, startTransition] = useTransition();
   const [loading, setLoading] = useState<LoadingStates>({
     generating: false,
     evaluating: false,
     optimizing: false,
+    iterating: false,
   });
 
   const { toast } = useToast();
@@ -150,6 +159,39 @@ export function PromptForgeClient() {
       }
     });
   };
+  
+  const onIterate = () => {
+    if (!currentPrompt || !iterationComments) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Please provide a prompt and feedback before refining.',
+      });
+      return;
+    }
+    setLoading((prev) => ({ ...prev, iterating: true }));
+    setEvaluationResult(null);
+    setOptimizationResult(null);
+    startTransition(async () => {
+      try {
+        const result = await handleIterateOnPrompt({
+          currentPrompt,
+          userComments: iterationComments,
+        });
+        setIterationResult(result);
+        setCurrentPrompt(result.newPrompt);
+        toast({ title: 'Success', description: 'Prompt refined with new suggestions.' });
+      } catch (error: any) {
+        toast({
+          variant: 'destructive',
+          title: 'Refinement Failed',
+          description: error.message,
+        });
+      } finally {
+        setLoading((prev) => ({ ...prev, iterating: false }));
+      }
+    });
+  };
 
   const onEvaluate = () => {
     if (!currentPrompt || !userNeeds || !knowledgeBase || !fewShotExamples) {
@@ -162,6 +204,7 @@ export function PromptForgeClient() {
     }
     setLoading((prev) => ({ ...prev, evaluating: true }));
     setOptimizationResult(null);
+    setIterationResult(null);
     startTransition(async () => {
       try {
         const result = await handleEvaluateAndIterate({
@@ -196,6 +239,7 @@ export function PromptForgeClient() {
     }
     setLoading((prev) => ({ ...prev, optimizing: true }));
     setEvaluationResult(null);
+    setIterationResult(null);
     startTransition(async () => {
       try {
         const result = await handleOptimizeWithContext({
@@ -225,7 +269,7 @@ export function PromptForgeClient() {
       <div className="space-y-6 lg:col-span-3">
         <Card>
           <CardHeader>
-            <CardTitle>1. Describe Your Assistant & Provide Knowledge</CardTitle>
+            <CardTitle>Describe Your Assistant</CardTitle>
             <CardDescription>
               What are the primary goals and functionalities of your AI assistant? You can also provide a knowledge base to ground the assistant.
             </CardDescription>
@@ -266,7 +310,7 @@ export function PromptForgeClient() {
 
         <Card>
           <CardHeader>
-            <CardTitle>2. System Prompt</CardTitle>
+            <CardTitle>System Prompt</CardTitle>
             <CardDescription>
               This is the generated system prompt. You can manually edit it before evaluation or optimization.
             </CardDescription>
@@ -295,7 +339,7 @@ export function PromptForgeClient() {
 
         <Card>
           <CardHeader>
-            <CardTitle>3. Advanced Tools</CardTitle>
+            <CardTitle>Advanced Tools</CardTitle>
             {!isAuthenticated && (
               <CardDescription>
                Log in to access advanced features like evaluation, optimization, and web scraping.
@@ -402,61 +446,128 @@ export function PromptForgeClient() {
       </div>
 
       <div className="space-y-6 lg:col-span-2">
-        <Card className="sticky top-24">
-          <CardHeader>
-            <CardTitle>Results & Deployment</CardTitle>
-            <CardDescription>
-              Review the results from the AI evaluation and deploy your agent.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {loading.evaluating ? <Skeleton className="h-40 w-full" /> : evaluationResult && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span>Evaluation</span>
-                    <Badge variant={evaluationResult.relevancyScore > 0.7 ? "default" : "destructive"}>
-                      Score: {Math.round(evaluationResult.relevancyScore * 100)}%
-                    </Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm font-medium">Summary:</p>
-                  <p className="text-sm text-muted-foreground">{evaluationResult.evaluationSummary}</p>
-                </CardContent>
-              </Card>
-            )}
+        {isAuthenticated ? (
+          <>
+            <Card>
+              <CardHeader>
+                <CardTitle>AI-Assisted Refinement</CardTitle>
+                <CardDescription>
+                  Provide feedback on the current prompt to get AI-generated suggestions for improvement.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="iteration-comments">Your Feedback & Comments</Label>
+                  <Textarea
+                    id="iteration-comments"
+                    placeholder="e.g., 'Make it more concise' or 'Add a rule to always ask for the user's name.'"
+                    value={iterationComments}
+                    onChange={(e) => setIterationComments(e.target.value)}
+                    className="min-h-[100px]"
+                  />
+                </div>
+                {loading.iterating ? (
+                  <Skeleton className="h-40 w-full" />
+                ) : (
+                  iterationResult && (
+                    <div className="rounded-md border bg-muted/50 p-4">
+                      <p className="mb-2 text-sm font-medium">AI Suggestions:</p>
+                      <ul className="list-disc space-y-2 pl-5 text-sm text-muted-foreground">
+                        {iterationResult.suggestions.map((suggestion, index) => (
+                          <li key={index}>{suggestion}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )
+                )}
+              </CardContent>
+              <CardFooter>
+                <Button onClick={onIterate} disabled={isLoading || loading.iterating || !iterationComments || !currentPrompt}>
+                  {loading.iterating ? <Loader2 className="animate-spin" /> : <Sparkles />}
+                  Refine with AI
+                </Button>
+              </CardFooter>
+            </Card>
 
-            {loading.optimizing ? <Skeleton className="h-40 w-full" /> : optimizationResult && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Optimization</CardTitle>
-                </CardHeader>
-                <CardContent>
-                   <p className="text-sm font-medium">Reasoning:</p>
-                   <p className="text-sm text-muted-foreground">{optimizationResult.reasoning}</p>
-                </CardContent>
-              </Card>
-            )}
+            <Card className="sticky top-24">
+              <CardHeader>
+                <CardTitle>Evaluation & Deployment</CardTitle>
+                <CardDescription>
+                  Review the results from our AI evaluator and deploy your agent.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {loading.evaluating ? <Skeleton className="h-40 w-full" /> : evaluationResult && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between">
+                        <span>Evaluation</span>
+                        <Badge variant={evaluationResult.relevancyScore > 0.7 ? "default" : "destructive"}>
+                          Score: {Math.round(evaluationResult.relevancyScore * 100)}%
+                        </Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm font-medium">Summary:</p>
+                      <p className="text-sm text-muted-foreground">{evaluationResult.evaluationSummary}</p>
+                    </CardContent>
+                  </Card>
+                )}
 
-            {!loading.evaluating && !loading.optimizing && !evaluationResult && !optimizationResult && (
-              <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 text-center">
-                  <p className="text-muted-foreground">Your results will appear here.</p>
-              </div>
-            )}
+                {loading.optimizing ? <Skeleton className="h-40 w-full" /> : optimizationResult && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Optimization</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm font-medium">Reasoning:</p>
+                      <p className="text-sm text-muted-foreground">{optimizationResult.reasoning}</p>
+                    </CardContent>
+                  </Card>
+                )}
 
-          </CardContent>
-          <CardFooter>
-            <Button
-              className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
-              disabled={isLoading || !currentPrompt}
-              onClick={() => toast({ title: "Onyx Integration", description: "This would trigger agent creation in the Onyx (Danswer) system." })}
-            >
-              <Rocket />
-              Create Agent in Onyx
-            </Button>
-          </CardFooter>
-        </Card>
+                {!loading.evaluating && !loading.optimizing && !evaluationResult && !optimizationResult && (
+                  <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 text-center">
+                      <p className="text-muted-foreground">Your evaluation results will appear here.</p>
+                  </div>
+                )}
+              </CardContent>
+              <CardFooter className="flex flex-col gap-2">
+                <Button
+                  className="w-full bg-accent text-accent-foreground text-white hover:bg-accent/90"
+                  disabled={isLoading || !currentPrompt}
+                  onClick={() => toast({ title: "Onyx Integration", description: "This would trigger agent creation in the Onyx (Danswer) system." })}
+                >
+                  <Rocket />
+                  Create NaviGator Assistant 
+                </Button>
+                <Button
+                  className="w-full text-accent-foreground text-white hover:bg-accent/90"
+                  disabled={isLoading || !currentPrompt}
+                  onClick={() => toast({ title: "Onyx Integration", description: "This would trigger agent creation in the Onyx (Danswer) system." })}
+                >
+                  <Upload />
+                  Upload to Prompt Library 
+                </Button>
+              </CardFooter>
+            </Card>
+          </>
+        ) : (
+          <Card>
+            <CardHeader>
+                <CardTitle>Results & Refinement</CardTitle>
+                <CardDescription>
+                    Log in to view evaluation results and use AI-assisted refinement tools.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 text-center">
+                    <Lock className="h-10 w-10 text-muted-foreground" />
+                    <p className="mt-4 text-muted-foreground">Please log in to use these tools.</p>
+                </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
