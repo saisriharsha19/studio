@@ -15,6 +15,7 @@ import {
   Plus,
   X,
   Upload,
+  Import,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -50,7 +51,7 @@ export function PromptForgeClient() {
   const { isAuthenticated } = useAuth();
   const [userNeeds, setUserNeeds] = useState('');
   const [currentPrompt, setCurrentPrompt] = useState('');
-  const [initialPromptGenerated, setInitialPromptGenerated] = useState(false);
+  const [promptsGenerated, setPromptsGenerated] = useState(0);
   const [knowledgeBase, setKnowledgeBase] = useState('');
   const [fewShotExamples, setFewShotExamples] = useState('');
   const [knowledgeBaseUrls, setKnowledgeBaseUrls] = useState(['']);
@@ -176,7 +177,7 @@ export function PromptForgeClient() {
       try {
         const result = await handleGenerateInitialPrompt({ userNeeds });
         setCurrentPrompt(result.initialPrompt);
-        setInitialPromptGenerated(true);
+        setPromptsGenerated(prev => prev + 1);
         toast({ title: 'Success', description: 'Initial prompt generated.' });
       } catch (error: any) {
         toast({
@@ -228,7 +229,7 @@ export function PromptForgeClient() {
       clearTimeout(suggestionTimeoutRef.current);
     }
     
-    if (currentPrompt) {
+    if (promptsGenerated > 0 || currentPrompt) {
       suggestionTimeoutRef.current = setTimeout(() => {
         getSuggestions();
       }, 1000); 
@@ -241,7 +242,7 @@ export function PromptForgeClient() {
         clearTimeout(suggestionTimeoutRef.current);
       }
     };
-  }, [currentPrompt, iterationComments, getSuggestions]);
+  }, [currentPrompt, iterationComments, getSuggestions, promptsGenerated]);
 
   const onIterate = () => {
     if (!currentPrompt || (!iterationComments && selectedSuggestions.length === 0)) {
@@ -346,7 +347,7 @@ export function PromptForgeClient() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button onClick={onGenerate} disabled={isLoading || loading.generating || initialPromptGenerated}>
+            <Button onClick={onGenerate} disabled={isLoading || loading.generating || promptsGenerated > 0}>
               {loading.generating ? (
                 <Loader2 className="animate-spin" />
               ) : (
@@ -371,13 +372,13 @@ export function PromptForgeClient() {
               placeholder="Your generated or refined prompt will appear here."
               value={currentPrompt}
               onChange={(e) => setCurrentPrompt(e.target.value)}
-              className="min-h-[200px] pr-12"
+              className="min-h-[200px] pr-12 pb-8"
             />
             {currentPrompt && (
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute bottom-3 right-2"
+                className="absolute bottom-5 right-2"
                 onClick={() => copyToClipboard(currentPrompt)}
               >
                 {copied ? <Check className="text-primary" /> : <Clipboard />}
@@ -439,7 +440,7 @@ export function PromptForgeClient() {
                       <Plus className="mr-2 h-4 w-4" />
                       Add URL
                     </Button>
-                    <Button variant="outline" onClick={() => toast({ title: "Coming Soon!", description: "Web scraping functionality is not yet implemented."})}>
+                    <Button variant="outline" size="sm" onClick={() => toast({ title: "Coming Soon!", description: "Web scraping functionality is not yet implemented."})}>
                         <Globe/>
                         Fetch Content
                     </Button>
@@ -447,7 +448,7 @@ export function PromptForgeClient() {
                 </div>
 
                 <div>
-                  <Label htmlFor="file-upload">Or Upload Knowledge File</Label>
+                  <Label htmlFor="file-upload">Upload Knowledge File</Label>
                     <Label 
                       htmlFor="file-upload" 
                       className={cn(
@@ -626,7 +627,7 @@ export function PromptForgeClient() {
                 disabled={isLoading || !currentPrompt}
                 onClick={() => toast({ title: "Coming Soon!", description: "This would import the prompt into the NaviGator Builder." })}
               >
-                <Rocket />
+                <Import />
                 Import to NaviGator Builder
               </Button>
             </CardFooter>

@@ -25,7 +25,7 @@ export function AppHeader() {
       <div className="ml-auto flex items-center gap-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="rounded-full hover:bg-muted">
+            <Button variant="ghost" size="icon" className="rounded-full hover:bg-muted hover:text-foreground">
               <UserCircle className="h-6 w-6" />
               <span className="sr-only">Toggle user menu</span>
             </Button>
