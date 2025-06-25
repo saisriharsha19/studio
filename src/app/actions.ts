@@ -26,6 +26,9 @@ import {
   type GeneratePromptSuggestionsInput,
   type GeneratePromptSuggestionsOutput,
 } from '@/ai/flows/get-prompt-suggestions';
+import { db } from '@/lib/db';
+import type { Prompt } from '@/hooks/use-prompts';
+import { revalidatePath } from 'next/cache';
 
 
 export async function handleGenerateInitialPrompt(input: GenerateInitialPromptInput): Promise<GenerateInitialPromptOutput> {
@@ -90,5 +93,48 @@ export async function handleIterateOnPrompt(input: IterateOnPromptInput): Promis
   } catch (error) {
     console.error('Error in handleIterateOnPrompt:', error);
     throw new Error('An error occurred while iterating on the prompt.');
+  }
+}
+
+export async function getPromptsFromDB(): Promise<Prompt[]> {
+  try {
+    const stmt = db.prepare('SELECT * FROM prompts ORDER BY createdAt DESC');
+    const prompts = stmt.all() as Prompt[];
+    return prompts;
+  } catch (error) {
+    console.error('Failed to get prompts:', error);
+    return [];
+  }
+}
+
+export async function addPromptToDB(promptText: string): Promise<Prompt> {
+  const newPrompt: Prompt = {
+    text: promptText,
+    id: crypto.randomUUID(),
+    createdAt: new Date().toISOString(),
+  };
+
+  try {
+    const stmt = db.prepare(
+      'INSERT INTO prompts (id, text, createdAt) VALUES (?, ?, ?)'
+    );
+    stmt.run(newPrompt.id, newPrompt.text, newPrompt.createdAt);
+    revalidatePath('/library');
+    return newPrompt;
+  } catch (error) {
+    console.error('Failed to add prompt:', error);
+    throw new Error('Failed to save prompt to database.');
+  }
+}
+
+export async function deletePromptFromDB(id: string): Promise<{ success: boolean }> {
+  try {
+    const stmt = db.prepare('DELETE FROM prompts WHERE id = ?');
+    const result = stmt.run(id);
+    revalidatePath('/library');
+    return { success: result.changes > 0 };
+  } catch (error) {
+    console.error('Failed to delete prompt:', error);
+    throw new Error('Failed to delete prompt from database.');
   }
 }

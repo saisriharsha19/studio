@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -27,9 +28,30 @@ import { Clipboard, Check, Trash2, Library, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { Input } from './ui/input';
+import { Skeleton } from './ui/skeleton';
+
+function PromptCardSkeleton() {
+  return (
+    <Card className="flex flex-col">
+      <CardHeader>
+        <Skeleton className="h-5 w-2/3" />
+        <Skeleton className="h-4 w-1/3 mt-2" />
+      </CardHeader>
+      <CardContent className="flex-grow space-y-2">
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-4/5" />
+      </CardContent>
+      <CardFooter className="flex justify-end gap-2">
+        <Skeleton className="h-8 w-8 rounded-full" />
+        <Skeleton className="h-8 w-8 rounded-full" />
+      </CardFooter>
+    </Card>
+  );
+}
 
 export function PromptLibraryClient() {
-  const { prompts, deletePrompt } = usePrompts();
+  const { prompts, deletePrompt, isLoading } = usePrompts();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
@@ -45,8 +67,14 @@ export function PromptLibraryClient() {
     prompt.text.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const getPromptTitle = (text: string) => {
+    const words = text.split(' ');
+    const title = words.slice(0, 8).join(' ');
+    return words.length > 8 ? `${title}...` : title;
+  };
+
   return (
-    <div className="container mx-auto max-w-7xl py-8">
+    <div className="container mx-auto max-w-7xl py-8 px-4 sm:px-6 lg:px-8">
       <div className="mb-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className='flex items-center gap-3'>
           <Library className="h-8 w-8" />
@@ -57,24 +85,30 @@ export function PromptLibraryClient() {
             </p>
           </div>
         </div>
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input 
             placeholder="Search prompts..."
-            className="pl-9"
+            className="h-11 w-full rounded-full border-transparent bg-muted pl-12 pr-4 transition-colors focus:bg-background focus:ring-2 focus:ring-ring"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
       </div>
 
-      <ScrollArea className="h-[calc(100vh-12rem)]">
-        {filteredPrompts.length > 0 ? (
+      <ScrollArea className="h-full">
+        {isLoading ? (
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => <PromptCardSkeleton key={i} />)}
+          </div>
+        ) : filteredPrompts.length > 0 ? (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filteredPrompts.map((prompt) => (
               <Card key={prompt.id} className="flex flex-col">
                 <CardHeader>
-                  <CardTitle className="text-lg">Prompt</CardTitle>
+                  <CardTitle className="text-lg leading-snug">
+                    {getPromptTitle(prompt.text)}
+                  </CardTitle>
                   <CardDescription>
                     Saved{' '}
                     {formatDistanceToNow(new Date(prompt.createdAt), {

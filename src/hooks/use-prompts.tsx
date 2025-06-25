@@ -1,7 +1,9 @@
+
 'use client';
 
-import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { useToast } from './use-toast';
+import { addPromptToDB, deletePromptFromDB, getPromptsFromDB } from '@/app/actions';
 
 export type Prompt = {
   id: string;
@@ -11,63 +13,81 @@ export type Prompt = {
 
 type PromptContextType = {
   prompts: Prompt[];
-  addPrompt: (text: string) => void;
-  deletePrompt: (id: string) => void;
+  isLoading: boolean;
+  addPrompt: (text: string) => Promise<void>;
+  deletePrompt: (id: string) => Promise<void>;
 };
 
 const PromptContext = createContext<PromptContextType | undefined>(undefined);
 
-const PROMPTS_STORAGE_KEY = 'prompt-library';
-
 export function PromptProvider({ children }: { children: ReactNode }) {
   const [prompts, setPrompts] = useState<Prompt[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    try {
-      const storedPrompts = localStorage.getItem(PROMPTS_STORAGE_KEY);
-      if (storedPrompts) {
-        setPrompts(JSON.parse(storedPrompts));
+    const loadPrompts = async () => {
+      try {
+        setIsLoading(true);
+        const initialPrompts = await getPromptsFromDB();
+        setPrompts(initialPrompts);
+      } catch (error) {
+        console.error('Failed to load prompts from database', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Could not load prompt library.',
+        });
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Failed to load prompts from local storage', error);
-    }
-  }, []);
+    };
+    loadPrompts();
+  }, [toast]);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(PROMPTS_STORAGE_KEY, JSON.stringify(prompts));
-    } catch (error) {
-      console.error('Failed to save prompts to local storage', error);
-    }
-  }, [prompts]);
-
-  const addPrompt = (text: string) => {
+  const addPrompt = useCallback(async (text: string) => {
     if (!text.trim()) return;
     
-    // Avoid adding duplicates
-    if (prompts.length > 0 && prompts[0].text === text) {
+    // Avoid adding duplicates based on text
+    if (prompts.some(p => p.text === text)) {
       return;
     }
 
-    const newPrompt: Prompt = {
-      id: new Date().toISOString(),
-      text,
-      createdAt: new Date().toISOString(),
-    };
-    setPrompts(prev => [newPrompt, ...prev]);
-    toast({
-      title: 'Prompt Saved',
-      description: 'The new prompt has been added to your library.',
-    });
-  };
+    try {
+      const newPrompt = await addPromptToDB(text);
+      setPrompts(prev => [newPrompt, ...prev]);
+      toast({
+        title: 'Prompt Saved',
+        description: 'The new prompt has been added to your library.',
+      });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Save Failed',
+        description: error.message || 'An error occurred while saving the prompt.',
+      });
+    }
+  }, [prompts, toast]);
 
-  const deletePrompt = (id: string) => {
-    setPrompts(prev => prev.filter(p => p.id !== id));
-  };
+  const deletePrompt = useCallback(async (id: string) => {
+    try {
+      await deletePromptFromDB(id);
+      setPrompts(prev => prev.filter(p => p.id !== id));
+      toast({
+        title: 'Prompt Deleted',
+        description: 'The prompt has been removed from your library.',
+      });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Delete Failed',
+        description: error.message || 'An error occurred while deleting the prompt.',
+      });
+    }
+  }, [toast]);
 
   return (
-    <PromptContext.Provider value={{ prompts, addPrompt, deletePrompt }}>
+    <PromptContext.Provider value={{ prompts, addPrompt, deletePrompt, isLoading }}>
       {children}
     </PromptContext.Provider>
   );
