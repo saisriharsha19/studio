@@ -32,17 +32,22 @@ const prompt = ai.definePrompt({
   name: 'generatePromptSuggestionsPrompt',
   input: {schema: GeneratePromptSuggestionsInputSchema},
   output: {schema: GeneratePromptSuggestionsOutputSchema},
-  prompt: `You are an AI assistant that helps users refine system prompts. The user will provide their current prompt and some comments on how they want to improve it.
+  prompt: `You are an AI assistant that helps users refine system prompts. The user will provide their current prompt and optionally some comments on how they want to improve it.
 
-Your task is to analyze the current prompt and the user's comments and provide a list of concrete, actionable suggestions (blurbs) for how the prompt could be improved to meet the user's goals. Do not generate a new prompt, only provide suggestions.
+Your task is to analyze the current prompt and provide a list of up to 5 concrete, actionable suggestions for how the prompt could be improved.
+- Each suggestion must be concise and under 15 words.
+- If user comments are provided, use them to guide your suggestions. If not, provide general improvement suggestions based on prompt engineering best practices.
+- Do not generate a new prompt, only provide suggestions.
 
 Current Prompt:
 {{{currentPrompt}}}
+{{#if userComments}}
 
 User Comments:
 "{{{userComments}}}"
+{{/if}}
 
-Based on the comments, provide improvement suggestions.`,
+Now, provide your suggestions based on the above.`,
 });
 
 const generatePromptSuggestionsFlow = ai.defineFlow(

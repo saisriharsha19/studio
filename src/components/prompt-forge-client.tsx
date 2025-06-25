@@ -525,7 +525,7 @@ export function PromptForgeClient() {
                         key={index}
                         variant={selectedSuggestions.includes(suggestion) ? 'default' : 'secondary'}
                         onClick={() => handleSuggestionToggle(suggestion)}
-                        className="cursor-pointer items-center transition-all hover:opacity-80"
+                        className="cursor-pointer items-center transition-all hover:opacity-80 text-sm px-3 py-1"
                       >
                         {selectedSuggestions.includes(suggestion) && (
                           <Check className="mr-1.5 h-4 w-4" />
