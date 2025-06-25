@@ -11,6 +11,8 @@ import {
   Lightbulb,
   Lock,
   Globe,
+  Plus,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -46,7 +48,7 @@ export function PromptForgeClient() {
   const [currentPrompt, setCurrentPrompt] = useState('');
   const [knowledgeBase, setKnowledgeBase] = useState('');
   const [fewShotExamples, setFewShotExamples] = useState('');
-  const [knowledgeBaseUrl, setKnowledgeBaseUrl] = useState('');
+  const [knowledgeBaseUrls, setKnowledgeBaseUrls] = useState(['']);
 
 
   const [evaluationResult, setEvaluationResult] = useState<{
@@ -74,6 +76,21 @@ export function PromptForgeClient() {
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleUrlChange = (index: number, value: string) => {
+    const newUrls = [...knowledgeBaseUrls];
+    newUrls[index] = value;
+    setKnowledgeBaseUrls(newUrls);
+  };
+
+  const addUrlField = () => {
+    setKnowledgeBaseUrls([...knowledgeBaseUrls, '']);
+  };
+
+  const removeUrlField = (index: number) => {
+    const newUrls = knowledgeBaseUrls.filter((_, i) => i !== index);
+    setKnowledgeBaseUrls(newUrls);
   };
 
   const onGenerate = () => {
@@ -261,17 +278,44 @@ export function PromptForgeClient() {
             ) : (
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="knowledge-base-url">Knowledge Base URL</Label>
-                  <div className="flex gap-2">
-                    <Input 
-                      id="knowledge-base-url"
-                      placeholder="https://example.com/knowledge"
-                      value={knowledgeBaseUrl}
-                      onChange={(e) => setKnowledgeBaseUrl(e.target.value)}
-                    />
+                  <Label>Knowledge Base URLs</Label>
+                  <div className="space-y-2">
+                    {knowledgeBaseUrls.map((url, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <Input
+                          id={`knowledge-base-url-${index}`}
+                          placeholder="https://example.com/knowledge"
+                          value={url}
+                          onChange={(e) => handleUrlChange(index, e.target.value)}
+                        />
+                        {knowledgeBaseUrls.length > 1 ? (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeUrlField(index)}
+                            className="shrink-0"
+                          >
+                            <X className="h-4 w-4" />
+                            <span className="sr-only">Remove URL</span>
+                          </Button>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-2 flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addUrlField}
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add URL
+                    </Button>
                     <Button variant="outline" onClick={() => toast({ title: "Coming Soon!", description: "Web scraping functionality is not yet implemented."})}>
-                      <Globe/>
-                      Fetch
+                        <Globe/>
+                        Fetch Content
                     </Button>
                   </div>
                 </div>
@@ -282,7 +326,7 @@ export function PromptForgeClient() {
                     id="few-shot-examples"
                     placeholder="e.g., 'The deadline for Fall 2024 registration is August 15th.' or 'Prof. Smith's office is in Room 301.'"
                     value={fewShotExamples}
-                    onChange={(e) => setFewShotExamples(e.target.value)}
+                    onChange={(e) => setFewShotExamples(e.g.target.value)}
                     className="min-h-[100px]"
                   />
                 </div>
