@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { UserCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image'
@@ -18,10 +19,23 @@ export function AppHeader() {
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-4 sm:px-6">
       <div className="flex items-center gap-2">
-        {/* <Logo className="h-6 w-6 text-primary" /> */}
         <Image src="/NavGAI-19.png" width={25} height={25} alt="NaviGator Logo" />
         <h1 className="text-xl font-bold tracking-tight">NaviGator Sailor</h1>
       </div>
+      <nav className="ml-6 hidden items-center gap-6 text-sm font-medium md:flex">
+        <Link
+          href="#"
+          className="font-bold text-primary"
+        >
+          Generator
+        </Link>
+        <Link
+          href="#"
+          className="text-muted-foreground transition-colors hover:text-foreground"
+        >
+          Library
+        </Link>
+      </nav>
       <div className="ml-auto flex items-center gap-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
