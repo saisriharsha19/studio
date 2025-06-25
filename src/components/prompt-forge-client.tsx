@@ -315,8 +315,8 @@ export function PromptForgeClient() {
   const isLoading = isPending || Object.values(loading).some(Boolean);
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-      <div className="space-y-6 lg:col-span-3">
+    <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">
+      <div className="space-y-8 lg:col-span-3">
         <Card>
           <CardHeader>
             <CardTitle>Describe Your Assistant</CardTitle>
@@ -509,7 +509,7 @@ export function PromptForgeClient() {
         </Card>
       </div>
 
-      <div className="space-y-6 lg:col-span-2">
+      <div className="space-y-8 lg:col-span-2">
         <Card>
           <CardHeader>
             <CardTitle>Prompt Refinement</CardTitle>
@@ -615,7 +615,7 @@ export function PromptForgeClient() {
                 Create NaviGator Assistant 
               </Button>
               <Button
-                className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+                className="w-full text-accent-foreground hover:bg-accent/90"
                 disabled={isLoading || !currentPrompt}
                 onClick={() => toast({ title: "Onyx Integration", description: "This would trigger agent creation in the Onyx (Danswer) system." })}
               >
