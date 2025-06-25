@@ -16,11 +16,17 @@ import { useAuth } from '@/hooks/use-auth';
 import { useTheme } from 'next-themes';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
 export function AppHeader() {
   const { isAuthenticated, login, logout } = useAuth();
   const { setTheme, theme } = useTheme();
   const pathname = usePathname();
+
+  const navItems = [
+    { href: '/', label: 'Generator' },
+    { href: '/library', label: 'Library' },
+  ];
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-4 sm:px-6">
@@ -28,29 +34,28 @@ export function AppHeader() {
         <Image src="/NavGAI-19.png" width={25} height={25} alt="NaviGator Logo" />
         <h1 className="text-xl font-bold tracking-tight">NaviGator Sailor</h1>
       </div>
-      <nav className="ml-6 hidden items-center gap-4 text-sm font-medium md:flex">
-        <Link
-          href="/"
-          className={cn(
-            "rounded-full px-3 py-1.5 transition-colors",
-            pathname === '/'
-              ? 'bg-accent text-accent-foreground'
-              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-          )}
-        >
-          Generator
-        </Link>
-        <Link
-          href="/library"
-          className={cn(
-            "rounded-full px-3 py-1.5 transition-colors",
-            pathname === '/library'
-              ? 'bg-accent text-accent-foreground'
-              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-          )}
-        >
-          Library
-        </Link>
+      <nav className="ml-6 hidden items-center gap-1 text-sm font-medium md:flex">
+        {navItems.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={cn(
+              'relative rounded-full px-3 py-1.5 transition-colors',
+              pathname === item.href
+                ? 'text-accent-foreground'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+            )}
+          >
+            <span className="relative z-10">{item.label}</span>
+            {pathname === item.href && (
+              <motion.span
+                layoutId="active-nav-pill"
+                className="absolute inset-0 z-0 rounded-full bg-accent"
+                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              />
+            )}
+          </Link>
+        ))}
       </nav>
       <div className="ml-auto flex items-center gap-2">
         <DropdownMenu>
@@ -62,13 +67,13 @@ export function AppHeader() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setTheme("light")}>
+            <DropdownMenuItem onClick={() => setTheme('light')}>
               Light
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setTheme("dark")}>
+            <DropdownMenuItem onClick={() => setTheme('dark')}>
               Dark
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setTheme("system")}>
+            <DropdownMenuItem onClick={() => setTheme('system')}>
               System
             </DropdownMenuItem>
           </DropdownMenuContent>
