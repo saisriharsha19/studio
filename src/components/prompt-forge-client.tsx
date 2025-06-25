@@ -56,6 +56,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { usePrompts } from '@/hooks/use-prompts';
 
 type LoadingStates = {
   generating: boolean;
@@ -65,6 +66,7 @@ type LoadingStates = {
 
 export function PromptForgeClient() {
   const { isAuthenticated } = useAuth();
+  const { addPrompt } = usePrompts();
   const [userNeeds, setUserNeeds] = useState('');
   const [currentPrompt, setCurrentPrompt] = useState('');
   const [promptsGenerated, setPromptsGenerated] = useState(0);
@@ -217,6 +219,7 @@ export function PromptForgeClient() {
         const result = await handleGenerateInitialPrompt({ userNeeds });
         setCurrentPrompt(result.initialPrompt);
         setPromptsGenerated(prev => prev + 1);
+        addPrompt(result.initialPrompt);
         toast({ title: 'Success', description: 'Initial prompt generated.' });
       } catch (error: any) {
         toast({
@@ -303,6 +306,7 @@ export function PromptForgeClient() {
           selectedSuggestions,
         });
         setCurrentPrompt(result.newPrompt);
+        addPrompt(result.newPrompt);
         setIterationComments(''); 
         setSelectedSuggestions([]);
         toast({ title: 'Success', description: 'Prompt refined with your feedback.' });
@@ -339,6 +343,7 @@ export function PromptForgeClient() {
         });
         setEvaluationResult(result);
         setCurrentPrompt(result.improvedPrompt);
+        addPrompt(result.improvedPrompt);
         toast({ title: 'Success', description: 'Prompt evaluated and improved.' });
       } catch (error: any) {
         toast({
@@ -414,13 +419,13 @@ export function PromptForgeClient() {
                   placeholder="Your generated or refined prompt will appear here."
                   value={currentPrompt}
                   onChange={(e) => setCurrentPrompt(e.target.value)}
-                  className="min-h-[200px] pr-16 pb-16"
+                  className="min-h-[200px] pr-12 pb-12"
                 />
                 {currentPrompt && (
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="absolute bottom-4 right-4"
+                    className="absolute bottom-2 right-2"
                     onClick={() => copyToClipboard(currentPrompt)}
                   >
                     {copied ? <Check className="text-primary" /> : <Clipboard />}
