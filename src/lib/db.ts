@@ -1,4 +1,3 @@
-
 import Database from 'better-sqlite3';
 import path from 'path';
 
@@ -31,3 +30,19 @@ db.exec(`
     createdAt TEXT NOT NULL
   )
 `);
+
+// Simple migration logic to add the userId column if it's missing from an older table schema.
+// This prevents errors on existing databases without requiring users to delete their db file.
+try {
+  const columns = db.pragma('table_info(prompts)') as { name: string }[];
+  const hasUserId = columns.some((col) => col.name === 'userId');
+
+  if (!hasUserId) {
+    console.log('Database migration: Adding userId column to prompts table.');
+    // Add the column with a default value to satisfy the NOT NULL constraint for existing rows.
+    db.exec("ALTER TABLE prompts ADD COLUMN userId TEXT NOT NULL DEFAULT 'unassigned'");
+  }
+} catch (error) {
+  // If pragma fails, it might be because the table doesn't exist yet.
+  // The CREATE TABLE above will handle that case. This is safe to ignore.
+}
