@@ -26,6 +26,7 @@ db.pragma('journal_mode = WAL');
 db.exec(`
   CREATE TABLE IF NOT EXISTS prompts (
     id TEXT PRIMARY KEY,
+    userId TEXT NOT NULL,
     text TEXT NOT NULL,
     createdAt TEXT NOT NULL
   )

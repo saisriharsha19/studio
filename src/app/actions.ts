@@ -96,10 +96,13 @@ export async function handleIterateOnPrompt(input: IterateOnPromptInput): Promis
   }
 }
 
-export async function getPromptsFromDB(): Promise<Prompt[]> {
+const MAX_PROMPTS_PER_USER = 20;
+
+export async function getPromptsFromDB(userId: string): Promise<Prompt[]> {
+  if (!userId) return [];
   try {
-    const stmt = db.prepare('SELECT * FROM prompts ORDER BY createdAt DESC');
-    const prompts = stmt.all() as Prompt[];
+    const stmt = db.prepare('SELECT * FROM prompts WHERE userId = ? ORDER BY createdAt DESC');
+    const prompts = stmt.all(userId) as Prompt[];
     return prompts;
   } catch (error) {
     console.error('Failed to get prompts:', error);
@@ -107,34 +110,49 @@ export async function getPromptsFromDB(): Promise<Prompt[]> {
   }
 }
 
-export async function addPromptToDB(promptText: string): Promise<Prompt> {
-  const newPrompt: Prompt = {
-    text: promptText,
-    id: crypto.randomUUID(),
-    createdAt: new Date().toISOString(),
-  };
+export async function addPromptToDB(promptText: string, userId: string): Promise<Prompt> {
+  if (!userId) throw new Error('User not authenticated.');
 
   try {
+    const countStmt = db.prepare('SELECT COUNT(*) as count FROM prompts WHERE userId = ?');
+    const { count } = countStmt.get(userId) as { count: number };
+
+    if (count >= MAX_PROMPTS_PER_USER) {
+      throw new Error(`You have reached the maximum of ${MAX_PROMPTS_PER_USER} saved prompts.`);
+    }
+
+    const newPrompt: Prompt = {
+      id: crypto.randomUUID(),
+      userId: userId,
+      text: promptText,
+      createdAt: new Date().toISOString(),
+    };
+
     const stmt = db.prepare(
-      'INSERT INTO prompts (id, text, createdAt) VALUES (?, ?, ?)'
+      'INSERT INTO prompts (id, userId, text, createdAt) VALUES (?, ?, ?, ?)'
     );
-    stmt.run(newPrompt.id, newPrompt.text, newPrompt.createdAt);
+    stmt.run(newPrompt.id, newPrompt.userId, newPrompt.text, newPrompt.createdAt);
     revalidatePath('/library');
     return newPrompt;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to add prompt:', error);
-    throw new Error('Failed to save prompt to database.');
+    throw new Error(error.message || 'Failed to save prompt to database.');
   }
 }
 
-export async function deletePromptFromDB(id: string): Promise<{ success: boolean }> {
+export async function deletePromptFromDB(id: string, userId: string): Promise<{ success: boolean }> {
+  if (!userId) throw new Error('User not authenticated.');
+
   try {
-    const stmt = db.prepare('DELETE FROM prompts WHERE id = ?');
-    const result = stmt.run(id);
+    const stmt = db.prepare('DELETE FROM prompts WHERE id = ? AND userId = ?');
+    const result = stmt.run(id, userId);
     revalidatePath('/library');
-    return { success: result.changes > 0 };
-  } catch (error) {
+    if (result.changes === 0) {
+      throw new Error("Prompt not found or you don't have permission to delete it.");
+    }
+    return { success: true };
+  } catch (error: any) {
     console.error('Failed to delete prompt:', error);
-    throw new Error('Failed to delete prompt from database.');
+    throw new Error(error.message || 'Failed to delete prompt from database.');
   }
 }

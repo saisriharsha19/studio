@@ -24,7 +24,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Clipboard, Check, Trash2, Library, Search } from 'lucide-react';
+import { Clipboard, Check, Trash2, Library, Search, UserCircle, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { Input } from './ui/input';
@@ -53,7 +53,7 @@ function PromptCardSkeleton() {
 
 export function PromptLibraryClient() {
   const { prompts, deletePrompt, isLoading } = usePrompts();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, login } = useAuth();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
@@ -74,6 +74,25 @@ export function PromptLibraryClient() {
     const title = words.slice(0, 8).join(' ');
     return words.length > 8 ? `${title}...` : title;
   };
+  
+  if (!isAuthenticated) {
+    return (
+      <div className="container mx-auto max-w-7xl py-8 px-4 sm:px-6 lg:px-8">
+        <div className="flex h-[60vh] flex-col items-center justify-center rounded-lg border-2 border-dashed bg-muted/50 p-12 text-center">
+            <Lock className="h-16 w-16 text-muted-foreground" />
+            <h2 className="mt-6 text-2xl font-semibold tracking-tight">Access Your Private Library</h2>
+            <p className="mt-2 text-muted-foreground">
+              Sign in to view, save, and manage your personal collection of prompts.
+            </p>
+            <Button onClick={login} className="mt-6">
+                <UserCircle className="mr-2 h-5 w-5" />
+                Sign In
+            </Button>
+        </div>
+      </div>
+    )
+  }
+
 
   return (
     <div className="container mx-auto max-w-7xl py-8 px-4 sm:px-6 lg:px-8">
@@ -83,7 +102,7 @@ export function PromptLibraryClient() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Prompt Library</h1>
             <p className="text-muted-foreground">
-              Browse, manage, and reuse your saved prompts.
+              You have saved {prompts.length} of 20 prompts.
             </p>
           </div>
         </div>

@@ -4,9 +4,11 @@
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { useToast } from './use-toast';
 import { addPromptToDB, deletePromptFromDB, getPromptsFromDB } from '@/app/actions';
+import { useAuth } from './use-auth';
 
 export type Prompt = {
   id: string;
+  userId: string;
   text: string;
   createdAt: string;
 };
@@ -24,28 +26,43 @@ export function PromptProvider({ children }: { children: ReactNode }) {
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { isAuthenticated, userId } = useAuth();
 
   useEffect(() => {
     const loadPrompts = async () => {
-      try {
-        setIsLoading(true);
-        const initialPrompts = await getPromptsFromDB();
-        setPrompts(initialPrompts);
-      } catch (error) {
-        console.error('Failed to load prompts from database', error);
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: 'Could not load prompt library.',
-        });
-      } finally {
+      if (isAuthenticated && userId) {
+        try {
+          setIsLoading(true);
+          const initialPrompts = await getPromptsFromDB(userId);
+          setPrompts(initialPrompts);
+        } catch (error) {
+          console.error('Failed to load prompts from database', error);
+          toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Could not load your prompt library.',
+          });
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        setPrompts([]);
         setIsLoading(false);
       }
     };
     loadPrompts();
-  }, [toast]);
+  }, [isAuthenticated, userId, toast]);
 
   const addPrompt = useCallback(async (text: string) => {
+    if (!isAuthenticated || !userId) {
+      toast({
+        variant: 'destructive',
+        title: 'Not Logged In',
+        description: 'You must be logged in to save prompts.',
+      });
+      return;
+    }
+    
     if (!text.trim()) return;
     
     // Avoid adding duplicates based on text
@@ -54,7 +71,7 @@ export function PromptProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const newPrompt = await addPromptToDB(text);
+      const newPrompt = await addPromptToDB(text, userId);
       setPrompts(prev => [newPrompt, ...prev]);
       toast({
         title: 'Prompt Saved',
@@ -67,11 +84,20 @@ export function PromptProvider({ children }: { children: ReactNode }) {
         description: error.message || 'An error occurred while saving the prompt.',
       });
     }
-  }, [prompts, toast]);
+  }, [isAuthenticated, userId, prompts, toast]);
 
   const deletePrompt = useCallback(async (id: string) => {
+    if (!isAuthenticated || !userId) {
+      toast({
+        variant: 'destructive',
+        title: 'Not Logged In',
+        description: 'You must be logged in to delete prompts.',
+      });
+      return;
+    }
+
     try {
-      await deletePromptFromDB(id);
+      await deletePromptFromDB(id, userId);
       setPrompts(prev => prev.filter(p => p.id !== id));
       toast({
         title: 'Prompt Deleted',
@@ -84,7 +110,7 @@ export function PromptProvider({ children }: { children: ReactNode }) {
         description: error.message || 'An error occurred while deleting the prompt.',
       });
     }
-  }, [toast]);
+  }, [isAuthenticated, userId, toast]);
 
   return (
     <PromptContext.Provider value={{ prompts, addPrompt, deletePrompt, isLoading }}>
