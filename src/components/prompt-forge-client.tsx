@@ -414,13 +414,13 @@ export function PromptForgeClient() {
                   placeholder="Your generated or refined prompt will appear here."
                   value={currentPrompt}
                   onChange={(e) => setCurrentPrompt(e.target.value)}
-                  className="min-h-[200px] pr-12 pb-8"
+                  className="min-h-[200px] pr-16 pb-16"
                 />
                 {currentPrompt && (
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="absolute bottom-2 right-2"
+                    className="absolute bottom-4 right-4"
                     onClick={() => copyToClipboard(currentPrompt)}
                   >
                     {copied ? <Check className="text-primary" /> : <Clipboard />}
