@@ -296,9 +296,11 @@ export function PromptForgeClient() {
         <Card>
           <CardHeader>
             <CardTitle>3. Advanced Tools</CardTitle>
-            <CardDescription>
-             Log in to access advanced features like evaluation, optimization, and web scraping.
-            </CardDescription>
+            {!isAuthenticated && (
+              <CardDescription>
+               Log in to access advanced features like evaluation, optimization, and web scraping.
+              </CardDescription>
+            )}
           </CardHeader>
           <CardContent>
             {!isAuthenticated ? (
