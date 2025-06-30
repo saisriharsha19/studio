@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -35,7 +36,7 @@ export function AppHeader() {
         <Image src="/NavGAI-19.png" width={25} height={25} alt="NaviGator Logo" />
         <h1 className="text-xl font-bold tracking-tight">NaviGator Sailor</h1>
       </div>
-      <nav className="ml-6 hidden items-center gap-1 text-sm font-medium md:flex">
+      <motion.nav layoutRoot className="ml-6 hidden items-center gap-1 text-sm font-medium md:flex">
         {navItems.map((item) => (
           <Link
             key={item.href}
@@ -52,12 +53,12 @@ export function AppHeader() {
               <motion.span
                 layoutId="active-nav-pill"
                 className="absolute inset-0 z-0 rounded-full bg-accent"
-                transition={{ type: 'spring', stiffness: 250, damping: 25 }}
+                transition={{ type: 'spring', stiffness: 350, damping: 30 }}
               />
             )}
           </Link>
         ))}
-      </nav>
+      </motion.nav>
       <div className="ml-auto flex items-center gap-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
