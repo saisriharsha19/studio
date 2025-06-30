@@ -5,7 +5,7 @@ export default function HistoryPage() {
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
       <AppHeader />
-      <main className="flex-1">
+      <main className="mt-16 flex-1">
         <PromptHistoryClient />
       </main>
     </div>

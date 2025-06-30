@@ -30,7 +30,7 @@ export function AppHeader() {
   ];
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-4 sm:px-6">
+    <header className="fixed top-0 z-30 flex h-16 w-full items-center gap-4 border-b bg-card px-4 sm:px-6">
       <div className="flex items-center gap-2">
         <Image src="/NavGAI-19.png" width={25} height={25} alt="NaviGator Logo" />
         <h1 className="text-xl font-bold tracking-tight">NaviGator Sailor</h1>

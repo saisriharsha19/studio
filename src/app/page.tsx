@@ -5,7 +5,7 @@ export default function Home() {
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
       <AppHeader />
-      <main className="flex-1 p-6 sm:p-8 md:p-10">
+      <main className="mt-16 flex-1 p-6 sm:p-8 md:p-10">
         <PromptForgeClient />
       </main>
     </div>
