@@ -41,7 +41,7 @@ export function AppHeader() {
             key={item.href}
             href={item.href}
             className={cn(
-              'relative rounded-full px-3 py-1.5 transition-colors',
+              'relative rounded-full px-3 py-1.5',
               pathname === item.href
                 ? 'text-accent-foreground'
                 : 'text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -52,7 +52,7 @@ export function AppHeader() {
               <motion.span
                 layoutId="active-nav-pill"
                 className="absolute inset-0 z-0 rounded-full bg-accent"
-                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                transition={{ type: 'spring', stiffness: 250, damping: 25 }}
               />
             )}
           </Link>
