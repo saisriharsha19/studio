@@ -17,7 +17,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useTheme } from 'next-themes';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export function AppHeader() {
   const { isAuthenticated, login, logout } = useAuth();
@@ -31,7 +31,7 @@ export function AppHeader() {
   ];
 
   return (
-    <motion.header layout className="fixed top-0 z-30 flex h-16 w-full items-center gap-4 border-b bg-card px-4 sm:px-6">
+    <header className="fixed top-0 z-30 flex h-16 w-full items-center gap-4 border-b bg-card px-4 sm:px-6">
       <div className="flex items-center gap-2">
         <Image src="/NavGAI-19.png" width={25} height={25} alt="NaviGator Logo" />
         <h1 className="text-xl font-bold tracking-tight">NaviGator Sailor</h1>
@@ -42,20 +42,23 @@ export function AppHeader() {
             key={item.href}
             href={item.href}
             className={cn(
-              'relative rounded-full px-3 py-1.5 transition-colors',
+              'relative rounded-full px-3 py-1.5',
               pathname === item.href
                 ? 'text-accent-foreground'
-                : 'text-muted-foreground hover:bg-muted/50'
+                : 'text-muted-foreground hover:text-foreground'
             )}
           >
+            <AnimatePresence>
+              {pathname === item.href && (
+                <motion.span
+                  className="absolute inset-0 z-0 rounded-full bg-accent"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1, transition: { duration: 0.2 } }}
+                  exit={{ opacity: 0, transition: { duration: 0.2 } }}
+                />
+              )}
+            </AnimatePresence>
             <span className="relative z-10">{item.label}</span>
-            {pathname === item.href && (
-              <motion.span
-                layoutId="active-nav-pill"
-                className="absolute inset-0 z-0 rounded-full bg-accent"
-                transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-              />
-            )}
           </Link>
         ))}
       </nav>
@@ -104,6 +107,6 @@ export function AppHeader() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-    </motion.header>
+    </header>
   );
 }
