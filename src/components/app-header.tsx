@@ -42,7 +42,7 @@ export function AppHeader() {
             key={item.href}
             href={item.href}
             className={cn(
-              'relative rounded-full px-3 py-1.5',
+              'relative rounded-full px-3 py-1.5 transition-colors duration-200',
               pathname === item.href
                 ? 'text-accent-foreground'
                 : 'text-muted-foreground hover:text-foreground'
@@ -52,9 +52,9 @@ export function AppHeader() {
               {pathname === item.href && (
                 <motion.span
                   className="absolute inset-0 z-0 rounded-full bg-accent"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1, transition: { duration: 0.35, ease: "easeOut" } }}
-                  exit={{ opacity: 0, transition: { duration: 0.2, ease: "easeIn" } }}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1, transition: { type: 'spring', stiffness: 400, damping: 40 } }}
+                  exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.15 } }}
                 />
               )}
             </AnimatePresence>
