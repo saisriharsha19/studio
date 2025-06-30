@@ -31,21 +31,21 @@ export function AppHeader() {
   ];
 
   return (
-    <header className="fixed top-0 z-30 flex h-16 w-full items-center gap-4 border-b bg-card px-4 sm:px-6">
+    <motion.header layout className="fixed top-0 z-30 flex h-16 w-full items-center gap-4 border-b bg-card px-4 sm:px-6">
       <div className="flex items-center gap-2">
         <Image src="/NavGAI-19.png" width={25} height={25} alt="NaviGator Logo" />
         <h1 className="text-xl font-bold tracking-tight">NaviGator Sailor</h1>
       </div>
-      <motion.nav layout className="ml-6 hidden items-center gap-1 text-sm font-medium md:flex">
+      <nav className="ml-6 hidden items-center gap-1 text-sm font-medium md:flex">
         {navItems.map((item) => (
           <Link
             key={item.href}
             href={item.href}
             className={cn(
-              'relative rounded-full px-3 py-1.5',
+              'relative rounded-full px-3 py-1.5 transition-colors',
               pathname === item.href
                 ? 'text-accent-foreground'
-                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                : 'text-muted-foreground hover:bg-muted/50'
             )}
           >
             <span className="relative z-10">{item.label}</span>
@@ -58,7 +58,7 @@ export function AppHeader() {
             )}
           </Link>
         ))}
-      </motion.nav>
+      </nav>
       <div className="ml-auto flex items-center gap-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -104,6 +104,6 @@ export function AppHeader() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-    </header>
+    </motion.header>
   );
 }
