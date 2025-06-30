@@ -20,8 +20,7 @@ if (process.env.NODE_ENV !== 'production') {
 // Enable Write-Ahead Logging for better concurrency
 db.pragma('journal_mode = WAL');
 
-// Create the 'prompts' table if it doesn't already exist.
-// This schema will store the prompt's ID, its text content, and creation timestamp.
+// Create the 'prompts' table for history if it doesn't already exist.
 db.exec(`
   CREATE TABLE IF NOT EXISTS prompts (
     id TEXT PRIMARY KEY,
@@ -31,18 +30,38 @@ db.exec(`
   )
 `);
 
-// Simple migration logic to add the userId column if it's missing from an older table schema.
-// This prevents errors on existing databases without requiring users to delete their db file.
+// Create the 'library_prompts' table for the official library if it doesn't already exist.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS library_prompts (
+    id TEXT PRIMARY KEY,
+    userId TEXT NOT NULL,
+    text TEXT NOT NULL,
+    createdAt TEXT NOT NULL
+  )
+`);
+
+// Simple migration logic for the 'prompts' table.
 try {
   const columns = db.pragma('table_info(prompts)') as { name: string }[];
   const hasUserId = columns.some((col) => col.name === 'userId');
 
   if (!hasUserId) {
     console.log('Database migration: Adding userId column to prompts table.');
-    // Add the column with a default value to satisfy the NOT NULL constraint for existing rows.
     db.exec("ALTER TABLE prompts ADD COLUMN userId TEXT NOT NULL DEFAULT 'unassigned'");
   }
 } catch (error) {
-  // If pragma fails, it might be because the table doesn't exist yet.
-  // The CREATE TABLE above will handle that case. This is safe to ignore.
+  // Safe to ignore if table doesn't exist yet.
+}
+
+// Simple migration logic for the 'library_prompts' table.
+try {
+  const columns = db.pragma('table_info(library_prompts)') as { name: string }[];
+  const hasUserId = columns.some((col) => col.name === 'userId');
+
+  if (!hasUserId) {
+    console.log('Database migration: Adding userId column to library_prompts table.');
+    db.exec("ALTER TABLE library_prompts ADD COLUMN userId TEXT NOT NULL DEFAULT 'unassigned'");
+  }
+} catch (error) {
+  // Safe to ignore if table doesn't exist yet.
 }

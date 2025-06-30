@@ -3,7 +3,7 @@
 
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { useToast } from './use-toast';
-import { addPromptToDB, deletePromptFromDB, getPromptsFromDB } from '@/app/actions';
+import { addHistoryPromptToDB, deleteHistoryPromptFromDB, getHistoryPromptsFromDB } from '@/app/actions';
 import { useAuth } from './use-auth';
 
 export type Prompt = {
@@ -13,16 +13,16 @@ export type Prompt = {
   createdAt: string;
 };
 
-type PromptContextType = {
+type PromptHistoryContextType = {
   prompts: Prompt[];
   isLoading: boolean;
   addPrompt: (text: string) => Promise<void>;
   deletePrompt: (id: string) => Promise<void>;
 };
 
-const PromptContext = createContext<PromptContextType | undefined>(undefined);
+const PromptHistoryContext = createContext<PromptHistoryContextType | undefined>(undefined);
 
-export function PromptProvider({ children }: { children: ReactNode }) {
+export function PromptHistoryProvider({ children }: { children: ReactNode }) {
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -33,14 +33,14 @@ export function PromptProvider({ children }: { children: ReactNode }) {
       if (isAuthenticated && userId) {
         try {
           setIsLoading(true);
-          const initialPrompts = await getPromptsFromDB(userId);
+          const initialPrompts = await getHistoryPromptsFromDB(userId);
           setPrompts(initialPrompts);
         } catch (error) {
-          console.error('Failed to load prompts from database', error);
+          console.error('Failed to load prompts from history', error);
           toast({
             variant: 'destructive',
             title: 'Error',
-            description: 'Could not load your prompt library.',
+            description: 'Could not load your prompt history.',
           });
         } finally {
           setIsLoading(false);
@@ -55,32 +55,24 @@ export function PromptProvider({ children }: { children: ReactNode }) {
 
   const addPrompt = useCallback(async (text: string) => {
     if (!isAuthenticated || !userId) {
-      toast({
-        variant: 'destructive',
-        title: 'Not Logged In',
-        description: 'You must be logged in to save prompts.',
-      });
+      // Don't show toast for guests, just fail silently.
       return;
     }
     
     if (!text.trim()) return;
     
-    // Avoid adding duplicates based on text
-    if (prompts.some(p => p.text === text)) {
+    // Avoid adding exact duplicates in a row
+    if (prompts[0]?.text === text) {
       return;
     }
 
     try {
-      const newPrompt = await addPromptToDB(text, userId);
-      setPrompts(prev => [newPrompt, ...prev]);
-      toast({
-        title: 'Prompt Saved',
-        description: 'The new prompt has been added to your library.',
-      });
+      const newPrompt = await addHistoryPromptToDB(text, userId);
+      setPrompts(prev => [newPrompt, ...prev].slice(0, 20)); // Keep client state in sync with limit
     } catch (error: any) {
       toast({
         variant: 'destructive',
-        title: 'Save Failed',
+        title: 'Save to History Failed',
         description: error.message || 'An error occurred while saving the prompt.',
       });
     }
@@ -91,17 +83,17 @@ export function PromptProvider({ children }: { children: ReactNode }) {
       toast({
         variant: 'destructive',
         title: 'Not Logged In',
-        description: 'You must be logged in to delete prompts.',
+        description: 'You must be logged in to delete prompts from history.',
       });
       return;
     }
 
     try {
-      await deletePromptFromDB(id, userId);
+      await deleteHistoryPromptFromDB(id, userId);
       setPrompts(prev => prev.filter(p => p.id !== id));
       toast({
         title: 'Prompt Deleted',
-        description: 'The prompt has been removed from your library.',
+        description: 'The prompt has been removed from your history.',
       });
     } catch (error: any) {
       toast({
@@ -113,16 +105,16 @@ export function PromptProvider({ children }: { children: ReactNode }) {
   }, [isAuthenticated, userId, toast]);
 
   return (
-    <PromptContext.Provider value={{ prompts, addPrompt, deletePrompt, isLoading }}>
+    <PromptHistoryContext.Provider value={{ prompts, addPrompt, deletePrompt, isLoading }}>
       {children}
-    </PromptContext.Provider>
+    </PromptHistoryContext.Provider>
   );
 }
 
-export function usePrompts() {
-  const context = useContext(PromptContext);
+export function usePromptHistory() {
+  const context = useContext(PromptHistoryContext);
   if (context === undefined) {
-    throw new Error('usePrompts must be used within a PromptProvider');
+    throw new Error('usePromptHistory must be used within a PromptHistoryProvider');
   }
   return context;
 }

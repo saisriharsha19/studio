@@ -107,29 +107,32 @@ export async function handleIterateOnPrompt(input: IterateOnPromptInput): Promis
   }
 }
 
-const MAX_PROMPTS_PER_USER = 20;
+// --- History Actions (prompts table) ---
+const MAX_HISTORY_PROMPTS_PER_USER = 20;
 
-export async function getPromptsFromDB(userId: string): Promise<Prompt[]> {
+export async function getHistoryPromptsFromDB(userId: string): Promise<Prompt[]> {
   if (!userId) return [];
   try {
     const stmt = db.prepare('SELECT * FROM prompts WHERE userId = ? ORDER BY createdAt DESC');
     const prompts = stmt.all(userId) as Prompt[];
     return prompts;
   } catch (error) {
-    console.error('Failed to get prompts:', error);
+    console.error('Failed to get history prompts:', error);
     return [];
   }
 }
 
-export async function addPromptToDB(promptText: string, userId: string): Promise<Prompt> {
+export async function addHistoryPromptToDB(promptText: string, userId: string): Promise<Prompt> {
   if (!userId) throw new Error('User not authenticated.');
 
   try {
     const countStmt = db.prepare('SELECT COUNT(*) as count FROM prompts WHERE userId = ?');
     const { count } = countStmt.get(userId) as { count: number };
 
-    if (count >= MAX_PROMPTS_PER_USER) {
-      throw new Error(`You have reached the maximum of ${MAX_PROMPTS_PER_USER} saved prompts.`);
+    if (count >= MAX_HISTORY_PROMPTS_PER_USER) {
+      // If limit is reached, delete the oldest prompt
+      const oldestStmt = db.prepare('DELETE FROM prompts WHERE id = (SELECT id FROM prompts WHERE userId = ? ORDER BY createdAt ASC LIMIT 1)');
+      oldestStmt.run(userId);
     }
 
     const newPrompt: Prompt = {
@@ -143,19 +146,89 @@ export async function addPromptToDB(promptText: string, userId: string): Promise
       'INSERT INTO prompts (id, userId, text, createdAt) VALUES (?, ?, ?, ?)'
     );
     stmt.run(newPrompt.id, newPrompt.userId, newPrompt.text, newPrompt.createdAt);
-    revalidatePath('/library');
+    revalidatePath('/history');
     return newPrompt;
   } catch (error: any) {
-    console.error('Failed to add prompt:', error);
-    throw new Error(error.message || 'Failed to save prompt to database.');
+    console.error('Failed to add prompt to history:', error);
+    throw new Error(error.message || 'Failed to save prompt to history.');
   }
 }
 
-export async function deletePromptFromDB(id: string, userId: string): Promise<{ success: boolean }> {
+export async function deleteHistoryPromptFromDB(id: string, userId: string): Promise<{ success: boolean }> {
   if (!userId) throw new Error('User not authenticated.');
 
   try {
     const stmt = db.prepare('DELETE FROM prompts WHERE id = ? AND userId = ?');
+    const result = stmt.run(id, userId);
+    revalidatePath('/history');
+    if (result.changes === 0) {
+      throw new Error("Prompt not found or you don't have permission to delete it.");
+    }
+    return { success: true };
+  } catch (error: any) {
+    console.error('Failed to delete prompt from history:', error);
+    throw new Error(error.message || 'Failed to delete prompt from history.');
+  }
+}
+
+
+// --- Library Actions (library_prompts table) ---
+const MAX_LIBRARY_PROMPTS_PER_USER = 50;
+
+export async function getLibraryPromptsFromDB(userId: string): Promise<Prompt[]> {
+  if (!userId) return [];
+  try {
+    const stmt = db.prepare('SELECT * FROM library_prompts WHERE userId = ? ORDER BY createdAt DESC');
+    const prompts = stmt.all(userId) as Prompt[];
+    return prompts;
+  } catch (error) {
+    console.error('Failed to get library prompts:', error);
+    return [];
+  }
+}
+
+export async function addLibraryPromptToDB(promptText: string, userId: string): Promise<Prompt> {
+  if (!userId) throw new Error('User not authenticated.');
+
+  try {
+    const countStmt = db.prepare('SELECT COUNT(*) as count FROM library_prompts WHERE userId = ?');
+    const { count } = countStmt.get(userId) as { count: number };
+
+    if (count >= MAX_LIBRARY_PROMPTS_PER_USER) {
+        throw new Error(`You have reached the maximum of ${MAX_LIBRARY_PROMPTS_PER_USER} saved library prompts.`);
+    }
+    
+    // Avoid adding duplicates
+    const existsStmt = db.prepare('SELECT 1 FROM library_prompts WHERE userId = ? AND text = ?');
+    const exists = existsStmt.get(userId, promptText);
+    if (exists) {
+        throw new Error('This prompt is already in your library.');
+    }
+
+    const newPrompt: Prompt = {
+      id: crypto.randomUUID(),
+      userId: userId,
+      text: promptText,
+      createdAt: new Date().toISOString(),
+    };
+
+    const stmt = db.prepare(
+      'INSERT INTO library_prompts (id, userId, text, createdAt) VALUES (?, ?, ?, ?)'
+    );
+    stmt.run(newPrompt.id, newPrompt.userId, newPrompt.text, newPrompt.createdAt);
+    revalidatePath('/library');
+    return newPrompt;
+  } catch (error: any) {
+    console.error('Failed to add prompt to library:', error);
+    throw new Error(error.message || 'Failed to save prompt to library.');
+  }
+}
+
+export async function deleteLibraryPromptFromDB(id: string, userId: string): Promise<{ success: boolean }> {
+  if (!userId) throw new Error('User not authenticated.');
+
+  try {
+    const stmt = db.prepare('DELETE FROM library_prompts WHERE id = ? AND userId = ?');
     const result = stmt.run(id, userId);
     revalidatePath('/library');
     if (result.changes === 0) {
@@ -163,7 +236,7 @@ export async function deletePromptFromDB(id: string, userId: string): Promise<{ 
     }
     return { success: true };
   } catch (error: any) {
-    console.error('Failed to delete prompt:', error);
-    throw new Error(error.message || 'Failed to delete prompt from database.');
+    console.error('Failed to delete prompt from library:', error);
+    throw new Error(error.message || 'Failed to delete prompt from library.');
   }
 }

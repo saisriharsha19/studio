@@ -25,6 +25,7 @@ export function AppHeader() {
 
   const navItems = [
     { href: '/', label: 'Generator' },
+    { href: '/history', label: 'History' },
     { href: '/library', label: 'Library' },
   ];
 

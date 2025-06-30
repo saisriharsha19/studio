@@ -56,8 +56,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { usePrompts } from '@/hooks/use-prompts';
+import { usePromptHistory } from '@/hooks/use-prompts';
 import { usePromptForge } from '@/hooks/use-prompt-forge';
+import { useLibrary } from '@/hooks/use-library';
 
 type LoadingStates = {
   generating: boolean;
@@ -67,7 +68,8 @@ type LoadingStates = {
 
 export function PromptForgeClient() {
   const { isAuthenticated } = useAuth();
-  const { addPrompt } = usePrompts();
+  const { addPrompt } = usePromptHistory();
+  const { addLibraryPrompt } = useLibrary();
   const { toast } = useToast();
 
   const {
@@ -362,6 +364,18 @@ export function PromptForgeClient() {
         setLoading((prev) => ({ ...prev, evaluating: false }));
       }
     });
+  };
+
+  const onUploadToLibrary = () => {
+    if (!currentPrompt) {
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'There is no prompt to upload.',
+        });
+        return;
+    }
+    addLibraryPrompt(currentPrompt);
   };
 
   const isLoading = isPending || Object.values(loading).some(Boolean);
@@ -840,7 +854,7 @@ export function PromptForgeClient() {
                   <Button
                     className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
                     disabled={isLoading || !currentPrompt}
-                    onClick={() => toast({ title: "Onyx Integration", description: "This would trigger agent creation in the Onyx (Danswer) system." })}
+                    onClick={onUploadToLibrary}
                   >
                     <Upload />
                     Upload to Prompt Library 

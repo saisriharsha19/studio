@@ -2,8 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { Prompt } from '@/hooks/use-prompts';
-import { useLibrary } from '@/hooks/use-library';
+import { usePromptHistory, type Prompt } from '@/hooks/use-prompts';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -25,7 +24,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Clipboard, Check, Trash2, Library, Search, UserCircle, Lock } from 'lucide-react';
+import { Clipboard, Check, Trash2, History, Search, UserCircle, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { Input } from './ui/input';
@@ -52,8 +51,8 @@ function PromptCardSkeleton() {
   );
 }
 
-export function PromptLibraryClient() {
-  const { libraryPrompts, deleteLibraryPrompt, isLoading } = useLibrary();
+export function PromptHistoryClient() {
+  const { prompts, deletePrompt, isLoading } = usePromptHistory();
   const { isAuthenticated, login } = useAuth();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -66,7 +65,7 @@ export function PromptLibraryClient() {
     setTimeout(() => setCopiedId(null), 2000);
   };
   
-  const filteredPrompts = libraryPrompts.filter(prompt => 
+  const filteredPrompts = prompts.filter(prompt => 
     prompt.text.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -81,9 +80,9 @@ export function PromptLibraryClient() {
       <div className="container mx-auto max-w-7xl py-8 px-4 sm:px-6 lg:px-8">
         <div className="flex h-[60vh] flex-col items-center justify-center rounded-lg border-2 border-dashed bg-muted/50 p-12 text-center">
             <Lock className="h-16 w-16 text-muted-foreground" />
-            <h2 className="mt-6 text-2xl font-semibold tracking-tight">Access Your Private Library</h2>
+            <h2 className="mt-6 text-2xl font-semibold tracking-tight">Access Your Work History</h2>
             <p className="mt-2 text-muted-foreground">
-              Sign in to view, save, and manage your curated collection of prompts.
+              Sign in to view, save, and manage your personal prompt history.
             </p>
             <Button onClick={login} className="mt-6">
                 <UserCircle className="mr-2 h-5 w-5" />
@@ -99,18 +98,18 @@ export function PromptLibraryClient() {
     <div className="container mx-auto max-w-7xl py-8 px-4 sm:px-6 lg:px-8">
       <div className="mb-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className='flex items-center gap-3'>
-          <Library className="h-8 w-8" />
+          <History className="h-8 w-8" />
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Prompt Library</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Prompt History</h1>
             <p className="text-muted-foreground">
-              Your collection of curated prompts. You have saved {libraryPrompts.length} of 50 prompts.
+              Your 20 most recent prompts are saved automatically.
             </p>
           </div>
         </div>
         <div className="relative w-full sm:w-72">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input 
-            placeholder="Search library..."
+            placeholder="Search history..."
             className="h-11 w-full rounded-full border-transparent bg-muted pl-12 pr-4 transition-colors focus:bg-background focus:ring-2 focus:ring-ring"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -156,38 +155,40 @@ export function PromptLibraryClient() {
                     )}
                     <span className="sr-only">Copy</span>
                   </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                        <span className="sr-only">Delete</span>
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This action cannot be undone. This will permanently delete this prompt from your library.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => deleteLibraryPrompt(prompt.id)}>
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  {isAuthenticated && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                          <span className="sr-only">Delete</span>
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete this prompt from your history.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => deletePrompt(prompt.id)}>
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
                 </CardFooter>
               </Card>
             ))}
           </div>
         ) : (
           <div className="flex h-[50vh] flex-col items-center justify-center rounded-lg border-2 border-dashed">
-            <Library className="mb-4 h-16 w-16 text-muted-foreground" />
-            <h2 className="text-2xl font-semibold">Library is Empty</h2>
+            <History className="mb-4 h-16 w-16 text-muted-foreground" />
+            <h2 className="text-2xl font-semibold">History is Empty</h2>
             <p className="mt-2 text-muted-foreground">
-              {searchQuery ? "No prompts match your search." : "Save a finalized prompt from the generator to start your collection."}
+              {searchQuery ? "No prompts match your search." : "Go to the generator to create your first prompt!"}
             </p>
           </div>
         )}

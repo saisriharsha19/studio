@@ -3,8 +3,9 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from '@/hooks/use-auth';
 import { ThemeProvider } from '@/components/theme-provider';
-import { PromptProvider } from '@/hooks/use-prompts';
+import { PromptHistoryProvider } from '@/hooks/use-prompts';
 import { PromptForgeProvider } from '@/hooks/use-prompt-forge';
+import { LibraryProvider } from '@/hooks/use-library';
 
 export const metadata: Metadata = {
   title: 'NaviGator Sailor',
@@ -25,18 +26,20 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <AuthProvider>
-          <PromptProvider>
-            <PromptForgeProvider>
-              <ThemeProvider
-                attribute="class"
-                defaultTheme="system"
-                enableSystem
-                disableTransitionOnChange
-              >
-                {children}
-              </ThemeProvider>
-            </PromptForgeProvider>
-          </PromptProvider>
+          <PromptHistoryProvider>
+            <LibraryProvider>
+              <PromptForgeProvider>
+                <ThemeProvider
+                  attribute="class"
+                  defaultTheme="system"
+                  enableSystem
+                  disableTransitionOnChange
+                >
+                  {children}
+                </ThemeProvider>
+              </PromptForgeProvider>
+            </LibraryProvider>
+          </PromptHistoryProvider>
         </AuthProvider>
         <Toaster />
       </body>

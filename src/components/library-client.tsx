@@ -52,7 +52,7 @@ function PromptCardSkeleton() {
   );
 }
 
-export function PromptLibraryClient() {
+export function LibraryClient() {
   const { libraryPrompts, deleteLibraryPrompt, isLoading } = useLibrary();
   const { isAuthenticated, login } = useAuth();
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -93,7 +93,6 @@ export function PromptLibraryClient() {
       </div>
     )
   }
-
 
   return (
     <div className="container mx-auto max-w-7xl py-8 px-4 sm:px-6 lg:px-8">
