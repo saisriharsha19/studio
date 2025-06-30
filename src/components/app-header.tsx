@@ -53,8 +53,8 @@ export function AppHeader() {
                 <motion.span
                   className="absolute inset-0 z-0 rounded-full bg-accent"
                   initial={{ opacity: 0 }}
-                  animate={{ opacity: 1, transition: { duration: 0.2 } }}
-                  exit={{ opacity: 0, transition: { duration: 0.2 } }}
+                  animate={{ opacity: 1, transition: { duration: 0.35, ease: "easeOut" } }}
+                  exit={{ opacity: 0, transition: { duration: 0.2, ease: "easeIn" } }}
                 />
               )}
             </AnimatePresence>
