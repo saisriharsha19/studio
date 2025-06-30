@@ -91,6 +91,7 @@ export function PromptForgeClient() {
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const suggestionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isInitialMount = useRef(true);
 
   const [isPending, startTransition] = useTransition();
   const [loading, setLoading] = useState<LoadingStates>({
@@ -272,6 +273,14 @@ export function PromptForgeClient() {
   }, [currentPrompt, iterationComments, toast, setSuggestions]);
 
   useEffect(() => {
+    // On the initial mount of the component instance, we don't want to trigger a new fetch.
+    // The existing suggestions from the context will be used.
+    // Any subsequent changes to dependencies will trigger the effect.
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
     if (suggestionTimeoutRef.current) {
       clearTimeout(suggestionTimeoutRef.current);
     }
