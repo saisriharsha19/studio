@@ -173,13 +173,10 @@ export async function deleteHistoryPromptFromDB(id: string, userId: string): Pro
 
 
 // --- Library Actions (library_prompts table) ---
-const MAX_LIBRARY_PROMPTS_PER_USER = 50;
-
-export async function getLibraryPromptsFromDB(userId: string): Promise<Prompt[]> {
-  if (!userId) return [];
+export async function getLibraryPromptsFromDB(): Promise<Prompt[]> {
   try {
-    const stmt = db.prepare('SELECT * FROM library_prompts WHERE userId = ? ORDER BY createdAt DESC');
-    const prompts = stmt.all(userId) as Prompt[];
+    const stmt = db.prepare('SELECT * FROM library_prompts ORDER BY createdAt DESC');
+    const prompts = stmt.all() as Prompt[];
     return prompts;
   } catch (error) {
     console.error('Failed to get library prompts:', error);
@@ -191,18 +188,11 @@ export async function addLibraryPromptToDB(promptText: string, userId: string): 
   if (!userId) throw new Error('User not authenticated.');
 
   try {
-    const countStmt = db.prepare('SELECT COUNT(*) as count FROM library_prompts WHERE userId = ?');
-    const { count } = countStmt.get(userId) as { count: number };
-
-    if (count >= MAX_LIBRARY_PROMPTS_PER_USER) {
-        throw new Error(`You have reached the maximum of ${MAX_LIBRARY_PROMPTS_PER_USER} saved library prompts.`);
-    }
-    
-    // Avoid adding duplicates
-    const existsStmt = db.prepare('SELECT 1 FROM library_prompts WHERE userId = ? AND text = ?');
-    const exists = existsStmt.get(userId, promptText);
+    // Avoid adding duplicates to the public library
+    const existsStmt = db.prepare('SELECT 1 FROM library_prompts WHERE text = ?');
+    const exists = existsStmt.get(promptText);
     if (exists) {
-        throw new Error('This prompt is already in your library.');
+        throw new Error('This prompt is already in the library.');
     }
 
     const newPrompt: Prompt = {

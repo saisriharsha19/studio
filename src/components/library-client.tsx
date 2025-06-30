@@ -25,7 +25,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Clipboard, Check, Trash2, Library, Search, UserCircle, Lock } from 'lucide-react';
+import { Clipboard, Check, Trash2, Library, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { Input } from './ui/input';
@@ -54,7 +54,7 @@ function PromptCardSkeleton() {
 
 export function LibraryClient() {
   const { libraryPrompts, deleteLibraryPrompt, isLoading } = useLibrary();
-  const { isAuthenticated, login } = useAuth();
+  const { isAuthenticated, userId } = useAuth();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
@@ -76,24 +76,6 @@ export function LibraryClient() {
     return words.length > 8 ? `${title}...` : title;
   };
   
-  if (!isAuthenticated) {
-    return (
-      <div className="container mx-auto max-w-7xl py-8 px-4 sm:px-6 lg:px-8">
-        <div className="flex h-[60vh] flex-col items-center justify-center rounded-lg border-2 border-dashed bg-muted/50 p-12 text-center">
-            <Lock className="h-16 w-16 text-muted-foreground" />
-            <h2 className="mt-6 text-2xl font-semibold tracking-tight">Access Your Private Library</h2>
-            <p className="mt-2 text-muted-foreground">
-              Sign in to view, save, and manage your curated collection of prompts.
-            </p>
-            <Button onClick={login} className="mt-6">
-                <UserCircle className="mr-2 h-5 w-5" />
-                Sign In
-            </Button>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="container mx-auto max-w-7xl py-8 px-4 sm:px-6 lg:px-8">
       <div className="mb-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -102,7 +84,7 @@ export function LibraryClient() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Prompt Library</h1>
             <p className="text-muted-foreground">
-              Your collection of curated prompts. You have saved {libraryPrompts.length} of 50 prompts.
+              A public collection of curated prompts submitted by the community.
             </p>
           </div>
         </div>
@@ -155,28 +137,31 @@ export function LibraryClient() {
                     )}
                     <span className="sr-only">Copy</span>
                   </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                        <span className="sr-only">Delete</span>
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This action cannot be undone. This will permanently delete this prompt from your library.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => deleteLibraryPrompt(prompt.id)}>
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  
+                  {isAuthenticated && userId === prompt.userId && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                          <span className="sr-only">Delete</span>
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete this prompt from the public library.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => deleteLibraryPrompt(prompt.id)}>
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
                 </CardFooter>
               </Card>
             ))}
@@ -186,7 +171,7 @@ export function LibraryClient() {
             <Library className="mb-4 h-16 w-16 text-muted-foreground" />
             <h2 className="text-2xl font-semibold">Library is Empty</h2>
             <p className="mt-2 text-muted-foreground">
-              {searchQuery ? "No prompts match your search." : "Save a finalized prompt from the generator to start your collection."}
+              {searchQuery ? "No prompts match your search." : "Be the first to add a prompt to the public library!"}
             </p>
           </div>
         )}

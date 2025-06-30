@@ -25,35 +25,31 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const loadPrompts = async () => {
-      if (isAuthenticated && userId) {
-        try {
-          setIsLoading(true);
-          const initialPrompts = await getLibraryPromptsFromDB(userId);
-          setLibraryPrompts(initialPrompts);
-        } catch (error) {
-          console.error('Failed to load prompts from library', error);
-          toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'Could not load your prompt library.',
-          });
-        } finally {
-          setIsLoading(false);
-        }
-      } else {
-        setLibraryPrompts([]);
+      // The library is public, so load prompts regardless of auth state.
+      try {
+        setIsLoading(true);
+        const initialPrompts = await getLibraryPromptsFromDB();
+        setLibraryPrompts(initialPrompts);
+      } catch (error) {
+        console.error('Failed to load prompts from library', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Could not load the prompt library.',
+        });
+      } finally {
         setIsLoading(false);
       }
     };
     loadPrompts();
-  }, [isAuthenticated, userId, toast]);
+  }, [toast]);
 
   const addLibraryPrompt = useCallback(async (text: string) => {
     if (!isAuthenticated || !userId) {
       toast({
         variant: 'destructive',
-        title: 'Not Logged In',
-        description: 'You must be logged in to save prompts to the library.',
+        title: 'Authentication Required',
+        description: 'You must be signed in to add prompts to the public library.',
       });
       return;
     }
@@ -64,13 +60,13 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       const newPrompt = await addLibraryPromptToDB(text, userId);
       setLibraryPrompts(prev => [newPrompt, ...prev]);
       toast({
-        title: 'Prompt Saved to Library',
-        description: 'The new prompt has been added to your library.',
+        title: 'Prompt Added to Library',
+        description: 'The new prompt has been added to the public library.',
       });
     } catch (error: any) {
       toast({
         variant: 'destructive',
-        title: 'Save to Library Failed',
+        title: 'Add to Library Failed',
         description: error.message || 'An error occurred while saving the prompt.',
       });
     }
@@ -80,8 +76,8 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     if (!isAuthenticated || !userId) {
       toast({
         variant: 'destructive',
-        title: 'Not Logged In',
-        description: 'You must be logged in to delete prompts from the library.',
+        title: 'Authentication Required',
+        description: 'You must be signed in to delete prompts.',
       });
       return;
     }
@@ -91,7 +87,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       setLibraryPrompts(prev => prev.filter(p => p.id !== id));
       toast({
         title: 'Prompt Deleted',
-        description: 'The prompt has been removed from your library.',
+        description: 'The prompt has been removed from the library.',
       });
     } catch (error: any) {
       toast({
