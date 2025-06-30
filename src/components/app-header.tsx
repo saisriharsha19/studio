@@ -36,7 +36,7 @@ export function AppHeader() {
         <Image src="/NavGAI-19.png" width={25} height={25} alt="NaviGator Logo" />
         <h1 className="text-xl font-bold tracking-tight">NaviGator Sailor</h1>
       </div>
-      <motion.nav layoutRoot className="ml-6 hidden items-center gap-1 text-sm font-medium md:flex">
+      <motion.nav layout className="ml-6 hidden items-center gap-1 text-sm font-medium md:flex">
         {navItems.map((item) => (
           <Link
             key={item.href}
