@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -36,9 +35,8 @@ function PromptCardSkeleton() {
   return (
     <Card className="flex flex-col">
       <CardHeader>
-        <Skeleton className="h-5 w-2/3" />
-        <Skeleton className="h-4 w-full mt-2" />
-        <Skeleton className="h-4 w-4/5 mt-1" />
+        <Skeleton className="h-5 w-11/12" />
+        <Skeleton className="h-5 w-4/5 mt-1" />
       </CardHeader>
       <CardContent className="flex-grow space-y-4">
         <div className="space-y-2">
@@ -89,12 +87,6 @@ export function LibraryClient() {
     return textMatch || summaryMatch;
   });
 
-  const getPromptTitle = (text: string) => {
-    const words = text.split(' ');
-    const title = words.slice(0, 8).join(' ');
-    return words.length > 8 ? `${title}...` : title;
-  };
-  
   return (
     <div className="container mx-auto max-w-7xl py-8 px-4 sm:px-6 lg:px-8">
       <div className="mb-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -128,14 +120,9 @@ export function LibraryClient() {
             {filteredPrompts.map((prompt) => (
               <Card key={prompt.id} className="flex flex-col">
                 <CardHeader>
-                  <CardTitle className="text-lg leading-snug">
-                    {getPromptTitle(prompt.text)}
+                  <CardTitle className="text-lg font-medium leading-snug">
+                    {prompt.summary || 'No summary available.'}
                   </CardTitle>
-                  {prompt.summary && (
-                    <CardDescription className="mt-2 text-foreground/90">
-                      {prompt.summary}
-                    </CardDescription>
-                  )}
                 </CardHeader>
                 <CardContent className="flex-grow space-y-4">
                   <div>
