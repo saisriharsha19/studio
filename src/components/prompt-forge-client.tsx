@@ -38,7 +38,7 @@ import {
   handleIterateOnPrompt,
   handleGetPromptSuggestions,
 } from '@/app/actions';
-import { Badge } from './ui/badge';
+import { Badge, badgeVariants } from './ui/badge';
 import { Skeleton } from './ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
 import { Input } from './ui/input';
@@ -273,9 +273,6 @@ export function PromptForgeClient() {
   }, [currentPrompt, iterationComments, toast, setSuggestions]);
 
   useEffect(() => {
-    // On the initial mount of the component instance, we don't want to trigger a new fetch.
-    // The existing suggestions from the context will be used.
-    // Any subsequent changes to dependencies will trigger the effect.
     if (isInitialMount.current) {
       isInitialMount.current = false;
       return;
@@ -457,6 +454,7 @@ export function PromptForgeClient() {
                     size="icon"
                     className="absolute bottom-2 right-2"
                     onClick={() => copyToClipboard(currentPrompt)}
+                    aria-label="Copy generated prompt"
                   >
                     {copied ? <Check className="text-primary" /> : <Clipboard />}
                   </Button>
@@ -489,6 +487,7 @@ export function PromptForgeClient() {
                         <div key={index} className="flex items-center gap-2">
                           <Input
                             id={`knowledge-base-url-${index}`}
+                            aria-label={`Knowledge base URL ${index + 1}`}
                             placeholder="https://example.com/knowledge"
                             value={url}
                             onChange={(e) => handleUrlChange(index, e.target.value)}
@@ -502,7 +501,7 @@ export function PromptForgeClient() {
                               className="shrink-0"
                             >
                               <X className="h-4 w-4" />
-                              <span className="sr-only">Remove URL</span>
+                              <span className="sr-only">Remove URL {index + 1}</span>
                             </Button>
                           ) : null}
                         </div>
@@ -539,7 +538,7 @@ export function PromptForgeClient() {
                         onDrop={handleDrop}
                       >
                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                            <Upload className="w-8 h-8 mb-4 text-muted-foreground" />
+                            <Upload className="w-8 h-8 mb-4 text-muted-foreground" aria-hidden="true" />
                             <p className="mb-2 text-sm text-muted-foreground">
                                 <span className="font-semibold">Click to upload</span> or drag and drop
                             </p>
@@ -625,6 +624,7 @@ export function PromptForgeClient() {
                             onClick={getSuggestions}
                             disabled={loadingSuggestions}
                             className="h-6 w-6"
+                            aria-label="Regenerate AI suggestions"
                           >
                             <RotateCw
                               className={`h-4 w-4 ${
@@ -653,17 +653,17 @@ export function PromptForgeClient() {
                       >
                         {suggestions.map((suggestion, index) => (
                           <motion.div key={index} variants={itemVariants}>
-                            <Badge
-                              key={index}
-                              variant={selectedSuggestions.includes(suggestion) ? 'default' : 'secondary'}
+                            <button
+                              type="button"
                               onClick={() => handleSuggestionToggle(suggestion)}
-                              className="cursor-pointer items-center transition-all hover:opacity-80 text-xs px-3 py-1 font-normal"
+                              aria-pressed={selectedSuggestions.includes(suggestion)}
+                              className={cn(badgeVariants({ variant: selectedSuggestions.includes(suggestion) ? 'default' : 'secondary' }), "cursor-pointer items-center transition-all hover:opacity-80 text-xs px-3 py-1 font-normal")}
                             >
                               {selectedSuggestions.includes(suggestion) && (
                                 <Check className="mr-1.5 h-4 w-4" />
                               )}
                               {suggestion}
-                            </Badge>
+                            </button>
                           </motion.div>
                         ))}
                       </motion.div>
@@ -706,121 +706,23 @@ export function PromptForgeClient() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {loading.evaluating ? (
-                    <Skeleton className="h-40 w-full" />
-                  ) : evaluationResult ? (
-                    <Accordion type="single" collapsible className="w-full">
-                      <AccordionItem value="bias">
-                        <AccordionTrigger>
-                          <div className="flex w-full items-center justify-between pr-4">
-                            <span>Bias</span>
-                            <Badge
-                              variant={
-                                evaluationResult.bias.score > 0.7
-                                  ? 'default'
-                                  : 'destructive'
-                              }
-                            >
-                              Score: {Math.round(evaluationResult.bias.score * 100)}%
-                            </Badge>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent className="space-y-4 px-1">
-                          <div>
-                            <p className="text-sm font-medium">Summary:</p>
-                            <p className="text-sm text-muted-foreground">
-                              {evaluationResult.bias.summary}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium">Test Cases:</p>
-                            <ul className="list-disc pl-5 text-sm text-muted-foreground">
-                              {evaluationResult.bias.testCases.map((tc, i) => (
-                                <li key={i}>{tc}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                      <AccordionItem value="toxicity">
-                        <AccordionTrigger>
-                          <div className="flex w-full items-center justify-between pr-4">
-                            <span>Toxicity</span>
-                            <Badge
-                              variant={
-                                evaluationResult.toxicity.score > 0.7
-                                  ? 'default'
-                                  : 'destructive'
-                              }
-                            >
-                              Score: {Math.round(evaluationResult.toxicity.score * 100)}%
-                            </Badge>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent className="space-y-4 px-1">
-                          <div>
-                            <p className="text-sm font-medium">Summary:</p>
-                            <p className="text-sm text-muted-foreground">
-                              {evaluationResult.toxicity.summary}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium">Test Cases:</p>
-                            <ul className="list-disc pl-5 text-sm text-muted-foreground">
-                              {evaluationResult.toxicity.testCases.map((tc, i) => (
-                                <li key={i}>{tc}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                      <AccordionItem value="alignment">
-                        <AccordionTrigger>
-                          <div className="flex w-full items-center justify-between pr-4">
-                            <span>Prompt Alignment</span>
-                            <Badge
-                              variant={
-                                evaluationResult.promptAlignment.score > 0.7
-                                  ? 'default'
-                                  : 'destructive'
-                              }
-                            >
-                              Score: {Math.round(evaluationResult.promptAlignment.score * 100)}%
-                            </Badge>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent className="space-y-4 px-1">
-                          <div>
-                            <p className="text-sm font-medium">Summary:</p>
-                            <p className="text-sm text-muted-foreground">
-                              {evaluationResult.promptAlignment.summary}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium">Test Cases:</p>
-                            <ul className="list-disc pl-5 text-sm text-muted-foreground">
-                              {evaluationResult.promptAlignment.testCases.map(
-                                (tc, i) => (
-                                  <li key={i}>{tc}</li>
-                                )
-                              )}
-                            </ul>
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                      {evaluationResult.faithfulness && (
-                        <AccordionItem value="faithfulness">
+                  <div aria-live="polite" aria-atomic="true">
+                    {loading.evaluating ? (
+                      <Skeleton className="h-40 w-full" />
+                    ) : evaluationResult ? (
+                      <Accordion type="single" collapsible className="w-full">
+                        <AccordionItem value="bias">
                           <AccordionTrigger>
                             <div className="flex w-full items-center justify-between pr-4">
-                              <span>Faithfulness</span>
+                              <span>Bias</span>
                               <Badge
                                 variant={
-                                  evaluationResult.faithfulness.score > 0.7
+                                  evaluationResult.bias.score > 0.7
                                     ? 'default'
                                     : 'destructive'
                                 }
                               >
-                                Score: {Math.round(evaluationResult.faithfulness.score * 100)}%
+                                Score: {Math.round(evaluationResult.bias.score * 100)}%
                               </Badge>
                             </div>
                           </AccordionTrigger>
@@ -828,13 +730,77 @@ export function PromptForgeClient() {
                             <div>
                               <p className="text-sm font-medium">Summary:</p>
                               <p className="text-sm text-muted-foreground">
-                                {evaluationResult.faithfulness.summary}
+                                {evaluationResult.bias.summary}
                               </p>
                             </div>
                             <div>
                               <p className="text-sm font-medium">Test Cases:</p>
                               <ul className="list-disc pl-5 text-sm text-muted-foreground">
-                                {evaluationResult.faithfulness.testCases.map(
+                                {evaluationResult.bias.testCases.map((tc, i) => (
+                                  <li key={i}>{tc}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                        <AccordionItem value="toxicity">
+                          <AccordionTrigger>
+                            <div className="flex w-full items-center justify-between pr-4">
+                              <span>Toxicity</span>
+                              <Badge
+                                variant={
+                                  evaluationResult.toxicity.score > 0.7
+                                    ? 'default'
+                                    : 'destructive'
+                                }
+                              >
+                                Score: {Math.round(evaluationResult.toxicity.score * 100)}%
+                              </Badge>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="space-y-4 px-1">
+                            <div>
+                              <p className="text-sm font-medium">Summary:</p>
+                              <p className="text-sm text-muted-foreground">
+                                {evaluationResult.toxicity.summary}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium">Test Cases:</p>
+                              <ul className="list-disc pl-5 text-sm text-muted-foreground">
+                                {evaluationResult.toxicity.testCases.map((tc, i) => (
+                                  <li key={i}>{tc}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                        <AccordionItem value="alignment">
+                          <AccordionTrigger>
+                            <div className="flex w-full items-center justify-between pr-4">
+                              <span>Prompt Alignment</span>
+                              <Badge
+                                variant={
+                                  evaluationResult.promptAlignment.score > 0.7
+                                    ? 'default'
+                                    : 'destructive'
+                                }
+                              >
+                                Score: {Math.round(evaluationResult.promptAlignment.score * 100)}%
+                              </Badge>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="space-y-4 px-1">
+                            <div>
+                              <p className="text-sm font-medium">Summary:</p>
+                              <p className="text-sm text-muted-foreground">
+                                {evaluationResult.promptAlignment.summary}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium">Test Cases:</p>
+                              <ul className="list-disc pl-5 text-sm text-muted-foreground">
+                                {evaluationResult.promptAlignment.testCases.map(
                                   (tc, i) => (
                                     <li key={i}>{tc}</li>
                                   )
@@ -843,13 +809,49 @@ export function PromptForgeClient() {
                             </div>
                           </AccordionContent>
                         </AccordionItem>
-                      )}
-                    </Accordion>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 text-center">
-                        <p className="text-muted-foreground">Your evaluation results will appear here.</p>
-                    </div>
-                  )}
+                        {evaluationResult.faithfulness && (
+                          <AccordionItem value="faithfulness">
+                            <AccordionTrigger>
+                              <div className="flex w-full items-center justify-between pr-4">
+                                <span>Faithfulness</span>
+                                <Badge
+                                  variant={
+                                    evaluationResult.faithfulness.score > 0.7
+                                      ? 'default'
+                                      : 'destructive'
+                                  }
+                                >
+                                  Score: {Math.round(evaluationResult.faithfulness.score * 100)}%
+                                </Badge>
+                              </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="space-y-4 px-1">
+                              <div>
+                                <p className="text-sm font-medium">Summary:</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {evaluationResult.faithfulness.summary}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium">Test Cases:</p>
+                                <ul className="list-disc pl-5 text-sm text-muted-foreground">
+                                  {evaluationResult.faithfulness.testCases.map(
+                                    (tc, i) => (
+                                      <li key={i}>{tc}</li>
+                                    )
+                                  )}
+                                </ul>
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+                        )}
+                      </Accordion>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 text-center">
+                          <p className="text-muted-foreground">Your evaluation results will appear here.</p>
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
                 <CardFooter className="flex flex-col gap-2">
                   <Button

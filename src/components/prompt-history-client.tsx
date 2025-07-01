@@ -110,6 +110,7 @@ export function PromptHistoryClient() {
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input 
             placeholder="Search history..."
+            aria-label="Search prompt history"
             className="h-11 w-full rounded-full border-transparent bg-muted pl-12 pr-4 transition-colors focus:bg-background focus:ring-2 focus:ring-ring"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -119,74 +120,75 @@ export function PromptHistoryClient() {
 
       <ScrollArea className="h-full">
         {isLoading ? (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {Array.from({ length: 8 }).map((_, i) => <PromptCardSkeleton key={i} />)}
-          </div>
+          <ul className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => <li key={i}><PromptCardSkeleton /></li>)}
+          </ul>
         ) : filteredPrompts.length > 0 ? (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <ul className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filteredPrompts.map((prompt) => (
-              <Card key={prompt.id} className="flex flex-col">
-                <CardHeader>
-                  <CardTitle className="text-lg leading-snug">
-                    {getPromptTitle(prompt.text)}
-                  </CardTitle>
-                  <CardDescription>
-                    Saved{' '}
-                    {formatDistanceToNow(new Date(prompt.createdAt), {
-                      addSuffix: true,
-                    })}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="flex-grow">
-                  <p className="line-clamp-6 text-sm text-foreground/80">
-                    {prompt.text}
-                  </p>
-                </CardContent>
-                <CardFooter className="flex justify-end gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => copyToClipboard(prompt)}
-                  >
-                    {copiedId === prompt.id ? (
-                      <Check className="h-4 w-4 text-primary" />
-                    ) : (
-                      <Clipboard className="h-4 w-4" />
+              <li key={prompt.id}>
+                <Card className="flex flex-col">
+                  <CardHeader>
+                    <CardTitle>
+                      {getPromptTitle(prompt.text)}
+                    </CardTitle>
+                    <CardDescription>
+                      Saved{' '}
+                      {formatDistanceToNow(new Date(prompt.createdAt), {
+                        addSuffix: true,
+                      })}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex-grow">
+                    <p className="line-clamp-6 text-sm text-foreground/80">
+                      {prompt.text}
+                    </p>
+                  </CardContent>
+                  <CardFooter className="flex justify-end gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => copyToClipboard(prompt)}
+                      aria-label="Copy prompt"
+                    >
+                      {copiedId === prompt.id ? (
+                        <Check className="h-4 w-4 text-primary" />
+                      ) : (
+                        <Clipboard className="h-4 w-4" />
+                      )}
+                    </Button>
+                    {isAuthenticated && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" aria-label="Delete prompt">
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will permanently delete this prompt from your history.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => deletePrompt(prompt.id)}>
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     )}
-                    <span className="sr-only">Copy</span>
-                  </Button>
-                  {isAuthenticated && (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                          <span className="sr-only">Delete</span>
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete this prompt from your history.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => deletePrompt(prompt.id)}>
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  )}
-                </CardFooter>
-              </Card>
+                  </CardFooter>
+                </Card>
+              </li>
             ))}
-          </div>
+          </ul>
         ) : (
-          <div className="flex h-[50vh] flex-col items-center justify-center rounded-lg border-2 border-dashed">
+          <div role="region" aria-labelledby="empty-history-heading" className="flex h-[50vh] flex-col items-center justify-center rounded-lg border-2 border-dashed">
             <History className="mb-4 h-16 w-16 text-muted-foreground" />
-            <h2 className="text-2xl font-semibold">History is Empty</h2>
+            <h2 id="empty-history-heading" className="text-2xl font-semibold">History is Empty</h2>
             <p className="mt-2 text-muted-foreground">
               {searchQuery ? "No prompts match your search." : "Go to the generator to create your first prompt!"}
             </p>

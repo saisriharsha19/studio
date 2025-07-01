@@ -112,6 +112,7 @@ export function LibraryClient() {
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input 
             placeholder="Search library..."
+            aria-label="Search prompt library"
             className="h-11 w-full rounded-full border-transparent bg-muted pl-12 pr-4 transition-colors focus:bg-background focus:ring-2 focus:ring-ring"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -121,115 +122,121 @@ export function LibraryClient() {
 
       <ScrollArea className="h-full">
         {isLoading ? (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {Array.from({ length: 8 }).map((_, i) => <PromptCardSkeleton key={i} />)}
-          </div>
+          <ul className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => <li key={i}><PromptCardSkeleton /></li>)}
+          </ul>
         ) : filteredPrompts.length > 0 ? (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <ul className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filteredPrompts.map((prompt) => {
                 const isExpanded = expandedIds.has(prompt.id);
-                // A rough character count to decide if "Show more" is needed. 6 lines of text-sm is ~250 chars.
                 const needsExpansion = prompt.text.length > 250;
 
                 return (
-                    <Card key={prompt.id} className="flex flex-col h-96">
-                        <CardHeader>
-                            <CardTitle className="text-lg font-medium leading-snug">
-                                {prompt.summary || 'No summary available.'}
-                            </CardTitle>
-                        </CardHeader>
-                        
-                        <CardContent className="flex flex-col flex-grow min-h-0">
-                            <div className='flex flex-col flex-grow min-h-0'>
-                                {prompt.tags && prompt.tags.length > 0 && (
-                                    <div className="flex flex-wrap gap-1.5 pb-4 flex-shrink-0">
-                                        {prompt.tags.map((tag, index) => (
-                                            <Badge key={index} variant="secondary" className="font-normal">
-                                                {tag}
-                                            </Badge>
-                                        ))}
-                                    </div>
-                                )}
-                                <div className="flex-grow min-h-0 flex flex-col justify-center">
-                                    {isExpanded ? (
-                                        <ScrollArea className="h-full rounded-md bg-muted p-3">
-                                            <p className="text-sm text-foreground/80 whitespace-pre-wrap">
+                    <li key={prompt.id}>
+                        <Card className="flex flex-col h-96">
+                            <CardHeader>
+                                <CardTitle>
+                                    {prompt.summary || 'No summary available.'}
+                                </CardTitle>
+                            </CardHeader>
+                            
+                            <CardContent className="flex flex-col flex-grow min-h-0">
+                                <div className='flex flex-col flex-grow min-h-0'>
+                                    {prompt.tags && prompt.tags.length > 0 && (
+                                        <div className="flex flex-wrap gap-1.5 pb-4 flex-shrink-0">
+                                            {prompt.tags.map((tag, index) => (
+                                                <Badge key={index} variant="secondary" className="font-normal">
+                                                    {tag}
+                                                </Badge>
+                                            ))}
+                                        </div>
+                                    )}
+                                    <div className="flex-grow min-h-0 flex flex-col justify-center">
+                                        {isExpanded ? (
+                                            <ScrollArea className="h-full rounded-md bg-muted p-3">
+                                                <p className="text-sm text-foreground/80 whitespace-pre-wrap">
+                                                    {prompt.text}
+                                                </p>
+                                            </ScrollArea>
+                                        ) : (
+                                            <p className="text-sm text-foreground/80 line-clamp-6">
                                                 {prompt.text}
                                             </p>
-                                        </ScrollArea>
-                                    ) : (
-                                        <p className="text-sm text-foreground/80 line-clamp-6">
-                                            {prompt.text}
-                                        </p>
+                                        )}
+                                    </div>
+                                </div>
+                            </CardContent>
+                            
+                            <CardFooter className="flex items-center justify-between pt-2 flex-shrink-0 mt-auto">
+                                <button 
+                                    onClick={() => toggleExpanded(prompt.id)} 
+                                    className={cn(
+                                        "text-sm font-medium text-primary hover:underline dark:text-primary-foreground",
+                                        !needsExpansion && 'invisible'
+                                    )}
+                                    disabled={!needsExpansion}
+                                >
+                                    {isExpanded ? "Show less" : "Show more"}
+                                </button>
+                                
+                                <div className='flex items-center'>
+                                    <Button 
+                                      variant="ghost" 
+                                      className="flex items-center gap-1.5 px-2 text-sm text-muted-foreground" 
+                                      onClick={() => toggleStar(prompt.id)} 
+                                      disabled={!isAuthenticated}
+                                      aria-label={prompt.isStarredByUser ? "Un-star this prompt" : "Star this prompt"}
+                                    >
+                                        <Star className={cn("h-4 w-4 transition-colors", prompt.isStarredByUser && "fill-yellow-400 text-yellow-400")} />
+                                        {prompt.stars ?? 0}
+                                    </Button>
+
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => copyToClipboard(prompt)}
+                                        aria-label="Copy prompt"
+                                    >
+                                        {copiedId === prompt.id ? (
+                                        <Check className="h-4 w-4 text-primary" />
+                                        ) : (
+                                        <Clipboard className="h-4 w-4" />
+                                        )}
+                                    </Button>
+                                    {isAdmin && (
+                                        <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="group focus-visible:bg-accent" aria-label="Delete prompt">
+                                                <Trash2 className="h-4 w-4 text-destructive dark:text-red-500 group-hover:text-accent-foreground group-focus-visible:text-accent-foreground" />
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                This action cannot be undone. This will permanently delete this prompt from the public library.
+                                            </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => deleteLibraryPrompt(prompt.id)}>
+                                                Delete
+                                            </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                        </AlertDialog>
                                     )}
                                 </div>
-                            </div>
-                        </CardContent>
-                        
-                        <CardFooter className="flex items-center justify-between pt-2 flex-shrink-0 mt-auto">
-                            <button 
-                                onClick={() => toggleExpanded(prompt.id)} 
-                                className={cn(
-                                    "text-sm font-medium text-primary hover:underline dark:text-primary-foreground",
-                                    !needsExpansion && 'invisible' // Keep layout stable
-                                )}
-                                disabled={!needsExpansion}
-                            >
-                                {isExpanded ? "Show less" : "Show more"}
-                            </button>
-                            
-                            <div className='flex items-center'>
-                                <Button variant="ghost" className="flex items-center gap-1.5 px-2 text-sm text-muted-foreground" onClick={() => toggleStar(prompt.id)} disabled={!isAuthenticated}>
-                                    <Star className={cn("h-4 w-4 transition-colors", prompt.isStarredByUser && "fill-yellow-400 text-yellow-400")} />
-                                    {prompt.stars ?? 0}
-                                </Button>
-
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => copyToClipboard(prompt)}
-                                >
-                                    {copiedId === prompt.id ? (
-                                    <Check className="h-4 w-4 text-primary" />
-                                    ) : (
-                                    <Clipboard className="h-4 w-4" />
-                                    )}
-                                    <span className="sr-only">Copy</span>
-                                </Button>
-                                {isAdmin && (
-                                    <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="group focus-visible:bg-accent">
-                                            <Trash2 className="h-4 w-4 text-destructive dark:text-red-500 group-hover:text-accent-foreground group-focus-visible:text-accent-foreground" />
-                                            <span className="sr-only">Delete</span>
-                                        </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            This action cannot be undone. This will permanently delete this prompt from the public library.
-                                        </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => deleteLibraryPrompt(prompt.id)}>
-                                            Delete
-                                        </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                    </AlertDialog>
-                                )}
-                            </div>
-                        </CardFooter>
-                    </Card>
+                            </CardFooter>
+                        </Card>
+                    </li>
                 );
             })}
-          </div>
+          </ul>
         ) : (
-          <div className="flex h-[50vh] flex-col items-center justify-center rounded-lg border-2 border-dashed">
+          <div role="region" aria-labelledby="empty-library-heading" className="flex h-[50vh] flex-col items-center justify-center rounded-lg border-2 border-dashed">
             <Library className="mb-4 h-16 w-16 text-muted-foreground" />
-            <h2 className="text-2xl font-semibold">Library is Empty</h2>
+            <h2 id="empty-library-heading" className="text-2xl font-semibold">Library is Empty</h2>
             <p className="mt-2 text-muted-foreground">
               {searchQuery ? "No prompts match your search." : "Be the first to add a prompt to the public library!"}
             </p>
