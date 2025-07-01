@@ -30,6 +30,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Input } from './ui/input';
 import { Skeleton } from './ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
 function PromptCardSkeleton() {
   return (
@@ -95,106 +96,123 @@ export function PromptHistoryClient() {
 
 
   return (
-    <div className="container mx-auto max-w-7xl py-8 px-4 sm:px-6 lg:px-8">
-      <div className="mb-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className='flex items-center gap-3'>
-          <History className="h-8 w-8" />
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Prompt History</h1>
-            <p className="text-muted-foreground">
-              Your 20 most recent prompts are saved automatically.
-            </p>
+    <TooltipProvider>
+      <div className="container mx-auto max-w-7xl py-8 px-4 sm:px-6 lg:px-8">
+        <div className="mb-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className='flex items-center gap-3'>
+            <History className="h-8 w-8" />
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Prompt History</h1>
+              <p className="text-muted-foreground">
+                Your 20 most recent prompts are saved automatically.
+              </p>
+            </div>
+          </div>
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input 
+              placeholder="Search history..."
+              aria-label="Search prompt history"
+              className="h-11 w-full rounded-full border-transparent bg-muted pl-12 pr-4 transition-colors focus:bg-background focus:ring-2 focus:ring-ring"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
         </div>
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-          <Input 
-            placeholder="Search history..."
-            aria-label="Search prompt history"
-            className="h-11 w-full rounded-full border-transparent bg-muted pl-12 pr-4 transition-colors focus:bg-background focus:ring-2 focus:ring-ring"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-      </div>
 
-      <ScrollArea className="h-full">
-        {isLoading ? (
-          <ul className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {Array.from({ length: 8 }).map((_, i) => <li key={i}><PromptCardSkeleton /></li>)}
-          </ul>
-        ) : filteredPrompts.length > 0 ? (
-          <ul className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filteredPrompts.map((prompt) => (
-              <li key={prompt.id}>
-                <Card className="flex flex-col">
-                  <CardHeader>
-                    <CardTitle>
-                      {getPromptTitle(prompt.text)}
-                    </CardTitle>
-                    <CardDescription>
-                      Saved{' '}
-                      {formatDistanceToNow(new Date(prompt.createdAt), {
-                        addSuffix: true,
-                      })}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex-grow">
-                    <p className="line-clamp-6 text-sm text-foreground/80">
-                      {prompt.text}
-                    </p>
-                  </CardContent>
-                  <CardFooter className="flex justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => copyToClipboard(prompt)}
-                      aria-label="Copy prompt"
-                    >
-                      {copiedId === prompt.id ? (
-                        <Check className="h-4 w-4 text-primary" />
-                      ) : (
-                        <Clipboard className="h-4 w-4" />
-                      )}
-                    </Button>
-                    {isAuthenticated && (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" aria-label="Delete prompt">
-                            <Trash2 className="h-4 w-4 text-destructive" />
+        <ScrollArea className="h-full">
+          {isLoading ? (
+            <ul className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {Array.from({ length: 8 }).map((_, i) => <li key={i}><PromptCardSkeleton /></li>)}
+            </ul>
+          ) : filteredPrompts.length > 0 ? (
+            <ul className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {filteredPrompts.map((prompt) => (
+                <li key={prompt.id}>
+                  <Card className="flex flex-col">
+                    <CardHeader>
+                      <CardTitle>
+                        {getPromptTitle(prompt.text)}
+                      </CardTitle>
+                      <CardDescription>
+                        Saved{' '}
+                        {formatDistanceToNow(new Date(prompt.createdAt), {
+                          addSuffix: true,
+                        })}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex-grow">
+                      <p className="line-clamp-6 text-sm text-foreground/80">
+                        {prompt.text}
+                      </p>
+                    </CardContent>
+                    <CardFooter className="flex justify-end gap-2">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => copyToClipboard(prompt)}
+                            aria-label="Copy prompt"
+                          >
+                            {copiedId === prompt.id ? (
+                              <Check className="h-4 w-4 text-primary" />
+                            ) : (
+                              <Clipboard className="h-4 w-4" />
+                            )}
                           </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This action cannot be undone. This will permanently delete this prompt from your history.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => deletePrompt(prompt.id)}>
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    )}
-                  </CardFooter>
-                </Card>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div role="region" aria-labelledby="empty-history-heading" className="flex h-[50vh] flex-col items-center justify-center rounded-lg border-2 border-dashed">
-            <History className="mb-4 h-16 w-16 text-muted-foreground" />
-            <h2 id="empty-history-heading" className="text-2xl font-semibold">History is Empty</h2>
-            <p className="mt-2 text-muted-foreground">
-              {searchQuery ? "No prompts match your search." : "Go to the generator to create your first prompt!"}
-            </p>
-          </div>
-        )}
-      </ScrollArea>
-    </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Copy prompt</p>
+                        </TooltipContent>
+                      </Tooltip>
+
+                      {isAuthenticated && (
+                        <AlertDialog>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" aria-label="Delete prompt">
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </AlertDialogTrigger>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Delete prompt</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete this prompt from your history.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => deletePrompt(prompt.id)}>
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
+                    </CardFooter>
+                  </Card>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div role="region" aria-labelledby="empty-history-heading" className="flex h-[50vh] flex-col items-center justify-center rounded-lg border-2 border-dashed">
+              <History className="mb-4 h-16 w-16 text-muted-foreground" />
+              <h2 id="empty-history-heading" className="text-2xl font-semibold">History is Empty</h2>
+              <p className="mt-2 text-muted-foreground">
+                {searchQuery ? "No prompts match your search." : "Go to the generator to create your first prompt!"}
+              </p>
+            </div>
+          )}
+        </ScrollArea>
+      </div>
+    </TooltipProvider>
   );
 }

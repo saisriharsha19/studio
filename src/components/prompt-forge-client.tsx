@@ -419,14 +419,21 @@ export function PromptForgeClient() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button onClick={onGenerate} disabled={isLoading || loading.generating}>
-                {loading.generating ? (
-                  <Loader2 className="animate-spin" />
-                ) : (
-                  <Sparkles />
-                )}
-                {promptsGenerated === 0 ? 'Generate Initial Prompt' : 'Regenerate Initial Prompt'}
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button onClick={onGenerate} disabled={isLoading || loading.generating}>
+                    {loading.generating ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <Sparkles />
+                    )}
+                    {promptsGenerated === 0 ? 'Generate Initial Prompt' : 'Regenerate Initial Prompt'}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Generate a new prompt based on your needs.</p>
+                </TooltipContent>
+              </Tooltip>
             </CardFooter>
           </Card>
 
@@ -448,15 +455,22 @@ export function PromptForgeClient() {
                   className="min-h-[200px] pr-12 pb-12"
                 />
                 {currentPrompt && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute bottom-2 right-2"
-                    onClick={() => copyToClipboard(currentPrompt)}
-                    aria-label="Copy generated prompt"
-                  >
-                    {copied ? <Check className="text-primary" /> : <Clipboard />}
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute bottom-2 right-2"
+                        onClick={() => copyToClipboard(currentPrompt)}
+                        aria-label="Copy generated prompt"
+                      >
+                        {copied ? <Check className="text-primary" /> : <Clipboard />}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Copy prompt</p>
+                    </TooltipContent>
+                  </Tooltip>
                 )}
               </div>
             </CardContent>
@@ -507,19 +521,33 @@ export function PromptForgeClient() {
                       ))}
                     </div>
                     <div className="mt-4 flex flex-wrap gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={addUrlField}
-                      >
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add URL
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => toast({ title: "Coming Soon!", description: "Web scraping functionality is not yet implemented."})} aria-disabled="true">
-                          <Globe className="mr-2 h-4 w-4"/>
-                          Fetch Content
-                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={addUrlField}
+                          >
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add URL
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Add another URL field for the knowledge base.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="outline" size="sm" onClick={() => toast({ title: "Coming Soon!", description: "Web scraping functionality is not yet implemented."})} aria-disabled="true">
+                              <Globe className="mr-2 h-4 w-4"/>
+                              Fetch Content
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Scrape content from URLs for the knowledge base.</p>
+                        </TooltipContent>
+                      </Tooltip>
                     </div>
                   </div>
 
@@ -586,10 +614,17 @@ export function PromptForgeClient() {
                         This information will be used by the LLM Judge to evaluate and score the prompt's effectiveness.
                       </p>
                       <div className="flex gap-4">
-                        <Button onClick={onEvaluate} disabled={isLoading || loading.evaluating}>
-                          {loading.evaluating ? <Loader2 className="animate-spin" /> : <Bot />}
-                          Iterate &amp; Evaluate
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button onClick={onEvaluate} disabled={isLoading || loading.evaluating}>
+                              {loading.evaluating ? <Loader2 className="animate-spin" /> : <Bot />}
+                              Iterate &amp; Evaluate
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Use AI to evaluate and improve the prompt with context.</p>
+                          </TooltipContent>
+                        </Tooltip>
                       </div>
                   </div>
                 </div>
@@ -681,18 +716,25 @@ export function PromptForgeClient() {
                 </div>
               </CardContent>
               <CardFooter>
-                <Button
-                  onClick={onIterate}
-                  disabled={
-                    isLoading ||
-                    loading.iterating ||
-                    !currentPrompt ||
-                    (!iterationComments && selectedSuggestions.length === 0)
-                  }
-                >
-                  {loading.iterating ? <Loader2 className="animate-spin" /> : <Wrench />}
-                  Refine with AI
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={onIterate}
+                      disabled={
+                        isLoading ||
+                        loading.iterating ||
+                        !currentPrompt ||
+                        (!iterationComments && selectedSuggestions.length === 0)
+                      }
+                    >
+                      {loading.iterating ? <Loader2 className="animate-spin" /> : <Wrench />}
+                      Refine with AI
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Refine the prompt using your feedback & suggestions.</p>
+                  </TooltipContent>
+                </Tooltip>
               </CardFooter>
             </Card>
 
@@ -853,30 +895,51 @@ export function PromptForgeClient() {
                   </div>
                 </CardContent>
                 <CardFooter className="flex flex-col gap-2">
-                  <Button
-                    className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
-                    disabled={isLoading || !currentPrompt}
-                    onClick={() => toast({ title: "Onyx Integration", description: "This would trigger agent creation in the Onyx (Danswer) system." })}
-                  >
-                    <Rocket />
-                    Create NaviGator Assistant 
-                  </Button>
-                  <Button
-                    className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
-                    disabled={isLoading || !currentPrompt}
-                    onClick={onUploadToLibrary}
-                  >
-                    <Upload />
-                    Upload to Prompt Library 
-                  </Button>
-                  <Button
-                    className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
-                    disabled={isLoading || !currentPrompt}
-                    onClick={() => toast({ title: "Coming Soon!", description: "This would import the prompt into the NaviGator Builder." })}
-                  >
-                    <Import />
-                    Import to NaviGator Builder
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+                        disabled={isLoading || !currentPrompt}
+                        onClick={() => toast({ title: "Onyx Integration", description: "This would trigger agent creation in the Onyx (Danswer) system." })}
+                      >
+                        <Rocket />
+                        Create NaviGator Assistant 
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Deploy this prompt as a new assistant in the NaviGator/Onyx system.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+                        disabled={isLoading || !currentPrompt}
+                        onClick={onUploadToLibrary}
+                      >
+                        <Upload />
+                        Upload to Prompt Library 
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Share this prompt with the community by adding it to the public library.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+                        disabled={isLoading || !currentPrompt}
+                        onClick={() => toast({ title: "Coming Soon!", description: "This would import the prompt into the NaviGator Builder." })}
+                      >
+                        <Import />
+                        Import to NaviGator Builder
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Open this prompt in the NaviGator Builder for further customization.</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </CardFooter>
               </Card>
             ) : (

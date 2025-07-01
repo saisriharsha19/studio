@@ -1,5 +1,6 @@
 import { AppHeader } from '@/components/app-header';
 import { PromptForgeClient } from '@/components/prompt-forge-client';
+import { AppFooter } from '@/components/app-footer';
 
 export default function Home() {
   return (
@@ -9,6 +10,7 @@ export default function Home() {
         <h1 className="sr-only">Prompt Forge</h1>
         <PromptForgeClient />
       </main>
+      <AppFooter />
     </div>
   );
 }
