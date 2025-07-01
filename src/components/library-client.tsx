@@ -13,19 +13,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Clipboard, Check, Trash2, Library, Search, Star } from 'lucide-react';
+import { Clipboard, Check, Library, Search, Star } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { Input } from './ui/input';
@@ -56,7 +45,6 @@ function PromptCardSkeleton() {
         <Skeleton className="h-8 w-12" />
         <div className="flex gap-2">
             <Skeleton className="h-8 w-8 rounded-full" />
-            <Skeleton className="h-8 w-8 rounded-full" />
         </div>
       </CardFooter>
     </Card>
@@ -64,8 +52,8 @@ function PromptCardSkeleton() {
 }
 
 export function LibraryClient() {
-  const { libraryPrompts, deleteLibraryPrompt, toggleStar, isLoading } = useLibrary();
-  const { isAuthenticated, userId } = useAuth();
+  const { libraryPrompts, toggleStar, isLoading } = useLibrary();
+  const { isAuthenticated } = useAuth();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedIds, setExpandedIds] = useState(new Set<string>());
@@ -155,10 +143,18 @@ export function LibraryClient() {
                     </div>
                   )}
                   <div>
-                    <p className={cn("text-sm text-foreground/80", !expandedIds.has(prompt.id) && "line-clamp-4")}>
-                      {prompt.text}
-                    </p>
-                    {prompt.text.split(' ').length > 50 && (
+                    {expandedIds.has(prompt.id) ? (
+                      <ScrollArea className="h-32 w-full rounded-md border p-3">
+                         <p className="text-sm text-foreground/80 whitespace-pre-wrap">
+                            {prompt.text}
+                        </p>
+                      </ScrollArea>
+                    ) : (
+                      <p className="text-sm text-foreground/80 line-clamp-4">
+                          {prompt.text}
+                      </p>
+                    )}
+                    {prompt.text.length > 200 && (
                         <button onClick={() => toggleExpanded(prompt.id)} className="text-sm font-medium text-primary hover:underline mt-2">
                             {expandedIds.has(prompt.id) ? "Show less" : "Show more"}
                         </button>
@@ -184,31 +180,6 @@ export function LibraryClient() {
                       )}
                       <span className="sr-only">Copy</span>
                     </Button>
-                    
-                    {isAuthenticated && userId === prompt.userId && (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                            <span className="sr-only">Delete</span>
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This action cannot be undone. This will permanently delete this prompt from the public library.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => deleteLibraryPrompt(prompt.id)}>
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    )}
                   </div>
                 </CardFooter>
               </Card>

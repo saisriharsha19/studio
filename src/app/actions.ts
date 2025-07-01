@@ -264,30 +264,6 @@ export async function addLibraryPromptToDB(promptText: string, userId: string): 
   }
 }
 
-export async function deleteLibraryPromptFromDB(id: string, userId: string): Promise<{ success: boolean }> {
-  if (!userId) throw new Error('User not authenticated.');
-
-  try {
-    // Transaction to ensure both deletes happen or neither do.
-    const deleteTx = db.transaction(() => {
-        // The FOREIGN KEY with ON DELETE CASCADE should handle deleting from prompt_stars automatically.
-        const stmt = db.prepare('DELETE FROM library_prompts WHERE id = ? AND userId = ?');
-        const result = stmt.run(id, userId);
-
-        if (result.changes === 0) {
-            throw new Error("Prompt not found or you don't have permission to delete it.");
-        }
-    });
-    deleteTx();
-    
-    revalidatePath('/library');
-    return { success: true };
-  } catch (error: any) {
-    console.error('Failed to delete prompt from library:', error);
-    throw new Error(error.message || 'Failed to delete prompt from history.');
-  }
-}
-
 export async function toggleStarForPrompt(promptId: string, userId: string): Promise<{ success: boolean }> {
   if (!userId) throw new Error('User not authenticated.');
 
