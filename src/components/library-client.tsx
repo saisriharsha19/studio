@@ -149,7 +149,7 @@ export function LibraryClient() {
                                     ))}
                                 </div>
                             )}
-                            <div className="flex-grow min-h-0">
+                            <div className="flex-grow min-h-0 flex flex-col justify-center">
                                 {isExpanded ? (
                                     <ScrollArea className="h-full rounded-md bg-muted p-3">
                                         <p className="text-sm text-foreground/80 whitespace-pre-wrap">
