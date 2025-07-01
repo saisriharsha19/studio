@@ -2,9 +2,9 @@
 'use client';
 
 import Link from 'next/link';
-import { Moon, Sun, UserCircle } from 'lucide-react';
+import { Menu, Moon, Sun, UserCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import Image from 'next/image'
+import Image from 'next/image';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useAuth } from '@/hooks/use-auth';
 import { useTheme } from 'next-themes';
 import { usePathname } from 'next/navigation';
@@ -32,11 +33,19 @@ export function AppHeader() {
 
   return (
     <header className="fixed top-0 z-30 flex h-16 w-full items-center gap-4 border-b bg-card px-4 sm:px-6">
-      <div className="flex items-center gap-2">
-        <Image src="/NavGAI-19.png" width={25} height={25} alt="NaviGator Logo" />
-        <h1 className="text-xl font-bold tracking-tight">NaviGator Sailor</h1>
-      </div>
-      <nav className="ml-6 hidden items-center gap-1 text-sm font-medium md:flex">
+      <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
+        <Link
+          href="/"
+          className="flex items-center gap-2 text-lg font-semibold md:text-base"
+        >
+          <Image
+            src="/NavGAI-19.png"
+            width={25}
+            height={25}
+            alt="NaviGator Logo"
+          />
+          <h1 className="text-xl font-bold tracking-tight">NaviGator Sailor</h1>
+        </Link>
         {navItems.map((item) => (
           <Link
             key={item.href}
@@ -53,8 +62,14 @@ export function AppHeader() {
                 <motion.span
                   className="absolute inset-0 z-0 rounded-full bg-accent"
                   initial={{ opacity: 0 }}
-                  animate={{ opacity: 1, transition: { duration: 0.25, ease: 'easeOut' } }}
-                  exit={{ opacity: 0, transition: { duration: 0.1, ease: 'easeIn' } }}
+                  animate={{
+                    opacity: 1,
+                    transition: { duration: 0.25, ease: 'easeOut' },
+                  }}
+                  exit={{
+                    opacity: 0,
+                    transition: { duration: 0.1, ease: 'easeIn' },
+                  }}
                 />
               )}
             </AnimatePresence>
@@ -62,6 +77,48 @@ export function AppHeader() {
           </Link>
         ))}
       </nav>
+
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="shrink-0 md:hidden"
+          >
+            <Menu className="h-5 w-5" />
+            <span className="sr-only">Toggle navigation menu</span>
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left">
+          <nav className="grid gap-6 text-lg font-medium">
+            <Link
+              href="/"
+              className="flex items-center gap-2 text-lg font-semibold"
+            >
+              <Image
+                src="/NavGAI-19.png"
+                width={25}
+                height={25}
+                alt="NaviGator Logo"
+              />
+              <span>NaviGator Sailor</span>
+            </Link>
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  'text-muted-foreground hover:text-foreground',
+                  pathname === item.href && 'font-semibold text-foreground'
+                )}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+        </SheetContent>
+      </Sheet>
+
       <div className="ml-auto flex items-center gap-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -96,13 +153,24 @@ export function AppHeader() {
             <DropdownMenuSeparator />
             {isAuthenticated ? (
               <>
-                <DropdownMenuItem className="cursor-pointer">University Profile</DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer">Settings</DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer">
+                  University Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer">
+                  Settings
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={logout} className="cursor-pointer">Sign Out</DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={logout}
+                  className="cursor-pointer"
+                >
+                  Sign Out
+                </DropdownMenuItem>
               </>
             ) : (
-              <DropdownMenuItem onClick={login} className="cursor-pointer">Sign In</DropdownMenuItem>
+              <DropdownMenuItem onClick={login} className="cursor-pointer">
+                Sign In
+              </DropdownMenuItem>
             )}
           </DropdownMenuContent>
         </DropdownMenu>

@@ -506,7 +506,7 @@ export function PromptForgeClient() {
                         </div>
                       ))}
                     </div>
-                    <div className="mt-4 flex gap-2">
+                    <div className="mt-4 flex flex-wrap gap-2">
                       <Button
                         type="button"
                         variant="outline"
