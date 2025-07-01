@@ -143,13 +143,15 @@ export function LibraryClient() {
                             <CardContent className="flex flex-col flex-grow min-h-0">
                                 <div className='flex flex-col flex-grow min-h-0'>
                                     {prompt.tags && prompt.tags.length > 0 && (
-                                        <div className="flex flex-wrap gap-1.5 pb-4 flex-shrink-0">
+                                        <ul className="flex flex-wrap gap-1.5 pb-4 flex-shrink-0" aria-label="Prompt tags">
                                             {prompt.tags.map((tag, index) => (
-                                                <Badge key={index} variant="secondary" className="font-normal">
-                                                    {tag}
-                                                </Badge>
+                                                <li key={index}>
+                                                  <Badge variant="secondary" className="font-normal">
+                                                      {tag}
+                                                  </Badge>
+                                                </li>
                                             ))}
-                                        </div>
+                                        </ul>
                                     )}
                                     <div className="flex-grow min-h-0 flex flex-col justify-center">
                                         {isExpanded ? (

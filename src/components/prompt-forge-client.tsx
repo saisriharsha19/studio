@@ -27,7 +27,6 @@ import {
   CardDescription,
   CardFooter,
   CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -392,7 +391,7 @@ export function PromptForgeClient() {
         <div className="space-y-12 lg:col-span-3">
           <Card>
             <CardHeader>
-              <CardTitle>Describe Your Assistant</CardTitle>
+              <h2 className="text-lg font-medium leading-snug">Describe Your Assistant</h2>
               <CardDescription>
                 What are the primary goals and functionalities of your AI assistant? You can also provide a knowledge base to ground the assistant.
               </CardDescription>
@@ -433,7 +432,7 @@ export function PromptForgeClient() {
 
           <Card>
             <CardHeader>
-              <CardTitle>System Prompt</CardTitle>
+              <h2 className="text-lg font-medium leading-snug">System Prompt</h2>
               <CardDescription>
                 This is the generated system prompt. You can manually edit it before evaluation or optimization.
               </CardDescription>
@@ -465,7 +464,7 @@ export function PromptForgeClient() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Advanced Tools</CardTitle>
+              <h2 className="text-lg font-medium leading-snug">Advanced Tools</h2>
               {!isAuthenticated && (
                 <CardDescription>
                  Log in to access advanced features.
@@ -517,7 +516,7 @@ export function PromptForgeClient() {
                         <Plus className="mr-2 h-4 w-4" />
                         Add URL
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => toast({ title: "Coming Soon!", description: "Web scraping functionality is not yet implemented."})}>
+                      <Button variant="outline" size="sm" onClick={() => toast({ title: "Coming Soon!", description: "Web scraping functionality is not yet implemented."})} aria-disabled="true">
                           <Globe className="mr-2 h-4 w-4"/>
                           Fetch Content
                       </Button>
@@ -603,7 +602,7 @@ export function PromptForgeClient() {
           <div className="sticky top-24 space-y-10">
             <Card>
               <CardHeader>
-                <CardTitle>Prompt Refinement</CardTitle>
+                <h2 className="text-lg font-medium leading-snug">Prompt Refinement</h2>
                 <CardDescription>
                   Provide feedback on the current prompt to get AI-generated suggestions for improvement.
                 </CardDescription>
@@ -700,7 +699,7 @@ export function PromptForgeClient() {
             {isAuthenticated ? (
               <Card>
                 <CardHeader>
-                  <CardTitle>Evaluation &amp; Deployment</CardTitle>
+                  <h2 className="text-lg font-medium leading-snug">Evaluation &amp; Deployment</h2>
                   <CardDescription>
                     Review the results from our AI evaluator and deploy your agent.
                   </CardDescription>
@@ -883,7 +882,7 @@ export function PromptForgeClient() {
             ) : (
               <Card>
                 <CardHeader>
-                    <CardTitle>Evaluation &amp; Deployment</CardTitle>
+                    <h2 className="text-lg font-medium leading-snug">Evaluation &amp; Deployment</h2>
                     <CardDescription>
                         Log in to view evaluation results and deploy your agent.
                     </CardDescription>
