@@ -5,6 +5,7 @@ import { createContext, useContext, useState, ReactNode } from 'react';
 type AuthContextType = {
   isAuthenticated: boolean;
   userId: string | null;
+  isAdmin: boolean;
   login: () => void;
   logout: () => void;
 };
@@ -14,19 +15,24 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const login = () => {
     setIsAuthenticated(true);
-    setUserId('mock-user-123'); 
+    // For this demo, we'll hardcode the admin user ID
+    const mockUserId = 'mock-user-123';
+    setUserId(mockUserId);
+    setIsAdmin(true); // Treat this user as admin
   };
   
   const logout = () => {
     setIsAuthenticated(false);
     setUserId(null);
+    setIsAdmin(false);
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, userId, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, userId, isAdmin, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -119,8 +119,12 @@ async function handleGeneratePromptTags(input: GeneratePromptSummaryInput): Prom
         throw new Error('No output received from AI.');
       }
       return output;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in handleGeneratePromptTags:', error);
+       // Ensure a valid structure is always returned
+      if (error.message && error.message.includes('JSON')) {
+          return { summary: "Could not generate summary." };
+      }
       throw new Error(`An error occurred while generating summary: ${getErrorMessage(error)}`);
     }
 }
@@ -263,6 +267,32 @@ export async function addLibraryPromptToDB(promptText: string, userId: string): 
   } catch (error: any) {
     console.error('Failed to add prompt to library:', error);
     throw new Error(error.message || 'Failed to save prompt to library.');
+  }
+}
+
+export async function deleteLibraryPromptFromDB(promptId: string, userId: string): Promise<{ success: boolean }> {
+  if (!userId) throw new Error('User not authenticated.');
+  
+  // In a real app, you'd have a proper role check. Here, we'll use the mock admin ID.
+  const isAdmin = userId === 'mock-user-123';
+  if (!isAdmin) {
+    throw new Error('You do not have permission to delete library prompts.');
+  }
+
+  try {
+    // The ON DELETE CASCADE in the schema will handle deleting from prompt_stars
+    const stmt = db.prepare('DELETE FROM library_prompts WHERE id = ?');
+    const result = stmt.run(promptId);
+    
+    if (result.changes === 0) {
+      throw new Error("Prompt not found.");
+    }
+
+    revalidatePath('/library');
+    return { success: true };
+  } catch (error: any) {
+    console.error('Failed to delete prompt from library:', error);
+    throw new Error(error.message || 'Failed to delete prompt from library.');
   }
 }
 

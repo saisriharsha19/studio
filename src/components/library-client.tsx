@@ -13,8 +13,19 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Clipboard, Check, Library, Search, Star } from 'lucide-react';
+import { Clipboard, Check, Library, Search, Star, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from './ui/input';
 import { Skeleton } from './ui/skeleton';
@@ -45,8 +56,8 @@ function PromptCardSkeleton() {
 }
 
 export function LibraryClient() {
-  const { libraryPrompts, toggleStar, isLoading } = useLibrary();
-  const { isAuthenticated } = useAuth();
+  const { libraryPrompts, toggleStar, isLoading, deleteLibraryPrompt } = useLibrary();
+  const { isAuthenticated, isAdmin } = useAuth();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedIds, setExpandedIds] = useState(new Set<string>());
@@ -165,6 +176,30 @@ export function LibraryClient() {
                       )}
                       <span className="sr-only">Copy</span>
                     </Button>
+                     {isAdmin && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                              <span className="sr-only">Delete</span>
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete this prompt from the public library.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => deleteLibraryPrompt(prompt.id)}>
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
                   </div>
                 </CardFooter>
               </Card>
