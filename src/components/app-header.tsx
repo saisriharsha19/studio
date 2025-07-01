@@ -86,7 +86,7 @@ export function AppHeader() {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="rounded-full hover:bg-muted">
+            <Button variant="ghost" size="icon" className="rounded-full">
               <UserCircle className="h-6 w-6" />
               <span className="sr-only">Toggle user menu</span>
             </Button>

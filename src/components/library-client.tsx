@@ -140,35 +140,37 @@ export function LibraryClient() {
                         </CardHeader>
                         
                         <CardContent className="flex flex-col flex-grow min-h-0">
-                             {prompt.tags && prompt.tags.length > 0 && (
-                                <div className="flex flex-wrap gap-1.5 pb-4 flex-shrink-0">
-                                    {prompt.tags.map((tag, index) => (
-                                        <Badge key={index} variant="secondary" className="font-normal">
-                                            {tag}
-                                        </Badge>
-                                    ))}
-                                </div>
-                            )}
-                            <div className="flex-grow min-h-0 flex flex-col justify-center">
-                                {isExpanded ? (
-                                    <ScrollArea className="h-full rounded-md bg-muted p-3">
-                                        <p className="text-sm text-foreground/80 whitespace-pre-wrap">
+                            <div className='flex flex-col flex-grow min-h-0'>
+                                {prompt.tags && prompt.tags.length > 0 && (
+                                    <div className="flex flex-wrap gap-1.5 pb-4 flex-shrink-0">
+                                        {prompt.tags.map((tag, index) => (
+                                            <Badge key={index} variant="secondary" className="font-normal">
+                                                {tag}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                )}
+                                <div className="flex-grow min-h-0 flex flex-col justify-center">
+                                    {isExpanded ? (
+                                        <ScrollArea className="h-full rounded-md bg-muted p-3">
+                                            <p className="text-sm text-foreground/80 whitespace-pre-wrap">
+                                                {prompt.text}
+                                            </p>
+                                        </ScrollArea>
+                                    ) : (
+                                        <p className="text-sm text-foreground/80 line-clamp-6">
                                             {prompt.text}
                                         </p>
-                                    </ScrollArea>
-                                ) : (
-                                    <p className="text-sm text-foreground/80 line-clamp-6">
-                                        {prompt.text}
-                                    </p>
-                                )}
+                                    )}
+                                </div>
                             </div>
                         </CardContent>
                         
-                        <CardFooter className="flex items-center justify-between pt-4 flex-shrink-0">
+                        <CardFooter className="flex items-center justify-between pt-4 flex-shrink-0 mt-auto">
                             <button 
                                 onClick={() => toggleExpanded(prompt.id)} 
                                 className={cn(
-                                    "text-sm font-medium text-primary hover:underline",
+                                    "text-sm font-medium text-primary dark:text-primary-foreground hover:underline",
                                     !needsExpansion && 'invisible' // Keep layout stable
                                 )}
                                 disabled={!needsExpansion}
