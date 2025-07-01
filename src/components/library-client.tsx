@@ -25,12 +25,14 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Clipboard, Check, Trash2, Library, Search } from 'lucide-react';
+import { Clipboard, Check, Trash2, Library, Search, Star } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { Input } from './ui/input';
 import { Skeleton } from './ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
+import { cn } from '@/lib/utils';
+import { Badge } from './ui/badge';
 
 function PromptCardSkeleton() {
   return (
@@ -39,25 +41,47 @@ function PromptCardSkeleton() {
         <Skeleton className="h-5 w-2/3" />
         <Skeleton className="h-4 w-1/3 mt-2" />
       </CardHeader>
-      <CardContent className="flex-grow space-y-2">
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-4/5" />
+      <CardContent className="flex-grow space-y-4">
+        <div className="flex flex-wrap gap-2">
+            <Skeleton className="h-5 w-16 rounded-full" />
+            <Skeleton className="h-5 w-20 rounded-full" />
+        </div>
+        <div className="space-y-2">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-4/5" />
+        </div>
       </CardContent>
-      <CardFooter className="flex justify-end gap-2">
-        <Skeleton className="h-8 w-8 rounded-full" />
-        <Skeleton className="h-8 w-8 rounded-full" />
+      <CardFooter className="flex justify-between gap-2">
+        <Skeleton className="h-8 w-12" />
+        <div className="flex gap-2">
+            <Skeleton className="h-8 w-8 rounded-full" />
+            <Skeleton className="h-8 w-8 rounded-full" />
+        </div>
       </CardFooter>
     </Card>
   );
 }
 
 export function LibraryClient() {
-  const { libraryPrompts, deleteLibraryPrompt, isLoading } = useLibrary();
+  const { libraryPrompts, deleteLibraryPrompt, toggleStar, isLoading } = useLibrary();
   const { isAuthenticated, userId } = useAuth();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [expandedIds, setExpandedIds] = useState(new Set<string>());
   const { toast } = useToast();
+
+  const toggleExpanded = (id: string) => {
+    setExpandedIds(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(id)) {
+            newSet.delete(id);
+        } else {
+            newSet.add(id);
+        }
+        return newSet;
+    });
+  };
 
   const copyToClipboard = (prompt: Prompt) => {
     navigator.clipboard.writeText(prompt.text);
@@ -66,9 +90,12 @@ export function LibraryClient() {
     setTimeout(() => setCopiedId(null), 2000);
   };
   
-  const filteredPrompts = libraryPrompts.filter(prompt => 
-    prompt.text.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredPrompts = libraryPrompts.filter(prompt => {
+    const query = searchQuery.toLowerCase();
+    const textMatch = prompt.text.toLowerCase().includes(query);
+    const tagMatch = prompt.tags?.some(tag => tag.toLowerCase().includes(query));
+    return textMatch || tagMatch;
+  });
 
   const getPromptTitle = (text: string) => {
     const words = text.split(' ');
@@ -119,49 +146,70 @@ export function LibraryClient() {
                     })}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="flex-grow">
-                  <p className="line-clamp-6 text-sm text-foreground/80">
-                    {prompt.text}
-                  </p>
-                </CardContent>
-                <CardFooter className="flex justify-end gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => copyToClipboard(prompt)}
-                  >
-                    {copiedId === prompt.id ? (
-                      <Check className="h-4 w-4 text-primary" />
-                    ) : (
-                      <Clipboard className="h-4 w-4" />
-                    )}
-                    <span className="sr-only">Copy</span>
-                  </Button>
-                  
-                  {isAuthenticated && userId === prompt.userId && (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                          <span className="sr-only">Delete</span>
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete this prompt from the public library.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => deleteLibraryPrompt(prompt.id)}>
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                <CardContent className="flex-grow space-y-4">
+                  {prompt.tags && prompt.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {prompt.tags.map(tag => (
+                        <Badge key={tag} variant="secondary" className="font-normal">{tag}</Badge>
+                      ))}
+                    </div>
                   )}
+                  <div>
+                    <p className={cn("text-sm text-foreground/80", !expandedIds.has(prompt.id) && "line-clamp-4")}>
+                      {prompt.text}
+                    </p>
+                    {prompt.text.split(' ').length > 50 && (
+                        <button onClick={() => toggleExpanded(prompt.id)} className="text-sm font-medium text-primary hover:underline mt-2">
+                            {expandedIds.has(prompt.id) ? "Show less" : "Show more"}
+                        </button>
+                    )}
+                  </div>
+                </CardContent>
+                <CardFooter className="mt-auto flex items-center justify-between gap-2 pt-4">
+                  <Button variant="ghost" className="flex items-center gap-1.5 px-2 text-sm text-muted-foreground" onClick={() => toggleStar(prompt.id)} disabled={!isAuthenticated}>
+                    <Star className={cn("h-4 w-4 transition-colors", prompt.isStarredByUser && "fill-yellow-400 text-yellow-400")} />
+                    {prompt.stars ?? 0}
+                  </Button>
+
+                  <div className='flex items-center'>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => copyToClipboard(prompt)}
+                    >
+                      {copiedId === prompt.id ? (
+                        <Check className="h-4 w-4 text-primary" />
+                      ) : (
+                        <Clipboard className="h-4 w-4" />
+                      )}
+                      <span className="sr-only">Copy</span>
+                    </Button>
+                    
+                    {isAuthenticated && userId === prompt.userId && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                            <span className="sr-only">Delete</span>
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will permanently delete this prompt from the public library.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => deleteLibraryPrompt(prompt.id)}>
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                  </div>
                 </CardFooter>
               </Card>
             ))}

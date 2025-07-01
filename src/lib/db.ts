@@ -36,7 +36,18 @@ db.exec(`
     id TEXT PRIMARY KEY,
     userId TEXT NOT NULL,
     text TEXT NOT NULL,
-    createdAt TEXT NOT NULL
+    createdAt TEXT NOT NULL,
+    tags TEXT
+  )
+`);
+
+// Create the 'prompt_stars' table to track user stars
+db.exec(`
+  CREATE TABLE IF NOT EXISTS prompt_stars (
+    promptId TEXT NOT NULL,
+    userId TEXT NOT NULL,
+    PRIMARY KEY (promptId, userId),
+    FOREIGN KEY (promptId) REFERENCES library_prompts(id) ON DELETE CASCADE
   )
 `);
 
@@ -56,11 +67,13 @@ try {
 // Simple migration logic for the 'library_prompts' table.
 try {
   const columns = db.pragma('table_info(library_prompts)') as { name: string }[];
-  const hasUserId = columns.some((col) => col.name === 'userId');
-
-  if (!hasUserId) {
+  if (!columns.some((col) => col.name === 'userId')) {
     console.log('Database migration: Adding userId column to library_prompts table.');
     db.exec("ALTER TABLE library_prompts ADD COLUMN userId TEXT NOT NULL DEFAULT 'unassigned'");
+  }
+  if (!columns.some((col) => col.name === 'tags')) {
+    console.log('Database migration: Adding tags column to library_prompts table.');
+    db.exec("ALTER TABLE library_prompts ADD COLUMN tags TEXT");
   }
 } catch (error) {
   // Safe to ignore if table doesn't exist yet.

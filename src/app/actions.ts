@@ -26,6 +26,11 @@ import {
   type GeneratePromptSuggestionsInput,
   type GeneratePromptSuggestionsOutput,
 } from '@/ai/flows/get-prompt-suggestions';
+import {
+    generatePromptTags,
+    type GeneratePromptTagsInput,
+    type GeneratePromptTagsOutput,
+} from '@/ai/flows/generate-prompt-tags';
 import { db } from '@/lib/db';
 import type { Prompt } from '@/hooks/use-prompts';
 import { revalidatePath } from 'next/cache';
@@ -107,6 +112,20 @@ export async function handleIterateOnPrompt(input: IterateOnPromptInput): Promis
   }
 }
 
+async function handleGeneratePromptTags(input: GeneratePromptTagsInput): Promise<GeneratePromptTagsOutput> {
+    try {
+      const output = await generatePromptTags(input);
+      if (!output) {
+        throw new Error('No output received from AI.');
+      }
+      return output;
+    } catch (error) {
+      console.error('Error in handleGeneratePromptTags:', error);
+      throw new Error(`An error occurred while generating tags: ${getErrorMessage(error)}`);
+    }
+}
+
+
 // --- History Actions (prompts table) ---
 const MAX_HISTORY_PROMPTS_PER_USER = 20;
 
@@ -173,11 +192,31 @@ export async function deleteHistoryPromptFromDB(id: string, userId: string): Pro
 
 
 // --- Library Actions (library_prompts table) ---
-export async function getLibraryPromptsFromDB(): Promise<Prompt[]> {
+export async function getLibraryPromptsFromDB(userId: string | null): Promise<Prompt[]> {
   try {
-    const stmt = db.prepare('SELECT * FROM library_prompts ORDER BY createdAt DESC');
-    const prompts = stmt.all() as Prompt[];
-    return prompts;
+    // This query is more complex. It fetches prompts, counts stars, and checks if the current user has starred it.
+    const sql = `
+      SELECT
+        lp.id,
+        lp.userId,
+        lp.text,
+        lp.createdAt,
+        lp.tags,
+        COUNT(ps.promptId) as stars,
+        ${userId ? `(SELECT 1 FROM prompt_stars WHERE promptId = lp.id AND userId = ?) as isStarredByUser` : '0 as isStarredByUser'}
+      FROM library_prompts lp
+      LEFT JOIN prompt_stars ps ON lp.id = ps.promptId
+      GROUP BY lp.id
+      ORDER BY stars DESC, lp.createdAt DESC
+    `;
+    const stmt = db.prepare(sql);
+    const results = userId ? stmt.all(userId) : stmt.all();
+
+    return results.map((p: any) => ({
+      ...p,
+      tags: p.tags ? JSON.parse(p.tags) : [],
+      isStarredByUser: !!p.isStarredByUser,
+    }));
   } catch (error) {
     console.error('Failed to get library prompts:', error);
     return [];
@@ -195,19 +234,30 @@ export async function addLibraryPromptToDB(promptText: string, userId: string): 
         throw new Error('This prompt is already in the library.');
     }
 
-    const newPrompt: Prompt = {
+    const { tags } = await handleGeneratePromptTags({ promptText });
+
+    const newPromptData = {
       id: crypto.randomUUID(),
       userId: userId,
       text: promptText,
       createdAt: new Date().toISOString(),
+      tags: JSON.stringify(tags || []),
     };
 
     const stmt = db.prepare(
-      'INSERT INTO library_prompts (id, userId, text, createdAt) VALUES (?, ?, ?, ?)'
+      'INSERT INTO library_prompts (id, userId, text, createdAt, tags) VALUES (@id, @userId, @text, @createdAt, @tags)'
     );
-    stmt.run(newPrompt.id, newPrompt.userId, newPrompt.text, newPrompt.createdAt);
+    stmt.run(newPromptData);
+    
     revalidatePath('/library');
-    return newPrompt;
+    
+    // Return a fully formed Prompt object, matching getLibraryPromptsFromDB
+    return {
+        ...newPromptData,
+        tags: tags || [],
+        stars: 0,
+        isStarredByUser: false,
+    };
   } catch (error: any) {
     console.error('Failed to add prompt to library:', error);
     throw new Error(error.message || 'Failed to save prompt to library.');
@@ -218,15 +268,47 @@ export async function deleteLibraryPromptFromDB(id: string, userId: string): Pro
   if (!userId) throw new Error('User not authenticated.');
 
   try {
-    const stmt = db.prepare('DELETE FROM library_prompts WHERE id = ? AND userId = ?');
-    const result = stmt.run(id, userId);
+    // Transaction to ensure both deletes happen or neither do.
+    const deleteTx = db.transaction(() => {
+        // The FOREIGN KEY with ON DELETE CASCADE should handle deleting from prompt_stars automatically.
+        const stmt = db.prepare('DELETE FROM library_prompts WHERE id = ? AND userId = ?');
+        const result = stmt.run(id, userId);
+
+        if (result.changes === 0) {
+            throw new Error("Prompt not found or you don't have permission to delete it.");
+        }
+    });
+    deleteTx();
+    
     revalidatePath('/library');
-    if (result.changes === 0) {
-      throw new Error("Prompt not found or you don't have permission to delete it.");
-    }
     return { success: true };
   } catch (error: any) {
     console.error('Failed to delete prompt from library:', error);
-    throw new Error(error.message || 'Failed to delete prompt from library.');
+    throw new Error(error.message || 'Failed to delete prompt from history.');
+  }
+}
+
+export async function toggleStarForPrompt(promptId: string, userId: string): Promise<{ success: boolean }> {
+  if (!userId) throw new Error('User not authenticated.');
+
+  try {
+    const existingStarStmt = db.prepare('SELECT 1 FROM prompt_stars WHERE promptId = ? AND userId = ?');
+    const existingStar = existingStarStmt.get(promptId, userId);
+
+    if (existingStar) {
+      // User has already starred, so unstar it.
+      const deleteStmt = db.prepare('DELETE FROM prompt_stars WHERE promptId = ? AND userId = ?');
+      deleteStmt.run(promptId, userId);
+    } else {
+      // User has not starred, so star it.
+      const insertStmt = db.prepare('INSERT INTO prompt_stars (promptId, userId) VALUES (?, ?)');
+      insertStmt.run(promptId, userId);
+    }
+    
+    revalidatePath('/library');
+    return { success: true };
+  } catch (error: any) {
+     console.error('Failed to toggle star for prompt:', error);
+    throw new Error(error.message || 'Failed to toggle star for prompt.');
   }
 }

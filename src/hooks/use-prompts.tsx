@@ -11,6 +11,10 @@ export type Prompt = {
   userId: string;
   text: string;
   createdAt: string;
+  // Library-specific fields
+  stars?: number;
+  tags?: string[];
+  isStarredByUser?: boolean;
 };
 
 type PromptHistoryContextType = {

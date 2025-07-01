@@ -3,7 +3,7 @@
 
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { useToast } from './use-toast';
-import { addLibraryPromptToDB, deleteLibraryPromptFromDB, getLibraryPromptsFromDB } from '@/app/actions';
+import { addLibraryPromptToDB, deleteLibraryPromptFromDB, getLibraryPromptsFromDB, toggleStarForPrompt } from '@/app/actions';
 import { useAuth } from './use-auth';
 import type { Prompt } from './use-prompts';
 
@@ -13,6 +13,7 @@ type LibraryContextType = {
   isLoading: boolean;
   addLibraryPrompt: (text: string) => Promise<void>;
   deleteLibraryPrompt: (id: string) => Promise<void>;
+  toggleStar: (id: string) => Promise<void>;
 };
 
 const LibraryContext = createContext<LibraryContextType | undefined>(undefined);
@@ -25,10 +26,9 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const loadPrompts = async () => {
-      // The library is public, so load prompts regardless of auth state.
       try {
         setIsLoading(true);
-        const initialPrompts = await getLibraryPromptsFromDB();
+        const initialPrompts = await getLibraryPromptsFromDB(userId);
         setLibraryPrompts(initialPrompts);
       } catch (error) {
         console.error('Failed to load prompts from library', error);
@@ -42,7 +42,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       }
     };
     loadPrompts();
-  }, [toast]);
+  }, [toast, userId]);
 
   const addLibraryPrompt = useCallback(async (text: string) => {
     if (!isAuthenticated || !userId) {
@@ -98,8 +98,56 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     }
   }, [isAuthenticated, userId, toast]);
 
+  const toggleStar = useCallback(async (promptId: string) => {
+    if (!isAuthenticated || !userId) {
+        toast({ variant: 'destructive', title: 'Please sign in to star prompts.' });
+        return;
+    }
+
+    // Optimistic update
+    setLibraryPrompts(prev =>
+      prev.map(p => {
+        if (p.id === promptId) {
+          const isStarred = p.isStarredByUser;
+          const currentStars = p.stars || 0;
+          return {
+            ...p,
+            isStarredByUser: !isStarred,
+            stars: isStarred ? currentStars - 1 : currentStars + 1,
+          };
+        }
+        return p;
+      })
+    );
+
+    try {
+        await toggleStarForPrompt(promptId, userId);
+    } catch (error: any) {
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: error.message,
+        });
+        // Revert optimistic update on failure
+        setLibraryPrompts(prev =>
+            prev.map(p => {
+                if (p.id === promptId) {
+                    const isStarred = p.isStarredByUser;
+                    const currentStars = p.stars || 0;
+                    return {
+                        ...p,
+                        isStarredByUser: !isStarred, // Revert the flag
+                        stars: isStarred ? currentStars - 1 : currentStars + 1, // Revert the count
+                    };
+                }
+                return p;
+            })
+        );
+    }
+  }, [isAuthenticated, userId, toast]);
+
   return (
-    <LibraryContext.Provider value={{ libraryPrompts, addLibraryPrompt, deleteLibraryPrompt, isLoading }}>
+    <LibraryContext.Provider value={{ libraryPrompts, addLibraryPrompt, deleteLibraryPrompt, toggleStar, isLoading }}>
       {children}
     </LibraryContext.Provider>
   );
