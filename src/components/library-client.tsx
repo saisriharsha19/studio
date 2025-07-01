@@ -28,13 +28,12 @@ function PromptCardSkeleton() {
     <Card className="flex flex-col">
       <CardHeader>
         <Skeleton className="h-5 w-2/3" />
-        <Skeleton className="h-4 w-1/3 mt-2" />
-      </CardHeader>
-      <CardContent className="flex-grow space-y-4">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1 mt-2">
             <Skeleton className="h-5 w-16 rounded-full" />
             <Skeleton className="h-5 w-20 rounded-full" />
         </div>
+      </CardHeader>
+      <CardContent className="flex-grow space-y-4">
         <div className="space-y-2">
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-full" />
@@ -125,21 +124,15 @@ export function LibraryClient() {
                   <CardTitle className="text-lg leading-snug">
                     {getPromptTitle(prompt.text)}
                   </CardTitle>
-                  <CardDescription>
-                    Saved{' '}
-                    {formatDistanceToNow(new Date(prompt.createdAt), {
-                      addSuffix: true,
-                    })}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="flex-grow space-y-4">
                   {prompt.tags && prompt.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1 mt-2">
                       {prompt.tags.map(tag => (
                         <Badge key={tag} variant="secondary" className="font-normal">{tag}</Badge>
                       ))}
                     </div>
                   )}
+                </CardHeader>
+                <CardContent className="flex-grow space-y-4">
                   <div>
                     {expandedIds.has(prompt.id) ? (
                       <ScrollArea className="h-32 w-full rounded-md border p-3">
