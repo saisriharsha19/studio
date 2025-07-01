@@ -51,8 +51,9 @@ function PromptCardSkeleton() {
       </CardContent>
       <CardFooter className="mt-auto flex items-center justify-between gap-2">
         <Skeleton className="h-8 w-24" />
-        <div className="flex items-center">
+        <div className="flex items-center gap-2">
           <Skeleton className="h-8 w-12" />
+          <Skeleton className="h-8 w-8" />
           <Skeleton className="h-8 w-8" />
         </div>
       </CardFooter>
@@ -145,15 +146,15 @@ export function LibraryClient() {
                         </CardHeader>
                         
                         {isExpanded ? (
-                            <CardContent className="flex-grow flex flex-col min-h-0">
-                                <ScrollArea className="flex-grow min-h-0 -mx-3 -my-2 px-3 py-2">
+                             <CardContent className="flex-grow flex flex-col min-h-0">
+                                <ScrollArea className="flex-grow min-h-0 -mx-6 -my-2 px-6 py-2">
                                     <p className="text-sm text-foreground/80 whitespace-pre-wrap">
                                         {prompt.text}
                                     </p>
                                 </ScrollArea>
                             </CardContent>
                         ) : (
-                            <CardContent>
+                            <CardContent className="flex-grow">
                                 <p className="text-sm text-foreground/80 line-clamp-6">
                                     {prompt.text}
                                 </p>
@@ -161,16 +162,19 @@ export function LibraryClient() {
                         )}
                         
                         <CardFooter className={cn(
-                            "flex-shrink-0 flex items-center justify-between gap-2 pt-4",
+                            "flex items-center justify-between gap-2 pt-4 flex-shrink-0",
                             !isExpanded && "mt-auto"
                         )}>
-                            <div className="flex-1">
-                                {prompt.text.length > 200 && (
-                                <button onClick={() => toggleExpanded(prompt.id)} className="text-sm font-medium text-primary hover:underline">
-                                    {isExpanded ? "Show less" : "Show more"}
-                                </button>
+                            <button 
+                                onClick={() => toggleExpanded(prompt.id)} 
+                                className={cn(
+                                    "text-sm font-medium text-primary hover:underline",
+                                    prompt.text.length <= 200 && 'invisible' // Keep layout stable
                                 )}
-                            </div>
+                                disabled={prompt.text.length <= 200}
+                            >
+                                {isExpanded ? "Show less" : "Show more"}
+                            </button>
                             
                             <div className='flex items-center'>
                                 <Button variant="ghost" className="flex items-center gap-1.5 px-2 text-sm text-muted-foreground" onClick={() => toggleStar(prompt.id)} disabled={!isAuthenticated}>
