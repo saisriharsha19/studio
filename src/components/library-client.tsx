@@ -30,16 +30,20 @@ import { Input } from './ui/input';
 import { Skeleton } from './ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
+import { Badge } from './ui/badge';
 
 function PromptCardSkeleton() {
   return (
     <Card className="flex flex-col">
       <CardHeader>
         <Skeleton className="h-5 w-11/12" />
-        <Skeleton className="h-5 w-4/5 mt-1" />
       </CardHeader>
       <CardContent className="flex-grow space-y-4">
-        <div className="space-y-2">
+        <div className="flex flex-wrap gap-2">
+            <Skeleton className="h-5 w-12 rounded-md" />
+            <Skeleton className="h-5 w-16 rounded-md" />
+        </div>
+        <div className="space-y-2 pt-2">
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-4/5" />
@@ -84,7 +88,8 @@ export function LibraryClient() {
     const query = searchQuery.toLowerCase();
     const textMatch = prompt.text.toLowerCase().includes(query);
     const summaryMatch = prompt.summary?.toLowerCase().includes(query);
-    return textMatch || summaryMatch;
+    const tagsMatch = prompt.tags?.some(tag => tag.toLowerCase().includes(query));
+    return textMatch || summaryMatch || tagsMatch;
   });
 
   return (
@@ -125,6 +130,15 @@ export function LibraryClient() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="flex-grow space-y-4">
+                  {prompt.tags && prompt.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                          {prompt.tags.map((tag, index) => (
+                              <Badge key={index} variant="secondary" className="font-normal">
+                                  {tag}
+                              </Badge>
+                          ))}
+                      </div>
+                  )}
                   <div>
                     {expandedIds.has(prompt.id) ? (
                       <ScrollArea className="h-32 w-full rounded-md border p-3">

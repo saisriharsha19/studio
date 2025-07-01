@@ -28,8 +28,8 @@ import {
 } from '@/ai/flows/get-prompt-suggestions';
 import {
     generatePromptTags,
-    type GeneratePromptSummaryInput,
-    type GeneratePromptSummaryOutput,
+    type GeneratePromptMetadataInput,
+    type GeneratePromptMetadataOutput,
 } from '@/ai/flows/generate-prompt-tags';
 import { db } from '@/lib/db';
 import type { Prompt } from '@/hooks/use-prompts';
@@ -112,7 +112,7 @@ export async function handleIterateOnPrompt(input: IterateOnPromptInput): Promis
   }
 }
 
-async function handleGeneratePromptTags(input: GeneratePromptSummaryInput): Promise<GeneratePromptSummaryOutput> {
+async function handleGeneratePromptTags(input: GeneratePromptMetadataInput): Promise<GeneratePromptMetadataOutput> {
     try {
       const output = await generatePromptTags(input);
       if (!output) {
@@ -123,9 +123,9 @@ async function handleGeneratePromptTags(input: GeneratePromptSummaryInput): Prom
       console.error('Error in handleGeneratePromptTags:', error);
        // Ensure a valid structure is always returned
       if (error.message && error.message.includes('JSON')) {
-          return { summary: "Could not generate summary." };
+          return { summary: "Could not generate summary.", tags: [] };
       }
-      throw new Error(`An error occurred while generating summary: ${getErrorMessage(error)}`);
+      throw new Error(`An error occurred while generating metadata: ${getErrorMessage(error)}`);
     }
 }
 
@@ -205,7 +205,8 @@ export async function getLibraryPromptsFromDB(userId: string | null): Promise<Pr
         lp.userId,
         lp.text,
         lp.createdAt,
-        lp.tags as summary,
+        lp.summary,
+        lp.tags,
         COUNT(ps.promptId) as stars,
         ${userId ? `(SELECT 1 FROM prompt_stars WHERE promptId = lp.id AND userId = ?) as isStarredByUser` : '0 as isStarredByUser'}
       FROM library_prompts lp
@@ -216,10 +217,24 @@ export async function getLibraryPromptsFromDB(userId: string | null): Promise<Pr
     const stmt = db.prepare(sql);
     const results = userId ? stmt.all(userId) : stmt.all();
 
-    return results.map((p: any) => ({
-      ...p,
-      isStarredByUser: !!p.isStarredByUser,
-    }));
+    return results.map((p: any) => {
+      let parsedTags: string[] = [];
+      // Check if tags is a JSON string before parsing
+      if (p.tags && p.tags.startsWith('[')) {
+          try {
+              parsedTags = JSON.parse(p.tags);
+          } catch (e) {
+              // Ignore parse errors for old data
+          }
+      }
+      return {
+        ...p,
+        isStarredByUser: !!p.isStarredByUser,
+        tags: parsedTags,
+        // The previous version stored summary in the 'tags' column, so we keep it as a fallback for old data.
+        summary: p.summary || p.tags,
+      };
+    });
   } catch (error) {
     console.error('Failed to get library prompts:', error);
     return [];
@@ -237,18 +252,19 @@ export async function addLibraryPromptToDB(promptText: string, userId: string): 
         throw new Error('This prompt is already in the library.');
     }
 
-    const { summary } = await handleGeneratePromptTags({ promptText });
+    const { summary, tags } = await handleGeneratePromptTags({ promptText });
 
     const newPromptData = {
       id: crypto.randomUUID(),
       userId: userId,
       text: promptText,
       createdAt: new Date().toISOString(),
-      tags: summary, // Storing summary in 'tags' column
+      summary: summary,
+      tags: JSON.stringify(tags),
     };
 
     const stmt = db.prepare(
-      'INSERT INTO library_prompts (id, userId, text, createdAt, tags) VALUES (@id, @userId, @text, @createdAt, @tags)'
+      'INSERT INTO library_prompts (id, userId, text, createdAt, summary, tags) VALUES (@id, @userId, @text, @createdAt, @summary, @tags)'
     );
     stmt.run(newPromptData);
     
@@ -260,7 +276,8 @@ export async function addLibraryPromptToDB(promptText: string, userId: string): 
         userId: newPromptData.userId,
         text: newPromptData.text,
         createdAt: newPromptData.createdAt,
-        summary: newPromptData.tags,
+        summary: newPromptData.summary,
+        tags: tags,
         stars: 0,
         isStarredByUser: false,
     };

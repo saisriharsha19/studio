@@ -37,6 +37,7 @@ db.exec(`
     userId TEXT NOT NULL,
     text TEXT NOT NULL,
     createdAt TEXT NOT NULL,
+    summary TEXT,
     tags TEXT
   )
 `);
@@ -71,7 +72,12 @@ try {
     console.log('Database migration: Adding userId column to library_prompts table.');
     db.exec("ALTER TABLE library_prompts ADD COLUMN userId TEXT NOT NULL DEFAULT 'unassigned'");
   }
-  if (!columns.some((col) => col.name === 'tags')) {
+  // This handles the transition from using 'tags' for summary to having separate 'summary' and 'tags' fields.
+  if (!columns.some((col) => col.name === 'summary')) {
+    console.log('Database migration: Adding summary column to library_prompts table.');
+    db.exec("ALTER TABLE library_prompts ADD COLUMN summary TEXT");
+  }
+   if (!columns.some((col) => col.name === 'tags')) {
     console.log('Database migration: Adding tags column to library_prompts table.');
     db.exec("ALTER TABLE library_prompts ADD COLUMN tags TEXT");
   }

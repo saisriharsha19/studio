@@ -14,6 +14,7 @@ export type Prompt = {
   // Library-specific fields
   stars?: number;
   summary?: string;
+  tags?: string[];
   isStarredByUser?: boolean;
 };
 
