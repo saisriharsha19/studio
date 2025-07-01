@@ -34,7 +34,7 @@ import { Badge } from './ui/badge';
 
 function PromptCardSkeleton() {
   return (
-    <Card className="flex flex-col h-80">
+    <Card className="flex flex-col h-96">
       <CardHeader>
         <Skeleton className="h-5 w-3/4" />
       </CardHeader>
@@ -50,7 +50,7 @@ function PromptCardSkeleton() {
             <Skeleton className="h-4 w-5/6" />
         </div>
       </CardContent>
-      <CardFooter className="flex items-center justify-between pt-4 flex-shrink-0">
+      <CardFooter className="flex items-center justify-between pt-2 flex-shrink-0">
         <Skeleton className="h-5 w-24" />
         <div className="flex items-center">
           <Skeleton className="h-8 w-12" />
@@ -132,7 +132,7 @@ export function LibraryClient() {
                 const needsExpansion = prompt.text.length > 250;
 
                 return (
-                    <Card key={prompt.id} className="flex flex-col h-80">
+                    <Card key={prompt.id} className="flex flex-col h-96">
                         <CardHeader>
                             <CardTitle className="text-lg font-medium leading-snug">
                                 {prompt.summary || 'No summary available.'}
@@ -166,7 +166,7 @@ export function LibraryClient() {
                             </div>
                         </CardContent>
                         
-                        <CardFooter className="flex items-center justify-between pt-4 flex-shrink-0 mt-auto">
+                        <CardFooter className="flex items-center justify-between pt-2 flex-shrink-0 mt-auto">
                             <button 
                                 onClick={() => toggleExpanded(prompt.id)} 
                                 className={cn(
