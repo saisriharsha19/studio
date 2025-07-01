@@ -28,8 +28,8 @@ import {
 } from '@/ai/flows/get-prompt-suggestions';
 import {
     generatePromptTags,
-    type GeneratePromptTagsInput,
-    type GeneratePromptTagsOutput,
+    type GeneratePromptSummaryInput,
+    type GeneratePromptSummaryOutput,
 } from '@/ai/flows/generate-prompt-tags';
 import { db } from '@/lib/db';
 import type { Prompt } from '@/hooks/use-prompts';
@@ -112,7 +112,7 @@ export async function handleIterateOnPrompt(input: IterateOnPromptInput): Promis
   }
 }
 
-async function handleGeneratePromptTags(input: GeneratePromptTagsInput): Promise<GeneratePromptTagsOutput> {
+async function handleGeneratePromptTags(input: GeneratePromptSummaryInput): Promise<GeneratePromptSummaryOutput> {
     try {
       const output = await generatePromptTags(input);
       if (!output) {
@@ -121,7 +121,7 @@ async function handleGeneratePromptTags(input: GeneratePromptTagsInput): Promise
       return output;
     } catch (error) {
       console.error('Error in handleGeneratePromptTags:', error);
-      throw new Error(`An error occurred while generating tags: ${getErrorMessage(error)}`);
+      throw new Error(`An error occurred while generating summary: ${getErrorMessage(error)}`);
     }
 }
 
@@ -201,7 +201,7 @@ export async function getLibraryPromptsFromDB(userId: string | null): Promise<Pr
         lp.userId,
         lp.text,
         lp.createdAt,
-        lp.tags,
+        lp.tags as summary,
         COUNT(ps.promptId) as stars,
         ${userId ? `(SELECT 1 FROM prompt_stars WHERE promptId = lp.id AND userId = ?) as isStarredByUser` : '0 as isStarredByUser'}
       FROM library_prompts lp
@@ -214,7 +214,6 @@ export async function getLibraryPromptsFromDB(userId: string | null): Promise<Pr
 
     return results.map((p: any) => ({
       ...p,
-      tags: p.tags ? JSON.parse(p.tags) : [],
       isStarredByUser: !!p.isStarredByUser,
     }));
   } catch (error) {
@@ -234,14 +233,14 @@ export async function addLibraryPromptToDB(promptText: string, userId: string): 
         throw new Error('This prompt is already in the library.');
     }
 
-    const { tags } = await handleGeneratePromptTags({ promptText });
+    const { summary } = await handleGeneratePromptTags({ promptText });
 
     const newPromptData = {
       id: crypto.randomUUID(),
       userId: userId,
       text: promptText,
       createdAt: new Date().toISOString(),
-      tags: JSON.stringify(tags || []),
+      tags: summary, // Storing summary in 'tags' column
     };
 
     const stmt = db.prepare(
@@ -253,8 +252,11 @@ export async function addLibraryPromptToDB(promptText: string, userId: string): 
     
     // Return a fully formed Prompt object, matching getLibraryPromptsFromDB
     return {
-        ...newPromptData,
-        tags: tags || [],
+        id: newPromptData.id,
+        userId: newPromptData.userId,
+        text: newPromptData.text,
+        createdAt: newPromptData.createdAt,
+        summary: newPromptData.tags,
         stars: 0,
         isStarredByUser: false,
     };

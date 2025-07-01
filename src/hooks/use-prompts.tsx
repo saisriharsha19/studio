@@ -13,7 +13,7 @@ export type Prompt = {
   createdAt: string;
   // Library-specific fields
   stars?: number;
-  tags?: string[];
+  summary?: string;
   isStarredByUser?: boolean;
 };
 

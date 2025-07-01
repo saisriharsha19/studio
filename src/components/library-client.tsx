@@ -16,22 +16,18 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Clipboard, Check, Library, Search, Star } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { formatDistanceToNow } from 'date-fns';
 import { Input } from './ui/input';
 import { Skeleton } from './ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
-import { Badge } from './ui/badge';
 
 function PromptCardSkeleton() {
   return (
     <Card className="flex flex-col">
       <CardHeader>
         <Skeleton className="h-5 w-2/3" />
-        <div className="flex flex-wrap gap-1 mt-2">
-            <Skeleton className="h-5 w-16 rounded-full" />
-            <Skeleton className="h-5 w-20 rounded-full" />
-        </div>
+        <Skeleton className="h-4 w-full mt-2" />
+        <Skeleton className="h-4 w-4/5 mt-1" />
       </CardHeader>
       <CardContent className="flex-grow space-y-4">
         <div className="space-y-2">
@@ -78,8 +74,8 @@ export function LibraryClient() {
   const filteredPrompts = libraryPrompts.filter(prompt => {
     const query = searchQuery.toLowerCase();
     const textMatch = prompt.text.toLowerCase().includes(query);
-    const tagMatch = prompt.tags?.some(tag => tag.toLowerCase().includes(query));
-    return textMatch || tagMatch;
+    const summaryMatch = prompt.summary?.toLowerCase().includes(query);
+    return textMatch || summaryMatch;
   });
 
   const getPromptTitle = (text: string) => {
@@ -124,12 +120,10 @@ export function LibraryClient() {
                   <CardTitle className="text-lg leading-snug">
                     {getPromptTitle(prompt.text)}
                   </CardTitle>
-                  {prompt.tags && prompt.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {prompt.tags.map(tag => (
-                        <Badge key={tag} variant="secondary" className="font-normal">{tag}</Badge>
-                      ))}
-                    </div>
+                  {prompt.summary && (
+                    <CardDescription className="mt-2 text-foreground/90">
+                      {prompt.summary}
+                    </CardDescription>
                   )}
                 </CardHeader>
                 <CardContent className="flex-grow space-y-4">
