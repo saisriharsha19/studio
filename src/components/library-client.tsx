@@ -199,9 +199,9 @@ export function LibraryClient() {
                                 {isAdmin && (
                                     <AlertDialog>
                                     <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon">
-                                        <Trash2 className="h-4 w-4 text-destructive dark:text-red-500" />
-                                        <span className="sr-only">Delete</span>
+                                        <Button variant="ghost" size="icon" className="group focus-visible:bg-accent">
+                                            <Trash2 className="h-4 w-4 text-destructive dark:text-red-500 group-hover:text-accent-foreground group-focus-visible:text-accent-foreground" />
+                                            <span className="sr-only">Delete</span>
                                         </Button>
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
