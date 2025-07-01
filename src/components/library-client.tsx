@@ -151,7 +151,7 @@ export function LibraryClient() {
                             )}
                             <div className="flex-grow min-h-0">
                                 {isExpanded ? (
-                                    <ScrollArea className="h-full pr-3 -mr-4">
+                                    <ScrollArea className="h-full rounded-md bg-muted p-3">
                                         <p className="text-sm text-foreground/80 whitespace-pre-wrap">
                                             {prompt.text}
                                         </p>
