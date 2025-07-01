@@ -37,6 +37,8 @@ Examples of good tags: "customer service", "code generation", "education", "stud
 
 Do not use generic tags like "assistant" or "prompt". Focus on the specific task.
 
+For example, for a prompt about creative story writing, the output should be: {"tags": ["creative writing", "storytelling"]}
+
 Prompt to analyze:
 "{{{promptText}}}"
 
@@ -49,12 +51,14 @@ const generatePromptTagsFlow = ai.defineFlow(
     inputSchema: GeneratePromptTagsInputSchema,
     outputSchema: GeneratePromptTagsOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
-    // Ensure we don't have too many tags and they are lowercase
-    if (output?.tags) {
-        output.tags = output.tags.slice(0, 5).map(tag => tag.toLowerCase());
+  async (input) => {
+    const { output } = await prompt(input);
+    // Be defensive. If the model doesn't return what we expect, return an empty array.
+    if (output?.tags && Array.isArray(output.tags)) {
+      return {
+        tags: output.tags.slice(0, 5).map((tag) => String(tag).toLowerCase()),
+      };
     }
-    return output!;
+    return { tags: [] };
   }
 );
