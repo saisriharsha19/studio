@@ -37,13 +37,13 @@ function PromptCardSkeleton() {
     <Card className="flex flex-col">
       <CardHeader>
         <Skeleton className="h-5 w-11/12" />
-      </CardHeader>
-      <CardContent className="flex-grow space-y-4">
-        <div className="flex flex-wrap gap-2">
-            <Skeleton className="h-5 w-12 rounded-md" />
-            <Skeleton className="h-5 w-16 rounded-md" />
+        <div className="flex flex-wrap gap-1.5 pt-2">
+            <Skeleton className="h-5 w-12 rounded-full" />
+            <Skeleton className="h-5 w-16 rounded-full" />
         </div>
-        <div className="space-y-2 pt-2">
+      </CardHeader>
+      <CardContent className="flex-grow">
+        <div className="space-y-2">
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-4/5" />
@@ -128,10 +128,8 @@ export function LibraryClient() {
                   <CardTitle className="text-lg font-medium leading-snug">
                     {prompt.summary || 'No summary available.'}
                   </CardTitle>
-                </CardHeader>
-                <CardContent className="flex-grow space-y-4">
-                  {prompt.tags && prompt.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5">
+                   {prompt.tags && prompt.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 pt-2">
                           {prompt.tags.map((tag, index) => (
                               <Badge key={index} variant="secondary" className="font-normal">
                                   {tag}
@@ -139,6 +137,8 @@ export function LibraryClient() {
                           ))}
                       </div>
                   )}
+                </CardHeader>
+                <CardContent className="flex-grow">
                   <div>
                     {expandedIds.has(prompt.id) ? (
                       <ScrollArea className="h-32 w-full rounded-md border p-3">

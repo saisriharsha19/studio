@@ -17,7 +17,7 @@ const GeneratePromptMetadataInputSchema = z.object({
 export type GeneratePromptMetadataInput = z.infer<typeof GeneratePromptMetadataInputSchema>;
 
 const GeneratePromptMetadataOutputSchema = z.object({
-  summary: z.string().describe("A brief, one-sentence summary of the prompt's purpose."),
+  summary: z.string().describe("A very short, concise summary (around 5-10 words) of the prompt's purpose, to be used as a title."),
   tags: z.array(z.string()).describe("A list of 2-4 relevant keywords (tags) for searching and filtering. Tags should be lowercase and one or two words max.")
 });
 export type GeneratePromptMetadataOutput = z.infer<typeof GeneratePromptMetadataOutputSchema>;
@@ -36,7 +36,7 @@ const prompt = ai.definePrompt({
   prompt: `Analyze the following system prompt.
   
 Your task is to generate two things:
-1.  A brief, one-sentence summary that explains what the prompt is used for.
+1.  A very short, concise summary (around 5-10 words) that explains what the prompt is used for. This will be used as a title.
 2.  A list of 2-4 relevant keywords (tags) for searching and filtering. Tags should be lowercase and one or two words at most.
 
 Prompt to analyze:
