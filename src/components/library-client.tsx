@@ -37,18 +37,20 @@ function PromptCardSkeleton() {
     <Card className="flex flex-col h-80">
       <CardHeader>
         <Skeleton className="h-5 w-3/4" />
-        <div className="flex flex-wrap gap-1.5 pt-2">
-          <Skeleton className="h-5 w-14 rounded-full" />
-          <Skeleton className="h-5 w-20 rounded-full" />
-          <Skeleton className="h-5 w-16 rounded-full" />
-        </div>
       </CardHeader>
-      <CardContent className="flex-grow space-y-2">
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-5/6" />
+      <CardContent className="flex flex-col flex-grow min-h-0">
+        <div className="flex flex-wrap gap-1.5 pb-4 flex-shrink-0">
+            <Skeleton className="h-5 w-14 rounded-full" />
+            <Skeleton className="h-5 w-20 rounded-full" />
+            <Skeleton className="h-5 w-16 rounded-full" />
+        </div>
+        <div className="flex-grow min-h-0 space-y-2">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-5/6" />
+        </div>
       </CardContent>
-      <CardFooter className="flex items-center justify-between">
+      <CardFooter className="flex items-center justify-between pt-4 flex-shrink-0">
         <Skeleton className="h-5 w-24" />
         <div className="flex items-center">
           <Skeleton className="h-8 w-12" />
@@ -135,8 +137,11 @@ export function LibraryClient() {
                             <CardTitle className="text-lg font-medium leading-snug">
                                 {prompt.summary || 'No summary available.'}
                             </CardTitle>
-                            {prompt.tags && prompt.tags.length > 0 && (
-                                <div className="flex flex-wrap gap-1.5 pt-2">
+                        </CardHeader>
+                        
+                        <CardContent className="flex flex-col flex-grow min-h-0">
+                             {prompt.tags && prompt.tags.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 pb-4 flex-shrink-0">
                                     {prompt.tags.map((tag, index) => (
                                         <Badge key={index} variant="secondary" className="font-normal">
                                             {tag}
@@ -144,20 +149,19 @@ export function LibraryClient() {
                                     ))}
                                 </div>
                             )}
-                        </CardHeader>
-                        
-                        <CardContent className="flex-grow min-h-0">
-                            {isExpanded ? (
-                                <ScrollArea className="h-full pr-3 -mr-4">
-                                    <p className="text-sm text-foreground/80 whitespace-pre-wrap">
+                            <div className="flex-grow min-h-0">
+                                {isExpanded ? (
+                                    <ScrollArea className="h-full pr-3 -mr-4">
+                                        <p className="text-sm text-foreground/80 whitespace-pre-wrap">
+                                            {prompt.text}
+                                        </p>
+                                    </ScrollArea>
+                                ) : (
+                                    <p className="text-sm text-foreground/80 line-clamp-6">
                                         {prompt.text}
                                     </p>
-                                </ScrollArea>
-                            ) : (
-                                <p className="text-sm text-foreground/80 line-clamp-6">
-                                    {prompt.text}
-                                </p>
-                            )}
+                                )}
+                            </div>
                         </CardContent>
                         
                         <CardFooter className="flex items-center justify-between pt-4 flex-shrink-0">
