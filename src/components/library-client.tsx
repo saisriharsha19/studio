@@ -170,7 +170,7 @@ export function LibraryClient() {
                             <button 
                                 onClick={() => toggleExpanded(prompt.id)} 
                                 className={cn(
-                                    "text-sm font-medium text-primary dark:text-primary-foreground hover:underline",
+                                    "text-sm font-medium text-primary hover:underline dark:text-primary-foreground",
                                     !needsExpansion && 'invisible' // Keep layout stable
                                 )}
                                 disabled={!needsExpansion}
@@ -200,7 +200,7 @@ export function LibraryClient() {
                                     <AlertDialog>
                                     <AlertDialogTrigger asChild>
                                         <Button variant="ghost" size="icon">
-                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                        <Trash2 className="h-4 w-4 text-destructive dark:text-red-500" />
                                         <span className="sr-only">Delete</span>
                                         </Button>
                                     </AlertDialogTrigger>
