@@ -34,7 +34,7 @@ import { Badge } from './ui/badge';
 
 function PromptCardSkeleton() {
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col h-80">
       <CardHeader>
         <Skeleton className="h-5 w-11/12" />
         <div className="flex flex-wrap gap-1.5 pt-2">
@@ -42,7 +42,7 @@ function PromptCardSkeleton() {
             <Skeleton className="h-5 w-16 rounded-full" />
         </div>
       </CardHeader>
-      <CardContent className="flex-grow">
+      <CardContent className="flex-grow space-y-2">
         <div className="space-y-2">
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-full" />
@@ -123,7 +123,7 @@ export function LibraryClient() {
         ) : filteredPrompts.length > 0 ? (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filteredPrompts.map((prompt) => (
-              <Card key={prompt.id} className="flex flex-col">
+              <Card key={prompt.id} className="flex flex-col h-80">
                 <CardHeader>
                   <CardTitle className="text-lg font-medium leading-snug">
                     {prompt.summary || 'No summary available.'}
@@ -138,27 +138,27 @@ export function LibraryClient() {
                       </div>
                   )}
                 </CardHeader>
-                <CardContent className="flex-grow">
-                  <div>
+                <CardContent className="flex-grow flex flex-col min-h-0">
+                  <div className="flex-grow relative min-h-0">
                     {expandedIds.has(prompt.id) ? (
-                      <ScrollArea className="h-32 w-full rounded-md border p-3">
+                      <ScrollArea className="absolute inset-0 w-full rounded-md border p-3">
                          <p className="text-sm text-foreground/80 whitespace-pre-wrap">
                             {prompt.text}
                         </p>
                       </ScrollArea>
                     ) : (
-                      <p className="text-sm text-foreground/80 line-clamp-4">
+                      <p className="text-sm text-foreground/80 line-clamp-6">
                           {prompt.text}
                       </p>
                     )}
+                  </div>
                     {prompt.text.length > 200 && (
-                        <button onClick={() => toggleExpanded(prompt.id)} className="text-sm font-medium text-primary hover:underline mt-2">
+                        <button onClick={() => toggleExpanded(prompt.id)} className="flex-shrink-0 text-sm font-medium text-primary hover:underline mt-2 self-start">
                             {expandedIds.has(prompt.id) ? "Show less" : "Show more"}
                         </button>
                     )}
-                  </div>
                 </CardContent>
-                <CardFooter className="mt-auto flex items-center justify-between gap-2 pt-4">
+                <CardFooter className="flex-shrink-0 mt-auto flex items-center justify-between gap-2 pt-4">
                   <Button variant="ghost" className="flex items-center gap-1.5 px-2 text-sm text-muted-foreground" onClick={() => toggleStar(prompt.id)} disabled={!isAuthenticated}>
                     <Star className={cn("h-4 w-4 transition-colors", prompt.isStarredByUser && "fill-yellow-400 text-yellow-400")} />
                     {prompt.stars ?? 0}
