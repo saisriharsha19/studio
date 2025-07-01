@@ -41,11 +41,9 @@ function PromptCardSkeleton() {
             <Skeleton className="h-4 w-4/5" />
         </div>
       </CardContent>
-      <CardFooter className="flex justify-between gap-2">
+      <CardFooter className="flex items-center justify-between gap-2">
         <Skeleton className="h-8 w-12" />
-        <div className="flex gap-2">
-            <Skeleton className="h-8 w-8 rounded-full" />
-        </div>
+        <Skeleton className="h-8 w-8 rounded-full" />
       </CardFooter>
     </Card>
   );
