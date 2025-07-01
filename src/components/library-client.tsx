@@ -36,24 +36,22 @@ function PromptCardSkeleton() {
   return (
     <Card className="flex flex-col h-80">
       <CardHeader>
-        <Skeleton className="h-5 w-11/12" />
+        <Skeleton className="h-5 w-3/4" />
         <div className="flex flex-wrap gap-1.5 pt-2">
-            <Skeleton className="h-5 w-12 rounded-full" />
-            <Skeleton className="h-5 w-16 rounded-full" />
+          <Skeleton className="h-5 w-14 rounded-full" />
+          <Skeleton className="h-5 w-20 rounded-full" />
+          <Skeleton className="h-5 w-16 rounded-full" />
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-2">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-4/5" />
-        </div>
+      <CardContent className="flex-grow space-y-2">
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-5/6" />
       </CardContent>
-      <CardFooter className="mt-auto flex items-center justify-between gap-2">
-        <Skeleton className="h-8 w-24" />
-        <div className="flex items-center gap-2">
+      <CardFooter className="flex items-center justify-between">
+        <Skeleton className="h-5 w-24" />
+        <div className="flex items-center">
           <Skeleton className="h-8 w-12" />
-          <Skeleton className="h-8 w-8" />
           <Skeleton className="h-8 w-8" />
         </div>
       </CardFooter>
@@ -128,50 +126,48 @@ export function LibraryClient() {
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filteredPrompts.map((prompt) => {
                 const isExpanded = expandedIds.has(prompt.id);
+                // A rough character count to decide if "Show more" is needed. 6 lines of text-sm is ~250 chars.
+                const needsExpansion = prompt.text.length > 250;
+
                 return (
                     <Card key={prompt.id} className="flex flex-col h-80">
                         <CardHeader>
-                        <CardTitle className="text-lg font-medium leading-snug">
-                            {prompt.summary || 'No summary available.'}
-                        </CardTitle>
-                        {prompt.tags && prompt.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 pt-2">
-                                {prompt.tags.map((tag, index) => (
-                                    <Badge key={index} variant="secondary" className="font-normal">
-                                        {tag}
-                                    </Badge>
-                                ))}
-                            </div>
-                        )}
+                            <CardTitle className="text-lg font-medium leading-snug">
+                                {prompt.summary || 'No summary available.'}
+                            </CardTitle>
+                            {prompt.tags && prompt.tags.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 pt-2">
+                                    {prompt.tags.map((tag, index) => (
+                                        <Badge key={index} variant="secondary" className="font-normal">
+                                            {tag}
+                                        </Badge>
+                                    ))}
+                                </div>
+                            )}
                         </CardHeader>
                         
-                        {isExpanded ? (
-                             <CardContent className="flex-grow flex flex-col min-h-0">
-                                <ScrollArea className="flex-grow min-h-0 -mx-6 -my-2 px-6 py-2">
+                        <CardContent className="flex-grow min-h-0">
+                            {isExpanded ? (
+                                <ScrollArea className="h-full pr-3 -mr-4">
                                     <p className="text-sm text-foreground/80 whitespace-pre-wrap">
                                         {prompt.text}
                                     </p>
                                 </ScrollArea>
-                            </CardContent>
-                        ) : (
-                            <CardContent className="flex-grow">
+                            ) : (
                                 <p className="text-sm text-foreground/80 line-clamp-6">
                                     {prompt.text}
                                 </p>
-                            </CardContent>
-                        )}
+                            )}
+                        </CardContent>
                         
-                        <CardFooter className={cn(
-                            "flex items-center justify-between gap-2 pt-4 flex-shrink-0",
-                            !isExpanded && "mt-auto"
-                        )}>
+                        <CardFooter className="flex items-center justify-between pt-4 flex-shrink-0">
                             <button 
                                 onClick={() => toggleExpanded(prompt.id)} 
                                 className={cn(
                                     "text-sm font-medium text-primary hover:underline",
-                                    prompt.text.length <= 200 && 'invisible' // Keep layout stable
+                                    !needsExpansion && 'invisible' // Keep layout stable
                                 )}
-                                disabled={prompt.text.length <= 200}
+                                disabled={!needsExpansion}
                             >
                                 {isExpanded ? "Show less" : "Show more"}
                             </button>
