@@ -3,7 +3,7 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
-import { PanelLeft } from "lucide-react"
+import { PanelLeft, PanelLeftClose } from "lucide-react"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
@@ -237,6 +237,7 @@ const Sidebar = React.forwardRef<
         <div
           className={cn(
             "duration-200 relative w-[--sidebar-width] bg-transparent transition-[width] ease-linear",
+            "peer-data-[collapsible=icon]:w-[--sidebar-width-icon]",
             "peer-data-[collapsible=offcanvas]:w-0",
             "peer-data-[side=right]:rotate-180",
             variant === "floating" || variant === "inset"
@@ -312,19 +313,29 @@ const SidebarRail = React.forwardRef<
       onClick={toggleSidebar}
       title="Toggle Sidebar"
       className={cn(
-        // Base styles
-        "absolute inset-y-0 z-20 hidden w-4 -translate-x-1/2 transition-all ease-linear after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] after:bg-sidebar-border sm:flex",
-        // Hover effect for the rail line
-        "hover:after:bg-sidebar-border/80",
-        // Positioning based on the peer's `data-side` attribute
-        "peer-data-[side=left]:-right-4 peer-data-[side=right]:left-0",
-        // Cursor style based on the peer's `data-side` and `data-state`
-        "peer-data-[side=left]:cursor-w-resize peer-data-[side=right]:cursor-e-resize",
-        "peer-data-[side=left][data-state=collapsed]:cursor-e-resize peer-data-[side=right][data-state=collapsed]:cursor-w-resize",
-        // Styles for 'offcanvas' collapsible variant
-        "peer-data-[collapsible=offcanvas]:translate-x-0 peer-data-[collapsible=offcanvas]:after:left-full peer-data-[collapsible=offcanvas]:hover:bg-sidebar",
-        "peer-data-[side=left][data-collapsible=offcanvas]:-right-2",
-        "peer-data-[side=right][data-collapsible=offcanvas]:-left-2",
+        // Base styles & visibility
+        "absolute inset-y-0 z-20 hidden w-4 -translate-x-1/2 transition-all duration-200 ease-linear sm:flex",
+        // The visible line
+        "after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] after:bg-sidebar-border after:transition-colors after:duration-200",
+        // Hover state
+        "hover:after:bg-sidebar-accent",
+
+        // Dynamic positioning using peer state and CSS variables
+        "peer-data-[side=left]:left-[var(--sidebar-width)]",
+        "peer-data-[side=left][data-state=collapsed]:left-[var(--sidebar-width-icon)]",
+
+        "peer-data-[side=right]:right-[var(--sidebar-width)]",
+        "peer-data-[side=right][data-state=collapsed]:right-[var(--sidebar-width-icon)]",
+
+        // Cursor style indicates resize/toggle action
+        "peer-data-[side=left]:cursor-w-resize",
+        "peer-data-[side=right]:cursor-e-resize",
+        "peer-data-[side=left][data-state=collapsed]:cursor-e-resize",
+        "peer-data-[side=right][data-state=collapsed]:cursor-w-resize",
+
+        // Hide for unsupported variants
+        "peer-data-[collapsible=offcanvas]:hidden",
+
         className
       )}
       {...props}
