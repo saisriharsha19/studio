@@ -24,7 +24,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Clipboard, Check, Library, Search, Star, Trash2 } from 'lucide-react';
+import { Clipboard, Check, Search, Star, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from './ui/input';
 import { Skeleton } from './ui/skeleton';
@@ -100,14 +100,31 @@ export function LibraryClient() {
   return (
     <TooltipProvider>
       <div className="container mx-auto max-w-7xl py-8 px-4 sm:px-6 lg:px-8">
-        <div className="mb-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className='flex items-center gap-3'>
-            <Library className="h-8 w-8" />
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">Prompt Library</h1>
-              <p className="text-muted-foreground">
-                A public collection of curated prompts submitted by the community.
-              </p>
+        <div className="mb-8 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="rounded-lg bg-muted p-6">
+            <div className='flex items-center gap-3 sm:gap-4'>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-6 w-6 shrink-0 text-accent sm:h-8 sm:w-8"
+                aria-hidden="true"
+              >
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+              </svg>
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Prompt Library</h1>
+                <p className="text-sm text-muted-foreground">
+                  A public collection of curated prompts submitted by the community.
+                </p>
+              </div>
             </div>
           </div>
           <div className="relative w-full sm:w-72">
@@ -261,7 +278,22 @@ export function LibraryClient() {
             </ul>
           ) : (
             <div role="region" aria-labelledby="empty-library-heading" className="flex h-[50vh] flex-col items-center justify-center rounded-lg border-2 border-dashed">
-              <Library className="mb-4 h-16 w-16 text-muted-foreground" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="mb-4 h-16 w-16 text-muted-foreground"
+                aria-hidden="true"
+              >
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+              </svg>
               <h2 id="empty-library-heading" className="text-2xl font-semibold">Library is Empty</h2>
               <p className="mt-2 text-muted-foreground">
                 {searchQuery ? "No prompts match your search." : "Be the first to add a prompt to the public library!"}

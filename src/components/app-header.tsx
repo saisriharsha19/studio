@@ -104,7 +104,7 @@ export function AppHeader() {
                 height={25}
                 alt="NaviGator Logo"
               />
-              <span>NaviGator Sailor</span>
+              <span className="font-bold">NaviGator Sailor</span>
             </Link>
             {navItems.map((item) => (
               <Link
