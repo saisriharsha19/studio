@@ -3,7 +3,7 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
-import { ChevronLeft, PanelLeft, PanelLeftClose } from "lucide-react"
+import { PanelLeft, PanelLeftClose } from "lucide-react"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
@@ -162,52 +162,6 @@ const SidebarProvider = React.forwardRef<
 )
 SidebarProvider.displayName = "SidebarProvider"
 
-const SidebarToggle = React.forwardRef<
-  React.ElementRef<typeof Button>,
-  React.ComponentProps<typeof Button>
->(({ className, ...props }, ref) => {
-  const { isMobile, toggleSidebar, state } = useSidebar()
-
-  if (isMobile) {
-    return null
-  }
-
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            ref={ref}
-            onClick={toggleSidebar}
-            variant="outline"
-            size="icon"
-            className={cn(
-              "fixed z-20 top-1/2 -translate-y-1/2 size-8 rounded-full",
-              "transition-all duration-200 ease-in-out",
-              "left-[var(--sidebar-width)] -translate-x-1/2",
-              state === 'collapsed' && "left-[var(--sidebar-width-icon)]",
-              className
-            )}
-            {...props}
-          >
-            <ChevronLeft
-              className={cn(
-                "size-4 transition-transform duration-200 ease-in-out",
-                state === "collapsed" && "rotate-180"
-              )}
-            />
-            <span className="sr-only">Toggle sidebar</span>
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="right">
-          {state === "expanded" ? "Collapse" : "Expand"}
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  )
-})
-SidebarToggle.displayName = 'SidebarToggle'
-
 const Sidebar = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div"> & {
@@ -294,7 +248,7 @@ const Sidebar = React.forwardRef<
           />
           <div
             className={cn(
-              "duration-200 fixed top-16 z-10 hidden h-[calc(100svh_-_4rem)] w-[--sidebar-width] transition-[left,right,width] ease-linear md:flex",
+              "duration-200 fixed top-16 z-10 hidden h-[calc(100svh_-_4rem)] w-[var(--sidebar-width)] transition-[left,right,width] ease-linear md:flex",
               side === "left"
                 ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
                 : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
@@ -314,7 +268,6 @@ const Sidebar = React.forwardRef<
             </div>
           </div>
         </div>
-        {collapsible === 'icon' && <SidebarToggle />}
       </>
     )
   }
@@ -346,6 +299,49 @@ const SidebarTrigger = React.forwardRef<
   )
 })
 SidebarTrigger.displayName = "SidebarTrigger"
+
+const SidebarCollapse = React.forwardRef<
+  React.ElementRef<typeof Button>,
+  React.ComponentProps<typeof Button>
+>(({ className, ...props }, ref) => {
+  const { isMobile, toggleSidebar, state } = useSidebar();
+
+  if (isMobile) {
+    return null;
+  }
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            ref={ref}
+            onClick={toggleSidebar}
+            variant="ghost"
+            className={cn(
+              "h-10 w-full justify-start p-2 group-data-[state=collapsed]:w-10 group-data-[state=collapsed]:justify-center",
+              className
+            )}
+            {...props}
+          >
+            <div className="group-data-[state=collapsed]:hidden flex items-center gap-2">
+              <PanelLeftClose />
+              <span>Collapse</span>
+            </div>
+            <div className="group-data-[state=expanded]:hidden">
+              <PanelLeft />
+              <span className="sr-only">Expand</span>
+            </div>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="right" hidden={state === "expanded"}>
+          Expand
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+});
+SidebarCollapse.displayName = 'SidebarCollapse';
 
 const SidebarInset = React.forwardRef<
   HTMLDivElement,
@@ -770,6 +766,7 @@ SidebarMenuSubButton.displayName = "SidebarMenuSubButton"
 
 export {
   Sidebar,
+  SidebarCollapse,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,

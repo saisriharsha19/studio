@@ -12,9 +12,9 @@ import {
   SidebarFooter,
   SidebarTrigger,
   useSidebar,
+  SidebarCollapse,
 } from '@/components/ui/sidebar';
-import { User, Palette, KeyRound, Info, PanelLeftClose } from 'lucide-react';
-import { Button } from './ui/button';
+import { User, Palette, KeyRound, Info } from 'lucide-react';
 
 const navItems = [
   { href: '/settings', label: 'Profile', icon: User },
@@ -58,13 +58,7 @@ export function SettingsSidebar() {
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
-        <SidebarTrigger
-          variant="ghost"
-          className="w-full justify-start group-data-[state=collapsed]:hidden"
-        >
-          <PanelLeftClose />
-          <span>Collapse</span>
-        </SidebarTrigger>
+        <SidebarCollapse />
       </SidebarFooter>
     </Sidebar>
   );
