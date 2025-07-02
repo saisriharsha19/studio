@@ -1,7 +1,12 @@
 import {genkit} from 'genkit';
-import {googleAI} from '@genkit-ai/googleai';
+import {openai} from '@genkit-ai/openai';
+
+const uflAI = openai({
+  apiKey: process.env.UFL_AI_API_KEY,
+  baseURL: process.env.UFL_AI_BASE_URL,
+});
 
 export const ai = genkit({
-  plugins: [googleAI()],
-  model: 'googleai/gemini-2.0-flash',
+  plugins: [uflAI],
+  model: 'openai/gpt-4o',
 });
