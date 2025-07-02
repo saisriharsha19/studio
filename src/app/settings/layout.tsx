@@ -11,6 +11,7 @@ import {
 import { SettingsSidebar } from '@/components/settings-sidebar';
 import { Button } from '@/components/ui/button';
 import { UserCircle } from 'lucide-react';
+import * as React from 'react';
 
 export default function SettingsLayout({
   children,
@@ -23,9 +24,9 @@ export default function SettingsLayout({
     <SidebarProvider>
       <div className="flex min-h-screen w-full flex-col bg-background">
         <AppHeader />
-        <div className="relative mt-16 flex flex-1 overflow-hidden">
+        <div className="relative mt-16 flex flex-1">
           <SettingsSidebar />
-          <SidebarInset>
+          <SidebarInset className="overflow-hidden">
             {/* Mobile-only header with trigger */}
             <header className="sticky top-16 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 md:hidden">
               <SidebarTrigger />
