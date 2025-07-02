@@ -101,7 +101,7 @@ export function LibraryClient() {
     <TooltipProvider>
       <div className="container mx-auto max-w-7xl py-8 px-4 sm:px-6 lg:px-8">
         <div className="mb-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className='flex items-center gap-3'>
+          <div className='flex items-center gap-4'>
             <Library className="h-8 w-8" />
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Prompt Library</h1>
