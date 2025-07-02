@@ -55,7 +55,7 @@ User Comments:
     fullPrompt += `
 Now, provide your suggestions based on the above.
 
-Respond with a single, valid JSON object that adheres to the output schema. Do not include any extra commentary or markdown formatting.`;
+Respond with a single, valid JSON object containing one key: "suggestions". The value should be an array of strings. Do not include any extra commentary or markdown formatting.`;
 
     const response = await fetch(`${process.env.UFL_AI_BASE_URL}/chat/completions`, {
         method: 'POST',

@@ -57,7 +57,7 @@ Ground Truths: ${input.groundTruths}
 
 Based on the retrieved content and ground truths, provide an optimized prompt and explain your reasoning for the changes.
 
-Respond with a single, valid JSON object that adheres to the output schema. Do not include any extra commentary or markdown formatting.`;
+Respond with a single, valid JSON object with two keys: "optimizedPrompt" (the new prompt) and "reasoning" (your explanation). Do not include any extra commentary or markdown formatting.`;
     
     const response = await fetch(`${process.env.UFL_AI_BASE_URL}/chat/completions`, {
         method: 'POST',

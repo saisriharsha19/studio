@@ -45,7 +45,7 @@ Your task is to generate two things:
 Prompt to analyze:
 "${input.promptText}"
 
-Return the response as a single, valid JSON object that adheres to the output schema. Do not include any extra commentary or markdown formatting.
+Return the response as a single, valid JSON object with two keys: "summary" (a short string) and "tags" (an array of 2-4 strings). Do not include any extra commentary or markdown formatting.
 `;
 
     const response = await fetch(`${process.env.UFL_AI_BASE_URL}/chat/completions`, {

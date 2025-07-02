@@ -116,7 +116,7 @@ ${input.groundTruths}
     }
 
     fullPrompt += `
-Now, generate your full response as a single, valid JSON object that adheres to the output schema structure. Do not include any extra commentary or markdown formatting.
+Now, generate your full response as a single, valid JSON object. The object must contain keys for "improvedPrompt", "bias", "toxicity", and "promptAlignment". If knowledge base content was provided, also include the "faithfulness" key. Each metric key should map to an object with "score", "summary", and "testCases". Do not include any extra commentary or markdown formatting.
 `;
 
     const response = await fetch(`${process.env.UFL_AI_BASE_URL}/chat/completions`, {
