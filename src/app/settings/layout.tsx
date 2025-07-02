@@ -23,7 +23,7 @@ export default function SettingsLayout({
     <SidebarProvider>
       <div className="flex min-h-screen w-full flex-col bg-background">
         <AppHeader />
-        <div className="relative mt-16 flex flex-1">
+        <div className="relative mt-16 flex flex-1 overflow-hidden">
           <SettingsSidebar />
           <SidebarInset>
             {/* Mobile-only header with trigger */}
