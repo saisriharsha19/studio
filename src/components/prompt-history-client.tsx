@@ -131,7 +131,7 @@ export function PromptHistoryClient() {
             <Input 
               placeholder="Search history..."
               aria-label="Search prompt history"
-              className="h-11 w-full rounded-full border-transparent bg-background/50 pl-12 pr-4 transition-colors focus:bg-background focus:ring-2 focus:ring-ring"
+              className="h-11 w-full rounded-full border-transparent bg-muted pl-12 pr-4 transition-colors focus:bg-background focus:ring-2 focus:ring-ring"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
