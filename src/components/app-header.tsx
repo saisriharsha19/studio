@@ -156,11 +156,10 @@ export function AppHeader() {
             <DropdownMenuSeparator />
             {isAuthenticated ? (
               <>
-                <DropdownMenuItem className="cursor-pointer">
-                  University Profile
-                </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer">
-                  Settings
+                <DropdownMenuItem asChild>
+                  <Link href="/settings" className="cursor-pointer">
+                    Settings
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
