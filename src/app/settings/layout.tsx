@@ -33,19 +33,21 @@ export default function SettingsLayout({
               <SidebarTrigger />
               <h1 className="text-lg font-semibold">Settings</h1>
             </header>
-            <main className="flex-1 p-6 sm:p-8 md:p-10">
+            <main className="flex flex-1 flex-col">
               {isAuthenticated ? (
-                children
+                <div className="p-6 sm:p-8 md:p-10">{children}</div>
               ) : (
-                <div className="flex h-full flex-col items-center justify-center rounded-lg border-2 border-dashed bg-muted/50 p-6 text-center sm:p-8 lg:p-12">
-                  <UserCircle className="h-12 w-12 text-muted-foreground sm:h-16 sm:w-16" />
-                  <h2 className="mt-6 text-xl font-semibold tracking-tight sm:text-2xl">Access Your Settings</h2>
-                  <p className="mt-2 text-muted-foreground">
-                    Sign in with your GatorLink to manage your profile, appearance, and account settings.
-                  </p>
-                  <Button onClick={login} className="mt-6">
-                    Sign In with GatorLink
-                  </Button>
+                <div className="flex flex-1 items-center justify-center p-6 text-center">
+                  <div className="flex max-w-md flex-col items-center rounded-lg border-2 border-dashed bg-muted/50 p-6 sm:p-8 lg:p-12">
+                    <UserCircle className="h-12 w-12 text-muted-foreground sm:h-16 sm:w-16" />
+                    <h2 className="mt-6 text-xl font-semibold tracking-tight sm:text-2xl">Access Your Settings</h2>
+                    <p className="mt-2 text-muted-foreground">
+                      Sign in with your GatorLink to manage your profile, appearance, and account settings.
+                    </p>
+                    <Button onClick={login} className="mt-6">
+                      Sign In with GatorLink
+                    </Button>
+                  </div>
                 </div>
               )}
             </main>
