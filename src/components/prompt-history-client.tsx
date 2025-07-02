@@ -99,11 +99,11 @@ export function PromptHistoryClient() {
     <TooltipProvider>
       <div className="container mx-auto max-w-7xl py-8 px-4 sm:px-6 lg:px-8">
         <div className="mb-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className='flex items-center gap-4'>
-            <History className="h-8 w-8" />
+          <div className='flex items-center gap-3 sm:gap-4'>
+            <History className="h-6 w-6 shrink-0 sm:h-8 sm:w-8" />
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Prompt History</h1>
-              <p className="text-muted-foreground">
+              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Prompt History</h1>
+              <p className="text-sm text-muted-foreground">
                 Your 20 most recent prompts are saved automatically.
               </p>
             </div>
