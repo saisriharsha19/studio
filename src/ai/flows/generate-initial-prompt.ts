@@ -36,7 +36,7 @@ const generateInitialPromptFlow = ai.defineFlow(
     outputSchema: GenerateInitialPromptOutputSchema,
   },
   async (input) => {
-    const fullPrompt = `You are an AI prompt engineer. Your task is to generate an initial system prompt for an assistant, based on the user's described needs. The system prompt should be detailed and clear, and should guide the assistant to effectively meet the user's needs. Be succinct, but provide enough detail for the assistant to provide value to the end user.
+    const fullPrompt = `You are an AI prompt engineer. Your task is to generate an initial system prompt for an assistant, based on the user's described needs. The system prompt should be detailed and clear, and should guide the assistant to effectively meet the user's needs. Be succinct, but provide enough detail for the assistant to provide value to the end user. Create the prompt based on state of the art techniques like Chain of Thought, Tree of thoughts, React prompt building, self thought and many many more techniques.
 
 User Needs: ${input.userNeeds}
 
