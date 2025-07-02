@@ -100,8 +100,8 @@ export function LibraryClient() {
   return (
     <TooltipProvider>
       <div className="container mx-auto max-w-7xl py-8 px-4 sm:px-6 lg:px-8">
-        <div className="mb-8 rounded-lg bg-muted p-6">
-          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-8 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="rounded-lg bg-muted p-6">
             <div className='flex items-center gap-3 sm:gap-4'>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -126,16 +126,16 @@ export function LibraryClient() {
                 </p>
               </div>
             </div>
-            <div className="relative w-full sm:w-72">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input 
-                placeholder="Search library..."
-                aria-label="Search prompt library"
-                className="h-11 w-full rounded-full border-transparent bg-background/50 pl-12 pr-4 transition-colors focus:bg-background focus:ring-2 focus:ring-ring"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
+          </div>
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input 
+              placeholder="Search library..."
+              aria-label="Search prompt library"
+              className="h-11 w-full rounded-full border-transparent bg-background/50 pl-12 pr-4 transition-colors focus:bg-background focus:ring-2 focus:ring-ring"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
         </div>
 
