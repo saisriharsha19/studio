@@ -55,32 +55,39 @@ export async function evaluateAndIteratePrompt(
   return evaluateAndIteratePromptFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'evaluateAndIteratePromptPrompt',
-  input: {schema: EvaluateAndIteratePromptInputSchema},
-  output: {schema: EvaluateAndIteratePromptOutputSchema},
-  prompt: `You are an AI expert in prompt engineering and evaluation. Your task is to act as an LLM Judge to evaluate and iterate on an existing system prompt.
+const evaluateAndIteratePromptFlow = ai.defineFlow(
+  {
+    name: 'evaluateAndIteratePromptFlow',
+    inputSchema: EvaluateAndIteratePromptInputSchema,
+    outputSchema: EvaluateAndIteratePromptOutputSchema,
+  },
+  async (input) => {
+    let fullPrompt = `You are an AI expert in prompt engineering and evaluation. Your task is to act as an LLM Judge to evaluate and iterate on an existing system prompt.
 
 First, analyze the provided prompt, user needs, and any contextual data. Then, generate an **improvedPrompt** that is more effective, clear, and aligned with the user's goals.
 
 Second, evaluate your **improvedPrompt** across several critical metrics. For each metric, provide a score from 0.0 to 1.0, a concise summary of your findings, and a list of sample test cases you considered.
 
 **Existing Prompt:**
-{{{prompt}}}
+${input.prompt}
 
 **User Needs:**
-{{{userNeeds}}}
-
-{{#if retrievedContent}}
+${input.userNeeds}
+`;
+    if (input.retrievedContent) {
+        fullPrompt += `
 **Knowledge Base Content:**
-{{{retrievedContent}}}
-{{/if}}
-
-{{#if groundTruths}}
+${input.retrievedContent}
+`;
+    }
+    if (input.groundTruths) {
+        fullPrompt += `
 **Ground Truths / Few-shot Examples:**
-{{{groundTruths}}}
-{{/if}}
+${input.groundTruths}
+`;
+    }
 
+    fullPrompt += `
 **Evaluation Metrics:**
 
 1.  **Bias**:
@@ -97,26 +104,50 @@ Second, evaluate your **improvedPrompt** across several critical metrics. For ea
     *   **Score**: (0-1) How well does the prompt align with the user's stated needs?
     *   **Summary**: Explain your reasoning.
     *   **Test Cases**: List examples you would use to test alignment.
+`;
 
-{{#if retrievedContent}}
+    if (input.retrievedContent) {
+        fullPrompt += `
 4.  **Faithfulness**:
     *   **Score**: (0-1) How likely is the prompt to generate responses that are faithful to the provided Knowledge Base Content?
     *   **Summary**: Explain your reasoning.
     *   **Test Cases**: List examples you would use to test faithfulness to the knowledge base.
-{{/if}}
+`;
+    }
 
-Please generate the full response in the required JSON format.
-`,
-});
+    fullPrompt += `
+Please generate the full response in a valid JSON object format that adheres to the following Zod schema. Do not include any extra commentary or markdown formatting.
+Schema:
+${JSON.stringify(EvaluateAndIteratePromptOutputSchema.jsonSchema, null, 2)}
+`;
 
-const evaluateAndIteratePromptFlow = ai.defineFlow(
-  {
-    name: 'evaluateAndIteratePromptFlow',
-    inputSchema: EvaluateAndIteratePromptInputSchema,
-    outputSchema: EvaluateAndIteratePromptOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+    const response = await fetch(`${process.env.UFL_AI_BASE_URL}/chat/completions`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.UFL_AI_API_KEY}`,
+        },
+        body: JSON.stringify({
+            model: 'gpt-4o',
+            messages: [{ role: 'user', content: fullPrompt }],
+            response_format: { type: "json_object" }, 
+        }),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API request failed: ${response.statusText} - ${errorText}`);
+    }
+
+    const result = await response.json();
+    const content = result.choices[0].message.content;
+
+    try {
+        const parsedContent = JSON.parse(content);
+        return EvaluateAndIteratePromptOutputSchema.parse(parsedContent);
+    } catch (e) {
+        console.error("Failed to parse LLM response:", e, "Raw content:", content);
+        throw new Error("Failed to parse LLM response as JSON.");
+    }
   }
 );

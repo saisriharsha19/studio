@@ -29,22 +29,6 @@ export async function generatePromptTags(
   return generatePromptMetadataFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'generatePromptMetadataPrompt',
-  input: {schema: GeneratePromptMetadataInputSchema},
-  output: {schema: GeneratePromptMetadataOutputSchema},
-  prompt: `Analyze the following system prompt.
-  
-Your task is to generate two things:
-1.  A very short, concise summary (around 5-10 words) that explains what the prompt is used for. This will be used as a title.
-2.  A list of 2-4 relevant keywords (tags) for searching and filtering. Tags should be lowercase and one or two words at most.
-
-Prompt to analyze:
-"{{{promptText}}}"
-
-Return the response in the required JSON format.`,
-});
-
 const generatePromptMetadataFlow = ai.defineFlow(
   {
     name: 'generatePromptMetadataFlow',
@@ -52,10 +36,47 @@ const generatePromptMetadataFlow = ai.defineFlow(
     outputSchema: GeneratePromptMetadataOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input);
-    return { 
-        summary: output?.summary || 'No summary generated.',
-        tags: output?.tags || []
-    };
+    const fullPrompt = `Analyze the following system prompt.
+  
+Your task is to generate two things:
+1.  A very short, concise summary (around 5-10 words) that explains what the prompt is used for. This will be used as a title.
+2.  A list of 2-4 relevant keywords (tags) for searching and filtering. Tags should be lowercase and one or two words at most.
+
+Prompt to analyze:
+"${input.promptText}"
+
+Return the response in a valid JSON object format that adheres to the following Zod schema. Do not include any extra commentary or markdown formatting.
+Schema:
+${JSON.stringify(GeneratePromptMetadataOutputSchema.jsonSchema, null, 2)}
+`;
+
+    const response = await fetch(`${process.env.UFL_AI_BASE_URL}/chat/completions`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.UFL_AI_API_KEY}`,
+        },
+        body: JSON.stringify({
+            model: 'gpt-4o',
+            messages: [{ role: 'user', content: fullPrompt }],
+            response_format: { type: "json_object" }, 
+        }),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API request failed: ${response.statusText} - ${errorText}`);
+    }
+
+    const result = await response.json();
+    const content = result.choices[0].message.content;
+    
+    try {
+        const parsedContent = JSON.parse(content);
+        return GeneratePromptMetadataOutputSchema.parse(parsedContent);
+    } catch (e) {
+        console.error("Failed to parse LLM response:", e, "Raw content:", content);
+        throw new Error("Failed to parse LLM response as JSON.");
+    }
   }
 );

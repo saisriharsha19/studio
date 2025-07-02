@@ -29,23 +29,46 @@ export async function generateInitialPrompt(
   return generateInitialPromptFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'generateInitialPromptPrompt',
-  input: {schema: GenerateInitialPromptInputSchema},
-  output: {schema: GenerateInitialPromptOutputSchema},
-  prompt: `You are an AI prompt engineer. Your task is to generate an initial system prompt for an assistant, based on the user's described needs.  The system prompt should be detailed and clear, and should guide the assistant to effectively meet the user's needs. Be succinct, but provide enough detail for the assistant to provide value to the end user.
-
-User Needs: {{{userNeeds}}}`,
-});
-
 const generateInitialPromptFlow = ai.defineFlow(
   {
     name: 'generateInitialPromptFlow',
     inputSchema: GenerateInitialPromptInputSchema,
     outputSchema: GenerateInitialPromptOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+  async (input) => {
+    const fullPrompt = `You are an AI prompt engineer. Your task is to generate an initial system prompt for an assistant, based on the user's described needs. The system prompt should be detailed and clear, and should guide the assistant to effectively meet the user's needs. Be succinct, but provide enough detail for the assistant to provide value to the end user.
+
+User Needs: ${input.userNeeds}
+
+Respond with a JSON object of the format: { "initialPrompt": "your generated prompt" }`;
+
+    const response = await fetch(`${process.env.UFL_AI_BASE_URL}/chat/completions`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.UFL_AI_API_KEY}`,
+        },
+        body: JSON.stringify({
+            model: 'gpt-4o',
+            messages: [{ role: 'user', content: fullPrompt }],
+            response_format: { type: "json_object" }, 
+        }),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API request failed: ${response.statusText} - ${errorText}`);
+    }
+
+    const result = await response.json();
+    const content = result.choices[0].message.content;
+    
+    try {
+        const parsedContent = JSON.parse(content);
+        return GenerateInitialPromptOutputSchema.parse(parsedContent);
+    } catch (e) {
+        console.error("Failed to parse LLM response:", e, "Raw content:", content);
+        throw new Error("Failed to parse LLM response as JSON.");
+    }
   }
 );

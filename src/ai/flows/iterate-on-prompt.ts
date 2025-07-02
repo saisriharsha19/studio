@@ -31,36 +31,58 @@ export async function iterateOnPrompt(
   return iterateOnPromptFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'iterateOnPromptPrompt',
-  input: {schema: IterateOnPromptInputSchema},
-  output: {schema: IterateOnPromptOutputSchema},
-  prompt: `You are an AI assistant that helps users refine system prompts. The user will provide their current prompt, some manual comments, and a list of AI-generated suggestions they have selected.
-
-Your task is to generate a new, refined system prompt that incorporates the user's manual feedback and the selected suggestions.
-
-Current Prompt:
-{{{currentPrompt}}}
-
-User's Manual Comments:
-"{{{userComments}}}"
-
-User's Selected AI Suggestions to Apply:
-{{#each selectedSuggestions}}
-- {{{this}}}
-{{/each}}
-
-Generate the new, improved system prompt.`,
-});
-
 const iterateOnPromptFlow = ai.defineFlow(
   {
     name: 'iterateOnPromptFlow',
     inputSchema: IterateOnPromptInputSchema,
     outputSchema: IterateOnPromptOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+  async (input) => {
+    const suggestionsText = input.selectedSuggestions.map(s => `- ${s}`).join('\n');
+    const fullPrompt = `You are an AI assistant that helps users refine system prompts. The user will provide their current prompt, some manual comments, and a list of AI-generated suggestions they have selected.
+
+Your task is to generate a new, refined system prompt that incorporates the user's manual feedback and the selected suggestions.
+
+Current Prompt:
+${input.currentPrompt}
+
+User's Manual Comments:
+"${input.userComments}"
+
+User's Selected AI Suggestions to Apply:
+${suggestionsText}
+
+Generate the new, improved system prompt.
+
+Respond with a JSON object of the format: { "newPrompt": "your newly generated prompt" }`;
+
+    const response = await fetch(`${process.env.UFL_AI_BASE_URL}/chat/completions`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.UFL_AI_API_KEY}`,
+        },
+        body: JSON.stringify({
+            model: 'gpt-4o',
+            messages: [{ role: 'user', content: fullPrompt }],
+            response_format: { type: "json_object" }, 
+        }),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API request failed: ${response.statusText} - ${errorText}`);
+    }
+
+    const result = await response.json();
+    const content = result.choices[0].message.content;
+
+    try {
+        const parsedContent = JSON.parse(content);
+        return IterateOnPromptOutputSchema.parse(parsedContent);
+    } catch (e) {
+        console.error("Failed to parse LLM response:", e, "Raw content:", content);
+        throw new Error("Failed to parse LLM response as JSON.");
+    }
   }
 );

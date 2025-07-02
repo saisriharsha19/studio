@@ -28,11 +28,14 @@ export async function generatePromptSuggestions(
   return generatePromptSuggestionsFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'generatePromptSuggestionsPrompt',
-  input: {schema: GeneratePromptSuggestionsInputSchema},
-  output: {schema: GeneratePromptSuggestionsOutputSchema},
-  prompt: `You are an AI assistant that helps users refine system prompts. The user will provide their current prompt and optionally some comments on how they want to improve it.
+const generatePromptSuggestionsFlow = ai.defineFlow(
+  {
+    name: 'generatePromptSuggestionsFlow',
+    inputSchema: GeneratePromptSuggestionsInputSchema,
+    outputSchema: GeneratePromptSuggestionsOutputSchema,
+  },
+  async (input) => {
+    let fullPrompt = `You are an AI assistant that helps users refine system prompts. The user will provide their current prompt and optionally some comments on how they want to improve it.
 
 Your task is to analyze the current prompt and provide a list of up to 5 concrete, actionable suggestions for how the prompt could be improved.
 - Each suggestion must be concise and under 15 words.
@@ -40,24 +43,47 @@ Your task is to analyze the current prompt and provide a list of up to 5 concret
 - Do not generate a new prompt, only provide suggestions.
 
 Current Prompt:
-{{{currentPrompt}}}
-{{#if userComments}}
-
+${input.currentPrompt}
+`;
+    if (input.userComments) {
+        fullPrompt += `
 User Comments:
-"{{{userComments}}}"
-{{/if}}
+"${input.userComments}"
+`;
+    }
 
-Now, provide your suggestions based on the above.`,
-});
+    fullPrompt += `
+Now, provide your suggestions based on the above.
 
-const generatePromptSuggestionsFlow = ai.defineFlow(
-  {
-    name: 'generatePromptSuggestionsFlow',
-    inputSchema: GeneratePromptSuggestionsInputSchema,
-    outputSchema: GeneratePromptSuggestionsOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+Respond with a JSON object of the format: { "suggestions": ["suggestion 1", "suggestion 2", ...] }`;
+
+    const response = await fetch(`${process.env.UFL_AI_BASE_URL}/chat/completions`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.UFL_AI_API_KEY}`,
+        },
+        body: JSON.stringify({
+            model: 'gpt-4o',
+            messages: [{ role: 'user', content: fullPrompt }],
+            response_format: { type: "json_object" }, 
+        }),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API request failed: ${response.statusText} - ${errorText}`);
+    }
+
+    const result = await response.json();
+    const content = result.choices[0].message.content;
+
+    try {
+        const parsedContent = JSON.parse(content);
+        return GeneratePromptSuggestionsOutputSchema.parse(parsedContent);
+    } catch (e) {
+        console.error("Failed to parse LLM response:", e, "Raw content:", content);
+        throw new Error("Failed to parse LLM response as JSON.");
+    }
   }
 );

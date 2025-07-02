@@ -40,21 +40,52 @@ export async function optimizePromptWithContext(
   return optimizePromptWithContextFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'optimizePromptWithContextPrompt',
-  input: {schema: OptimizePromptWithContextInputSchema},
-  output: {schema: OptimizePromptWithContextOutputSchema},
-  prompt: `You are an AI prompt optimizer. Analyze the retrieved content and ground truths to refine the given prompt, ensuring it aligns with the contextual information and improves the accuracy and relevance of the assistant's responses.\n\nOriginal Prompt: {{{prompt}}}\n\nRetrieved Content: {{{retrievedContent}}}\n\nGround Truths: {{{groundTruths}}}\n\nBased on the retrieved content and ground truths, provide an optimized prompt and explain your reasoning for the changes.\n\nOptimized Prompt: \nReasoning: `,
-});
-
 const optimizePromptWithContextFlow = ai.defineFlow(
   {
     name: 'optimizePromptWithContextFlow',
     inputSchema: OptimizePromptWithContextInputSchema,
     outputSchema: OptimizePromptWithContextOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+  async (input) => {
+    const fullPrompt = `You are an AI prompt optimizer. Analyze the retrieved content and ground truths to refine the given prompt, ensuring it aligns with the contextual information and improves the accuracy and relevance of the assistant's responses.
+
+Original Prompt: ${input.prompt}
+
+Retrieved Content: ${input.retrievedContent}
+
+Ground Truths: ${input.groundTruths}
+
+Based on the retrieved content and ground truths, provide an optimized prompt and explain your reasoning for the changes.
+
+Respond with a JSON object of the format: { "optimizedPrompt": "...", "reasoning": "..." }`;
+    
+    const response = await fetch(`${process.env.UFL_AI_BASE_URL}/chat/completions`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.UFL_AI_API_KEY}`,
+        },
+        body: JSON.stringify({
+            model: 'gpt-4o',
+            messages: [{ role: 'user', content: fullPrompt }],
+            response_format: { type: "json_object" }, 
+        }),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API request failed: ${response.statusText} - ${errorText}`);
+    }
+
+    const result = await response.json();
+    const content = result.choices[0].message.content;
+
+    try {
+        const parsedContent = JSON.parse(content);
+        return OptimizePromptWithContextOutputSchema.parse(parsedContent);
+    } catch (e) {
+        console.error("Failed to parse LLM response:", e, "Raw content:", content);
+        throw new Error("Failed to parse LLM response as JSON.");
+    }
   }
 );
