@@ -318,24 +318,18 @@ const SidebarCollapse = React.forwardRef<
             ref={ref}
             onClick={toggleSidebar}
             variant="ghost"
-            className={cn(
-              "h-10 w-full justify-start p-2 group-data-[state=collapsed]:w-10 group-data-[state=collapsed]:justify-center",
-              className
-            )}
+            size="icon"
+            className={cn("h-10 w-10", className)}
             {...props}
           >
-            <div className="group-data-[state=collapsed]:hidden flex items-center gap-2">
-              <PanelLeftClose />
-              <span>Collapse</span>
-            </div>
-            <div className="group-data-[state=expanded]:hidden">
-              <PanelLeft />
-              <span className="sr-only">Expand</span>
-            </div>
+            {state === "expanded" ? <PanelLeftClose /> : <PanelLeft />}
+            <span className="sr-only">
+              {state === "expanded" ? "Collapse" : "Expand"}
+            </span>
           </Button>
         </TooltipTrigger>
-        <TooltipContent side="right" hidden={state === "expanded"}>
-          Expand
+        <TooltipContent side="right">
+          {state === "expanded" ? "Collapse" : "Expand"}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
