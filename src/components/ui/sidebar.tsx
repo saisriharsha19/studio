@@ -147,7 +147,7 @@ const SidebarProvider = React.forwardRef<
               } as React.CSSProperties
             }
             className={cn(
-              "group/sidebar-wrapper flex min-h-svh w-full has-[[data-variant=inset]]:bg-sidebar",
+              "group/sidebar-wrapper flex w-full has-[[data-variant=inset]]:bg-sidebar",
               className
             )}
             ref={ref}
@@ -244,7 +244,7 @@ const Sidebar = React.forwardRef<
               variant === "floating" || variant === "inset"
                 ? "group-data-[state=collapsed]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)))]"
                 : "group-data-[state=collapsed]:w-[--sidebar-width-icon]",
-              "transition-all duration-300"
+              "transition-all"
             )}
           />
           <div
@@ -259,7 +259,7 @@ const Sidebar = React.forwardRef<
               variant === "floating" || variant === "inset"
                 ? "p-2 group-data-[state=collapsed]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]"
                 : "group-data-[state=collapsed]:w-[--sidebar-width-icon] group-data-[side=left]:border-r group-data-[side=right]:border-l",
-              "transition-all duration-300",
+              "transition-all",
               className
             )}
             {...props}
@@ -323,10 +323,18 @@ const SidebarCollapse = React.forwardRef<
             onClick={toggleSidebar}
             variant="ghost"
             size="icon"
-            className={cn("h-10 w-10", className)}
+            className={cn(
+              "h-10 w-10 group-data-[state=expanded]:w-full",
+              className
+            )}
             {...props}
           >
-            {state === "expanded" ? <PanelLeftClose /> : <PanelLeft />}
+            <span className="group-data-[state=collapsed]:hidden">
+              <PanelLeftClose />
+            </span>
+            <span className="group-data-[state=expanded]:hidden">
+              <PanelLeft />
+            </span>
             <span className="sr-only">
               {state === "expanded" ? "Collapse" : "Expand"}
             </span>
@@ -349,7 +357,7 @@ const SidebarInset = React.forwardRef<
     <div
       ref={ref}
       className={cn(
-        "relative flex min-h-svh flex-1 flex-col bg-background",
+        "relative flex flex-1 flex-col bg-background",
         "group-data-[variant=inset]/sidebar-wrapper:min-h-[calc(100svh-theme(spacing.4))] md:group-data-[variant=inset]/sidebar-wrapper:m-2 md:group-data-[state=collapsed]/sidebar-wrapper:group-data-[variant=inset]/sidebar-wrapper:ml-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]] md:group-data-[variant=inset]/sidebar-wrapper:ml-0 md:group-data-[variant=inset]/sidebar-wrapper:rounded-xl md:group-data-[variant=inset]/sidebar-wrapper:shadow",
         className
       )}
