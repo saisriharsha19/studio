@@ -12,6 +12,7 @@ import {
   SidebarFooter,
   SidebarRail,
   SidebarTrigger,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import { User, Palette, KeyRound, Info, PanelLeftClose } from 'lucide-react';
 import { Button } from './ui/button';
@@ -25,6 +26,13 @@ const navItems = [
 
 export function SettingsSidebar() {
   const pathname = usePathname();
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  const handleItemClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   return (
     <Sidebar collapsible="icon">
@@ -40,6 +48,7 @@ export function SettingsSidebar() {
                 asChild
                 isActive={pathname === item.href}
                 tooltip={{ children: item.label }}
+                onClick={handleItemClick}
               >
                 <Link href={item.href}>
                   <item.icon />
