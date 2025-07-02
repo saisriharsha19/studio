@@ -172,7 +172,7 @@ export function AppHeader() {
               </>
             ) : (
               <DropdownMenuItem onClick={login} className="cursor-pointer">
-                Sign In
+                Sign In with GatorLink
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>

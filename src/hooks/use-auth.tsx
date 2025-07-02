@@ -18,14 +18,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
 
   const login = () => {
+    // In a real Shibboleth integration, this function would initiate a redirect
+    // to the University's Identity Provider (IdP).
+    // Example: window.location.href = 'https://login.ufl.edu/idp/profile/SAML2/Redirect/SSO?execution=e1s1';
+    
+    // For this dummy implementation, we will simulate a successful login
+    // immediately. We'll set a mock user ID as if the user has returned
+    // from the IdP with valid authentication assertions.
+    
     setIsAuthenticated(true);
-    // For this demo, we'll hardcode the admin user ID
-    const mockUserId = 'mock-user-123';
+    const mockUserId = 'gator-user-123'; // A mock user ID for the demo
     setUserId(mockUserId);
-    setIsAdmin(true); // Treat this user as admin
+    // In a real app, admin status would be determined from the Shibboleth
+    // assertions (e.g., group membership). Here, we'll keep the mock admin status.
+    setIsAdmin(true);
   };
   
   const logout = () => {
+    // In a real Shibboleth integration, this would redirect to a logout URL
+    // to terminate the IdP session.
+    // Example: window.location.href = '/Shibboleth.sso/Logout';
+
+    // For this dummy implementation, we just clear the local state.
     setIsAuthenticated(false);
     setUserId(null);
     setIsAdmin(false);
