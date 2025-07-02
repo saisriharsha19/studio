@@ -10,7 +10,6 @@ import {
   SidebarMenuButton,
   SidebarContent,
   SidebarFooter,
-  SidebarRail,
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
@@ -36,7 +35,6 @@ export function SettingsSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarRail />
       <SidebarContent>
         <SidebarHeader className="group-data-[state=expanded]:flex group-data-[state=collapsed]:hidden">
           <h2 className="text-lg font-semibold">Settings</h2>
