@@ -3,7 +3,7 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
-import { ChevronLeft, PanelLeft, PanelLeftClose } from "lucide-react"
+import { PanelLeft, PanelLeftClose } from "lucide-react"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
@@ -237,18 +237,19 @@ const Sidebar = React.forwardRef<
           {/* This is what handles the sidebar gap on desktop */}
           <div
             className={cn(
-              "relative bg-transparent transition-all duration-300 ease-in-out",
+              "relative bg-transparent ease-in-out",
               "w-[var(--sidebar-width)]",
               "group-data-[state=collapsed]:w-[var(--sidebar-width-icon)]",
               "group-data-[side=right]:rotate-180",
               variant === "floating" || variant === "inset"
                 ? "group-data-[state=collapsed]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)))]"
-                : "group-data-[state=collapsed]:w-[--sidebar-width-icon]"
+                : "group-data-[state=collapsed]:w-[--sidebar-width-icon]",
+              "transition-all duration-300"
             )}
           />
           <div
             className={cn(
-              "fixed top-16 z-10 hidden h-[calc(100svh_-_4rem)] md:flex transition-all duration-300 ease-in-out",
+              "fixed top-16 z-10 hidden h-[calc(100svh_-_4rem)] md:flex ease-in-out",
               "w-[var(--sidebar-width)]",
               "group-data-[state=collapsed]:w-[var(--sidebar-width-icon)]",
               side === "left"
@@ -258,6 +259,7 @@ const Sidebar = React.forwardRef<
               variant === "floating" || variant === "inset"
                 ? "p-2 group-data-[state=collapsed]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]"
                 : "group-data-[state=collapsed]:w-[--sidebar-width-icon] group-data-[side=left]:border-r group-data-[side=right]:border-l",
+              "transition-all duration-300",
               className
             )}
             {...props}
@@ -398,7 +400,11 @@ const SidebarFooter = React.forwardRef<
     <div
       ref={ref}
       data-sidebar="footer"
-      className={cn("mt-auto flex flex-col gap-2 p-2", className)}
+      className={cn(
+        "mt-auto flex flex-col items-start gap-2 p-2",
+        "group-data-[state=collapsed]:items-center",
+        className
+      )}
       {...props}
     />
   )
@@ -747,11 +753,11 @@ const SidebarMenuSubButton = React.forwardRef<
       data-size={size}
       data-active={isActive}
       className={cn(
-        "flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2 text-sidebar-foreground outline-none ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-sidebar-accent-foreground",
+        "flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2 text-sidebar-foreground outline-none ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-sidebar-accent-foreground",
         "data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground",
         size === "sm" && "text-xs",
         size === "md" && "text-sm",
-        "transition-opacity group-data-[state=collapsed]:opacity-0 group-data-[state=collapsed]:pointer-events-none",
+        "transition-opacity group-data-[state=expanded]:delay-200 group-data-[state=collapsed]:opacity-0 group-data-[state=collapsed]:pointer-events-none",
         className
       )}
       {...props}
