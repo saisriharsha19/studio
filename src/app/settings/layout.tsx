@@ -7,7 +7,6 @@ import {
   SidebarProvider,
   SidebarInset,
   SidebarTrigger,
-  SidebarRail,
 } from '@/components/ui/sidebar';
 import { SettingsSidebar } from '@/components/settings-sidebar';
 import { Button } from '@/components/ui/button';
@@ -26,7 +25,6 @@ export default function SettingsLayout({
         <AppHeader />
         <div className="relative mt-16 flex flex-1">
           <SettingsSidebar />
-          <SidebarRail />
           <SidebarInset>
             {/* Mobile-only header with trigger */}
             <header className="sticky top-16 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 md:hidden">
