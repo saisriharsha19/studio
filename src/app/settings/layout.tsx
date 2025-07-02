@@ -7,6 +7,7 @@ import {
   SidebarProvider,
   SidebarInset,
   SidebarTrigger,
+  SidebarRail,
 } from '@/components/ui/sidebar';
 import { SettingsSidebar } from '@/components/settings-sidebar';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,7 @@ export default function SettingsLayout({
         <AppHeader />
         <div className="mt-16 flex flex-1">
           <SettingsSidebar />
+          <SidebarRail />
           <SidebarInset>
             {/* Mobile-only header with trigger */}
             <header className="sticky top-16 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 md:hidden">
@@ -35,9 +37,9 @@ export default function SettingsLayout({
               {isAuthenticated ? (
                 children
               ) : (
-                <div className="flex h-full flex-col items-center justify-center rounded-lg border-2 border-dashed bg-muted/50 p-12 text-center">
-                  <UserCircle className="h-16 w-16 text-muted-foreground" />
-                  <h2 className="mt-6 text-2xl font-semibold tracking-tight">Access Your Settings</h2>
+                <div className="flex h-full flex-col items-center justify-center rounded-lg border-2 border-dashed bg-muted/50 p-6 text-center sm:p-8 lg:p-12">
+                  <UserCircle className="h-12 w-12 text-muted-foreground sm:h-16 sm:w-16" />
+                  <h2 className="mt-6 text-xl font-semibold tracking-tight sm:text-2xl">Access Your Settings</h2>
                   <p className="mt-2 text-muted-foreground">
                     Sign in with your GatorLink to manage your profile, appearance, and account settings.
                   </p>
