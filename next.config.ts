@@ -1,5 +1,17 @@
 import type {NextConfig} from 'next';
 
+module.exports = {
+  // existing config …
+  experimental: {
+    serverActions: {
+      allowedOrigins: [
+        'localhost:3000',
+        '*.app.github.dev',
+      ],
+    },
+  },
+}
+
 const nextConfig: NextConfig = {
   /* config options here */
   typescript: {
