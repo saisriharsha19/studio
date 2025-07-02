@@ -54,7 +54,7 @@ ${suggestionsText}
 
 Generate the new, improved system prompt.
 
-Respond with a JSON object of the format: { "newPrompt": "your newly generated prompt" }`;
+Respond with a single, valid JSON object that adheres to the output schema. Do not include any extra commentary or markdown formatting.`;
 
     const response = await fetch(`${process.env.UFL_AI_BASE_URL}/chat/completions`, {
         method: 'POST',
@@ -63,7 +63,7 @@ Respond with a JSON object of the format: { "newPrompt": "your newly generated p
             'Authorization': `Bearer ${process.env.UFL_AI_API_KEY}`,
         },
         body: JSON.stringify({
-            model: 'gpt-4o',
+            model: 'llama-3.1-70b-instruct',
             messages: [{ role: 'user', content: fullPrompt }],
             response_format: { type: "json_object" }, 
         }),
@@ -78,11 +78,17 @@ Respond with a JSON object of the format: { "newPrompt": "your newly generated p
     const content = result.choices[0].message.content;
 
     try {
-        const parsedContent = JSON.parse(content);
+        // The model can sometimes wrap the JSON in markdown. Find the first '{' and last '}' to extract the JSON.
+        const jsonMatch = content.match(/{[\s\S]*}/);
+        if (!jsonMatch) {
+          throw new Error('No JSON object found in the response.');
+        }
+        const jsonString = jsonMatch[0];
+        const parsedContent = JSON.parse(jsonString);
         return IterateOnPromptOutputSchema.parse(parsedContent);
-    } catch (e) {
+    } catch (e: any) {
         console.error("Failed to parse LLM response:", e, "Raw content:", content);
-        throw new Error("Failed to parse LLM response as JSON.");
+        throw new Error(`Failed to parse LLM response as JSON: ${e.message}`);
     }
   }
 );
