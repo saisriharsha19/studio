@@ -31,7 +31,7 @@ export default function SettingsLayout({
               <SidebarTrigger />
               <h1 className="text-lg font-semibold">Settings</h1>
             </header>
-            <main className="flex flex-1 flex-col">
+            <main className="flex flex-1 flex-col overflow-y-auto">
               {isAuthenticated ? (
                 <div className="p-6 sm:p-8 md:p-10">{children}</div>
               ) : (
