@@ -100,40 +100,42 @@ export function LibraryClient() {
   return (
     <TooltipProvider>
       <div className="container mx-auto max-w-7xl py-8 px-4 sm:px-6 lg:px-8">
-        <div className="mb-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className='flex items-center gap-3 sm:gap-4'>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-6 w-6 shrink-0 text-accent sm:h-8 sm:w-8"
-              aria-hidden="true"
-            >
-              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-            </svg>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Prompt Library</h1>
-              <p className="text-sm text-muted-foreground">
-                A public collection of curated prompts submitted by the community.
-              </p>
+        <div className="mb-8 rounded-lg bg-muted p-6">
+          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className='flex items-center gap-3 sm:gap-4'>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-6 w-6 shrink-0 text-accent sm:h-8 sm:w-8"
+                aria-hidden="true"
+              >
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+              </svg>
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Prompt Library</h1>
+                <p className="text-sm text-muted-foreground">
+                  A public collection of curated prompts submitted by the community.
+                </p>
+              </div>
             </div>
-          </div>
-          <div className="relative w-full sm:w-72">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input 
-              placeholder="Search library..."
-              aria-label="Search prompt library"
-              className="h-11 w-full rounded-full border-transparent bg-muted pl-12 pr-4 transition-colors focus:bg-background focus:ring-2 focus:ring-ring"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input 
+                placeholder="Search library..."
+                aria-label="Search prompt library"
+                className="h-11 w-full rounded-full border-transparent bg-background/50 pl-12 pr-4 transition-colors focus:bg-background focus:ring-2 focus:ring-ring"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
           </div>
         </div>
 

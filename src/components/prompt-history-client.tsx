@@ -98,41 +98,43 @@ export function PromptHistoryClient() {
   return (
     <TooltipProvider>
       <div className="container mx-auto max-w-7xl py-8 px-4 sm:px-6 lg:px-8">
-        <div className="mb-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className='flex items-center gap-3 sm:gap-4'>
-             <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-6 w-6 shrink-0 text-accent sm:h-8 sm:w-8"
-              aria-hidden="true"
-            >
-              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-              <path d="M3 3v5h5" />
-              <path d="M12 7v5l3 3" />
-            </svg>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Prompt History</h1>
-              <p className="text-sm text-muted-foreground">
-                Your 20 most recent prompts are saved automatically.
-              </p>
+        <div className="mb-8 rounded-lg bg-muted p-6">
+          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className='flex items-center gap-3 sm:gap-4'>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-6 w-6 shrink-0 text-accent sm:h-8 sm:w-8"
+                aria-hidden="true"
+              >
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                <path d="M3 3v5h5" />
+                <path d="M12 7v5l3 3" />
+              </svg>
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Prompt History</h1>
+                <p className="text-sm text-muted-foreground">
+                  Your 20 most recent prompts are saved automatically.
+                </p>
+              </div>
             </div>
-          </div>
-          <div className="relative w-full sm:w-72">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input 
-              placeholder="Search history..."
-              aria-label="Search prompt history"
-              className="h-11 w-full rounded-full border-transparent bg-muted pl-12 pr-4 transition-colors focus:bg-background focus:ring-2 focus:ring-ring"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input 
+                placeholder="Search history..."
+                aria-label="Search prompt history"
+                className="h-11 w-full rounded-full border-transparent bg-background/50 pl-12 pr-4 transition-colors focus:bg-background focus:ring-2 focus:ring-ring"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
           </div>
         </div>
 
