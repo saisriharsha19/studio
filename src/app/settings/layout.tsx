@@ -1,7 +1,5 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { AppHeader } from '@/components/app-header';
 import { AppFooter } from '@/components/app-footer';
@@ -11,48 +9,15 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { SettingsSidebar } from '@/components/settings-sidebar';
-import { Skeleton } from '@/components/ui/skeleton';
-
-function SettingsSkeleton() {
-  return (
-    <div className="flex min-h-screen w-full flex-col bg-background">
-      <AppHeader />
-      <main className="mt-16 flex-1 p-6 sm:p-8 md:p-10">
-        <div className="space-y-4">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-4 w-72" />
-        </div>
-        <div className="mt-8 space-y-8">
-          <Skeleton className="h-48 w-full rounded-lg" />
-          <Skeleton className="h-32 w-full rounded-lg" />
-        </div>
-      </main>
-      <AppFooter />
-    </div>
-  );
-}
+import { Button } from '@/components/ui/button';
+import { UserCircle } from 'lucide-react';
 
 export default function SettingsLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    // Since the dummy auth provider initializes with isAuthenticated=false and has no loading state,
-    // this effect will run on the initial render and redirect if the user is not logged in.
-    if (!isAuthenticated) {
-      router.replace('/');
-    }
-  }, [isAuthenticated, router]);
-
-  // To prevent the settings UI from flashing before the redirect,
-  // we render a skeleton loading state if the user is not authenticated.
-  if (!isAuthenticated) {
-    return <SettingsSkeleton />;
-  }
+  const { isAuthenticated, login } = useAuth();
 
   return (
     <SidebarProvider>
@@ -66,7 +31,22 @@ export default function SettingsLayout({
               <SidebarTrigger />
               <h1 className="text-lg font-semibold">Settings</h1>
             </header>
-            <main className="flex-1 p-6 sm:p-8 md:p-10">{children}</main>
+            <main className="flex-1 p-6 sm:p-8 md:p-10">
+              {isAuthenticated ? (
+                children
+              ) : (
+                <div className="flex h-full flex-col items-center justify-center rounded-lg border-2 border-dashed bg-muted/50 p-12 text-center">
+                  <UserCircle className="h-16 w-16 text-muted-foreground" />
+                  <h2 className="mt-6 text-2xl font-semibold tracking-tight">Access Your Settings</h2>
+                  <p className="mt-2 text-muted-foreground">
+                    Sign in with your GatorLink to manage your profile, appearance, and account settings.
+                  </p>
+                  <Button onClick={login} className="mt-6">
+                    Sign In with GatorLink
+                  </Button>
+                </div>
+              )}
+            </main>
           </SidebarInset>
         </div>
         <AppFooter />
