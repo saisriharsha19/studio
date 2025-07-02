@@ -1,6 +1,6 @@
 import { AppHeader } from '@/components/app-header';
 import { AppFooter } from '@/components/app-footer';
-import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { SettingsSidebar } from '@/components/settings-sidebar';
 
 export default function SettingsLayout({
@@ -12,12 +12,17 @@ export default function SettingsLayout({
     <SidebarProvider>
       <div className="flex min-h-screen w-full flex-col bg-background">
         <AppHeader />
-        <main className="mt-16 flex flex-1">
+        <div className="mt-16 flex flex-1">
           <SettingsSidebar />
           <SidebarInset>
-            <div className="p-6 sm:p-8 md:p-10">{children}</div>
+            {/* Mobile-only header with trigger */}
+            <header className="sticky top-16 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 md:hidden">
+              <SidebarTrigger />
+              <h1 className="text-lg font-semibold">Settings</h1>
+            </header>
+            <main className="flex-1 p-6 sm:p-8 md:p-10">{children}</main>
           </SidebarInset>
-        </main>
+        </div>
         <AppFooter />
       </div>
     </SidebarProvider>

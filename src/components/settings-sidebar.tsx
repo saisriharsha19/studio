@@ -9,8 +9,12 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarContent,
+  SidebarFooter,
+  SidebarRail,
+  SidebarTrigger,
 } from '@/components/ui/sidebar';
-import { User, Palette, KeyRound, Info } from 'lucide-react';
+import { User, Palette, KeyRound, Info, PanelLeftClose } from 'lucide-react';
+import { Button } from './ui/button';
 
 const navItems = [
   { href: '/settings', label: 'Profile', icon: User },
@@ -23,9 +27,10 @@ export function SettingsSidebar() {
   const pathname = usePathname();
 
   return (
-    <Sidebar>
+    <Sidebar collapsible="icon">
+      <SidebarRail />
       <SidebarContent>
-        <SidebarHeader>
+        <SidebarHeader className="group-data-[state=expanded]:flex group-data-[state=collapsed]:hidden">
           <h2 className="text-lg font-semibold">Settings</h2>
         </SidebarHeader>
         <SidebarMenu>
@@ -45,6 +50,15 @@ export function SettingsSidebar() {
           ))}
         </SidebarMenu>
       </SidebarContent>
+      <SidebarFooter>
+        <SidebarTrigger
+          variant="ghost"
+          className="w-full justify-start group-data-[state=collapsed]:hidden"
+        >
+          <PanelLeftClose />
+          <span>Collapse</span>
+        </SidebarTrigger>
+      </SidebarFooter>
     </Sidebar>
   );
 }
