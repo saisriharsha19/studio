@@ -6,7 +6,7 @@ export default function AboutPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">About PromptForgeAI</h1>
+        <h1 className="text-2xl font-bold tracking-tight">About Navigator Sailor</h1>
         <p className="text-muted-foreground">
           Information about the application.
         </p>
@@ -19,7 +19,7 @@ export default function AboutPage() {
                 height={60}
                 alt="NaviGator Logo"
             />
-          <CardTitle className="text-2xl">PromptForgeAI</CardTitle>
+          <CardTitle className="text-2xl">Navigator Sailor</CardTitle>
           <CardDescription>Version 1.0.0</CardDescription>
         </CardHeader>
         <CardContent className="text-center text-sm text-muted-foreground">
