@@ -20,17 +20,16 @@ export default function SettingsLayout({
 
   return (
     <SidebarProvider>
-      <div className="flex h-screen w-full bg-background">
-        <SettingsSidebar />
-        <div className="flex flex-1 flex-col overflow-hidden bg-muted">
-          <AppHeader isPaneHeader={true} />
-
-          <main className="flex-1 overflow-y-auto">
+      <div className="flex min-h-screen w-full flex-col">
+        <AppHeader />
+        <main className="mt-16 flex flex-1">
+          <SettingsSidebar />
+          <div className="flex-1 overflow-y-auto p-6 sm:p-8 md:p-10">
             {isAuthenticated ? (
-              <div className="p-6 sm:p-8 md:p-10">{children}</div>
+              children
             ) : (
-              <div className="flex h-full items-center justify-center p-6 text-center">
-                <div className="flex max-w-md flex-col items-center rounded-lg border-2 border-dashed bg-card p-6 sm:p-8 lg:p-12">
+              <div className="flex h-full items-center justify-center">
+                <div className="flex max-w-md flex-col items-center rounded-lg border-2 border-dashed bg-card p-6 text-center sm:p-8 lg:p-12">
                   <UserCircle className="h-12 w-12 text-muted-foreground sm:h-16 sm:w-16" />
                   <h2 className="mt-6 text-xl font-semibold tracking-tight sm:text-2xl">Access Your Settings</h2>
                   <p className="mt-2 text-muted-foreground">
@@ -42,10 +41,9 @@ export default function SettingsLayout({
                 </div>
               </div>
             )}
-          </main>
-
-          <AppFooter />
-        </div>
+          </div>
+        </main>
+        <AppFooter />
       </div>
     </SidebarProvider>
   );
