@@ -87,7 +87,9 @@ export function AppHeader() {
               href={item.href}
               className={cn(
                 'relative rounded-full px-3 py-1.5 transition-colors duration-300',
-                pathname === item.href ? 'text-accent-foreground' : 'text-muted-foreground hover:text-foreground'
+                pathname === item.href
+                  ? 'text-accent-foreground'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
               )}
             >
               <AnimatePresence>
