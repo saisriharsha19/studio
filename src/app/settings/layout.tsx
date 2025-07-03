@@ -28,7 +28,7 @@ export default function SettingsLayout({
           <AppHeader isPaneHeader={true} />
 
           {/* This main area is scrollable and fills the space between header and footer */}
-          <main className="flex-1 overflow-y-auto">
+          <main className="flex-1 overflow-y-auto bg-muted">
             {/* Mobile-only header with trigger */}
             <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 md:hidden">
               <SidebarTrigger />
