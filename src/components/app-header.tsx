@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -74,13 +75,13 @@ export function AppHeader() {
           )}
         </div>
 
-        {/* Desktop: Show full nav or hide for settings page */}
+        {/* Desktop: Show full nav */}
         <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
           <Link href="/" className="flex items-center gap-2 text-lg font-semibold md:text-base">
             <Image src="/NavGAI-19.png" width={25} height={25} alt="NaviGator Logo" />
             <h1 className="text-xl font-bold tracking-tight">NaviGator Sailor</h1>
           </Link>
-          {!isSettingsPage && navItems.map((item) => (
+          {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
