@@ -21,27 +21,13 @@ export default function SettingsLayout({
 
   return (
     <SidebarProvider>
-      {/* 
-        This is the main page container. `h-screen` ensures it doesn't grow beyond the viewport.
-        `flex-col` arranges header, content, and footer vertically.
-      */}
-      <div className="flex h-screen w-full flex-col bg-background">
-        {/* AppHeader is fixed, so it's not part of the flex flow, but we account for its height below. */}
-        <AppHeader />
-        
-        {/* 
-          This container holds the main content (sidebar + pane).
-          - flex-1: It grows to fill the vertical space between the header and footer.
-          - mt-16: Accounts for the fixed header's height.
-          - min-h-0: CRITICAL FIX. Allows this flex item to shrink below its content's intrinsic size, preventing it from pushing the footer down.
-        */}
-        <div className="flex flex-1 min-h-0 mt-16">
-          <SettingsSidebar />
+      <div className="flex h-screen w-full bg-background">
+        <SettingsSidebar />
+        <div className="flex flex-1 flex-col overflow-hidden">
+          {/* This header is part of the right pane, not fixed globally */}
+          <AppHeader isPaneHeader={true} />
 
-          {/* 
-            This is the main content pane. `flex-1` makes it fill the horizontal space next to the sidebar.
-            `overflow-y-auto` makes THIS pane, and only this pane, scrollable if its content is too tall.
-          */}
+          {/* This main area is scrollable and fills the space between header and footer */}
           <main className="flex-1 overflow-y-auto">
             {/* Mobile-only header with trigger */}
             <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 md:hidden">
@@ -66,10 +52,10 @@ export default function SettingsLayout({
               </div>
             )}
           </main>
+
+          {/* This footer is part of the right pane */}
+          <AppFooter />
         </div>
-        
-        {/* The AppFooter sits securely at the bottom of the flex column. */}
-        <AppFooter />
       </div>
     </SidebarProvider>
   );

@@ -19,7 +19,7 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export function AppHeader() {
+export function AppHeader({ isPaneHeader = false }: { isPaneHeader?: boolean }) {
   const { isAuthenticated, login, logout } = useAuth();
   const { setTheme, theme } = useTheme();
   const pathname = usePathname();
@@ -31,7 +31,10 @@ export function AppHeader() {
   ];
 
   return (
-    <header className="fixed top-0 z-30 flex h-16 w-full items-center gap-4 border-b bg-card px-4 sm:px-6">
+    <header className={cn(
+      "flex h-16 items-center gap-4 border-b bg-card px-4 sm:px-6",
+      !isPaneHeader && "fixed top-0 z-30 w-full"
+    )}>
       <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
         <Link
           href="/"
