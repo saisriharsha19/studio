@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A flow to scrape and extract text content from a given URL.
@@ -137,14 +138,29 @@ async function discoverFromSitemap(originalUrl: string, maxSubdomains: number = 
   const urlObj = new URL(originalUrl);
   const baseDomain = urlObj.hostname;
   
-  // Common sitemap locations
-  const sitemapUrls = [
-    `${urlObj.protocol}//${baseDomain}/sitemap.xml`,
-    `${urlObj.protocol}//${baseDomain}/sitemap_index.xml`,
-    `${urlObj.protocol}//${baseDomain}/sitemaps.xml`,
-    `${urlObj.protocol}//${baseDomain}/sitemap/sitemap.xml`,
-    `${urlObj.protocol}//${baseDomain}/robots.txt`, // Check robots.txt for sitemap reference
+  // Check for sitemaps on both root and www domains to improve reliability
+  const potentialBases = new Set<string>();
+  potentialBases.add(`${urlObj.protocol}//${baseDomain}`);
+  if (baseDomain.startsWith('www.')) {
+    potentialBases.add(`${urlObj.protocol}//${baseDomain.replace('www.', '')}`);
+  } else {
+    potentialBases.add(`${urlObj.protocol}//www.${baseDomain}`);
+  }
+
+  const sitemapLocations = [
+    '/robots.txt', // Check robots.txt first, as it often points to the correct sitemap
+    '/sitemap.xml',
+    '/sitemap_index.xml',
+    '/sitemaps.xml',
+    '/sitemap/sitemap.xml',
   ];
+
+  const sitemapUrls: string[] = [];
+  potentialBases.forEach(base => {
+    sitemapLocations.forEach(loc => {
+      sitemapUrls.push(base + loc);
+    });
+  });
   
   const discoveredUrls = new Set<string>();
   
@@ -154,7 +170,7 @@ async function discoverFromSitemap(originalUrl: string, maxSubdomains: number = 
       const urls = await extractUrlsFromSitemap(sitemapUrl);
       urls.forEach(url => discoveredUrls.add(url));
     } catch (error) {
-      // Continue to next sitemap location
+      // It's normal for many of these to fail (e.g., 404), so we continue silently.
       continue;
     }
   }
@@ -261,9 +277,9 @@ async function extractUrlsFromSitemap(sitemapUrl: string): Promise<string[]> {
       const sitemapMatches = content.match(/^Sitemap:\s*(.+)$/gim);
       if (sitemapMatches) {
         for (const match of sitemapMatches) {
-          const sitemapUrl = match.replace(/^Sitemap:\s*/i, '').trim();
+          const sitemapUrlFromRobots = match.replace(/^Sitemap:\s*/i, '').trim();
           try {
-            const nestedUrls = await extractUrlsFromSitemap(sitemapUrl);
+            const nestedUrls = await extractUrlsFromSitemap(sitemapUrlFromRobots);
             nestedUrls.forEach(url => urls.add(url));
           } catch (error) {
             // Continue with other sitemaps
@@ -499,3 +515,5 @@ function extractTextFromJson(obj: any): string {
   }
   return '';
 }
+
+    
