@@ -393,15 +393,31 @@ export function PromptForgeClient() {
       return;
     }
     
+    // Copy the raw prompt to the clipboard as a reliable backup.
     navigator.clipboard.writeText(currentPrompt);
 
-    const portalUrl = 'https://assistant.ai.it.ufl.edu/admin/assistants/new';
-    window.open(portalUrl, '_blank', 'noopener,noreferrer');
+    // Properly encode the prompt to be safely passed as a URL parameter.
+    const encodedPrompt = encodeURIComponent(currentPrompt);
+    const portalUrl = `https://assistant.ai.it.ufl.edu/admin/assistants/new?system_prompt=${encodedPrompt}`;
 
-    toast({
-      title: 'Prompt Copied & Portal Opened',
-      description: 'Please paste the copied prompt into the form on the new page. The portal requires sign-in.',
-    });
+    // Most modern browsers support long URLs, but as a safeguard, we'll check the length.
+    // A 2000-character limit is a safe, conservative choice for legacy compatibility.
+    if (portalUrl.length > 2000) {
+        // If the URL is too long, open the base URL and instruct the user to paste.
+        window.open('https://assistant.ai.it.ufl.edu/admin/assistants/new', '_blank', 'noopener,noreferrer');
+        toast({
+            title: 'Prompt Copied & Portal Opened',
+            description: 'The prompt was too long to auto-fill. Please paste the copied prompt. The portal requires sign-in.',
+            duration: 8000, // Give user more time to read
+        });
+    } else {
+        // If the URL is a reasonable length, open it to auto-fill the form.
+        window.open(portalUrl, '_blank', 'noopener,noreferrer');
+        toast({
+          title: 'Prompt Sent & Copied',
+          description: 'The prompt was sent to the portal and copied to your clipboard as a backup. The portal requires sign-in.',
+        });
+    }
   };
 
   const isLoading = isPending || Object.values(loading).some(Boolean);
@@ -928,7 +944,7 @@ export function PromptForgeClient() {
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Copies the prompt and opens the NaviGator Assistant portal.</p>
+                      <p>Sends the prompt to the NaviGator Assistant portal.</p>
                     </TooltipContent>
                   </Tooltip>
                   <Tooltip>
