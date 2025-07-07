@@ -392,18 +392,15 @@ export function PromptForgeClient() {
       });
       return;
     }
-    // Copy to clipboard as a helpful fallback
+    
     navigator.clipboard.writeText(currentPrompt);
 
     const portalUrl = 'https://assistant.ai.it.ufl.edu/admin/assistants/new';
-    const urlWithPrompt = new URL(portalUrl);
-    urlWithPrompt.searchParams.set('system_prompt', currentPrompt);
-    
-    window.open(urlWithPrompt.toString(), '_blank', 'noopener,noreferrer');
+    window.open(portalUrl, '_blank', 'noopener,noreferrer');
 
     toast({
       title: 'Prompt Copied & Portal Opened',
-      description: 'Your prompt is pre-filled in the new tab. The link requires authorization and sign-in.',
+      description: 'Please paste the copied prompt into the form on the new page. The portal requires sign-in.',
     });
   };
 
