@@ -184,7 +184,8 @@ export function PromptForgeClient() {
         setUploadedFileName(file.name);
         toast({
             title: "File Loaded",
-            description: `${file.name} is ready to be used for evaluation.`
+            description: `${file.name} is ready to be used for evaluation.`,
+            duration: 5000,
         });
     };
     reader.onerror = () => {
@@ -259,7 +260,7 @@ export function PromptForgeClient() {
         if (isAuthenticated) {
           addPrompt(result.initialPrompt);
         }
-        toast({ title: 'Success', description: 'Initial prompt generated.' });
+        toast({ title: 'Success', description: 'Initial prompt generated.', duration: 5000 });
       } catch (error: any) {
         toast({
           variant: 'destructive',
@@ -355,7 +356,7 @@ export function PromptForgeClient() {
         }
         setIterationComments(''); 
         setSelectedSuggestions([]);
-        toast({ title: 'Success', description: 'Prompt refined with your feedback.' });
+        toast({ title: 'Success', description: 'Prompt refined with your feedback.', duration: 5000 });
       } catch (error: any) {
         toast({
           variant: 'destructive',
@@ -392,7 +393,7 @@ export function PromptForgeClient() {
         if (isAuthenticated) {
           addPrompt(result.improvedPrompt);
         }
-        toast({ title: 'Success', description: 'Prompt evaluated and improved.' });
+        toast({ title: 'Success', description: 'Prompt evaluated and improved.', duration: 5000 });
       } catch (error: any) {
         toast({
           variant: 'destructive',
@@ -432,7 +433,8 @@ export function PromptForgeClient() {
     
     toast({
       title: 'Prompt Copied!',
-      description: 'The prompt has been copied. Please paste it into the portal, which requires sign-in.',
+      description: 'The prompt has been copied. Please paste it into the portal.',
+      duration: 5000,
     });
   };
 
@@ -462,9 +464,12 @@ export function PromptForgeClient() {
               </div>
                <div className="space-y-4">
                 <Label htmlFor="knowledge-base" className="text-base">Knowledge Base (Optional)</Label>
+                 <p className="text-sm text-muted-foreground">
+                  Provide factual content (like FAQs, documentation, or policies) that the AI should use as its source of truth. This helps prevent hallucination and ensures the assistant gives accurate, context-specific answers.
+                </p>
                 <Textarea
                   id="knowledge-base"
-                  placeholder="Paste relevant web-scraped data, FAQs, or knowledge base articles here."
+                  placeholder="Paste relevant documentation, policies, or other factual text here."
                   value={knowledgeBase}
                   onChange={(e) => setKnowledgeBase(e.target.value)}
                   className="min-h-[150px]"
@@ -513,7 +518,7 @@ export function PromptForgeClient() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="absolute top-3 right-2"
+                        className="absolute top-2 right-2"
                         onClick={() => copyToClipboard(currentPrompt)}
                         aria-label="Copy generated prompt"
                       >
@@ -548,6 +553,9 @@ export function PromptForgeClient() {
                 <div className="space-y-10">
                   <div className="space-y-4">
                     <Label className="text-base">Knowledge Base from URL (Optional)</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Automatically scrape a webpage to add its content to the knowledge base.
+                    </p>
                     <div className="flex items-center gap-2">
                       <Input
                         id="knowledge-base-url"
@@ -625,6 +633,9 @@ export function PromptForgeClient() {
 
                   <div className="space-y-4">
                     <Label htmlFor="file-upload" className="text-base">Upload Knowledge File (Optional)</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Upload a file (TXT, MD, CSV, JSON) to be added to the knowledge base.
+                    </p>
                       <Label 
                         htmlFor="file-upload" 
                         className={cn(
@@ -673,9 +684,13 @@ export function PromptForgeClient() {
 
                   <div className="space-y-4">
                     <Label htmlFor="few-shot-examples" className="text-base">Few-shot Examples (Optional)</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Provide examples in a "User/Assistant" format to teach the AI the desired tone, style, and structure for its replies. This is about *how* to answer, not *what* to answer.
+                    </p>
                     <Textarea
                       id="few-shot-examples"
-                      placeholder="e.g., 'The deadline for Fall 2024 registration is August 15th.' or 'Prof. Smith's office is in Room 301.'"
+                      placeholder="User: When is the add/drop deadline?
+Assistant: The add/drop deadline for the Fall 2024 semester is September 1st, 2024."
                       value={fewShotExamples}
                       onChange={(e) => setFewShotExamples(e.target.value)}
                       className="min-h-[100px]"

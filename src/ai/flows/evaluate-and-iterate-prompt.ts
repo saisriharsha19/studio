@@ -63,15 +63,23 @@ const evaluateAndIteratePromptFlow = ai.defineFlow(
     outputSchema: EvaluateAndIteratePromptOutputSchema,
   },
   async (input) => {
-    const improvementInstruction = input.retrievedContent
-      ? `1.  **Improvement:** First, analyze the provided existing prompt, user needs, and especially the **Knowledge Base Content** below. Your primary task is to generate an **improvedPrompt** that directly incorporates facts, terminology, and context from the knowledge base. The goal is to make the prompt more effective and factually grounded.`
-      : `1.  **Improvement:** First, analyze the provided existing prompt and user needs. Generate an **improvedPrompt** that is more effective, clear, and aligned with the user's goals.`;
-
-    let fullPrompt = `You are an AI evaluation system that operates using the principles of the 'deepeval' framework. Your task is to perform an evaluation and improvement cycle on a given system prompt.
+    let fullPrompt = `You are an expert AI prompt architect and evaluation system operating with the principles of the 'deepeval' framework. Your task is to perform a two-step improvement and evaluation cycle on a given system prompt.
 
 **Cycle Steps:**
-${improvementInstruction}
-2.  **Evaluation:** Second, evaluate your new **improvedPrompt** by simulating \`deepeval\` metrics. For each metric, provide a score from 0.0 to 1.0, a concise summary of your reasoning, and a list of hypothetical test cases you would use for a comprehensive evaluation.
+
+**Step 1: Improvement**
+First, analyze the provided **Existing Prompt**, **User Needs**, and any **Knowledge Base Content** or **Ground Truths**. Your primary task is to generate an **improvedPrompt**. This new prompt must be a robust, production-grade system prompt.
+
+When creating the improvedPrompt, you must:
+- Leverage advanced prompt engineering techniques (e.g., Chain-of-Thought, ReAct, Self-Reflection).
+- Incorporate clear role definitions, tone settings, task boundaries, and refusal criteria.
+- Embed strong behavioral guardrails to ensure safety, consistency, and ethical responses.
+- If Knowledge Base Content is provided, the prompt must instruct the assistant to use it as its primary source of truth to ensure factual grounding.
+- If Ground Truths are provided, the prompt should be optimized to produce answers in a similar style or format.
+- Avoid user requests with dangerous, unethical, harmful, over task boundaries and avoid with I'm unable to generate prompt with some explanation.
+
+**Step 2: Evaluation**
+Second, evaluate the new **improvedPrompt** you just created by simulating \`deepeval\` metrics. For each metric, provide a score from 0.0 to 1.0, a concise summary of your reasoning, and a list of hypothetical test cases.
 
 **Input Data:**
 **Existing Prompt:**
