@@ -66,7 +66,7 @@ Respond with a single, valid JSON object with two keys: "optimizedPrompt" (the n
             'Authorization': `Bearer ${process.env.UFL_AI_API_KEY}`,
         },
         body: JSON.stringify({
-            model: 'llama-3.1-70b-instruct',
+            model: 'llama-3-70b-instruct',
             messages: [{ role: 'user', content: fullPrompt }],
             response_format: { type: "json_object" }, 
         }),

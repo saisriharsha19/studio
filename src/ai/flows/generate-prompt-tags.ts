@@ -55,7 +55,7 @@ Return the response as a single, valid JSON object with two keys: "summary" (a s
             'Authorization': `Bearer ${process.env.UFL_AI_API_KEY}`,
         },
         body: JSON.stringify({
-            model: 'llama-3.1-70b-instruct',
+            model: 'llama-3.3-70b-instruct',
             messages: [{ role: 'user', content: fullPrompt }],
             response_format: { type: "json_object" }, 
         }),

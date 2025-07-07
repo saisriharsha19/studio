@@ -9,33 +9,27 @@ export default function ProfileSettingsPage() {
   const { userId } = useAuth();
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Profile Settings</h1>
-        <p className="text-muted-foreground">Manage your profile information.</p>
-      </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Your Profile</CardTitle>
-          <CardDescription>
-            This information is based on your university credentials and cannot be edited here.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
-            <Input id="name" defaultValue="Albert Gator" disabled />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" defaultValue="albert.gator@ufl.edu" disabled />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="userId">User ID</Label>
-            <Input id="userId" defaultValue={userId ?? 'N/A'} disabled />
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Your Profile</CardTitle>
+        <CardDescription>
+          This information is based on your university credentials and cannot be edited here.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="name">Name</Label>
+          <Input id="name" defaultValue="Albert Gator" disabled />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input id="email" defaultValue="albert.gator@ufl.edu" disabled />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="userId">User ID</Label>
+          <Input id="userId" defaultValue={userId ?? 'N/A'} disabled />
+        </div>
+      </CardContent>
+    </Card>
   );
 }

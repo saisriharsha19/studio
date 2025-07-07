@@ -19,13 +19,11 @@ import { useTheme } from 'next-themes';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { SidebarTrigger } from '@/components/ui/sidebar';
 
 export function AppHeader() {
   const { isAuthenticated, login, logout } = useAuth();
   const { setTheme, theme } = useTheme();
   const pathname = usePathname();
-  const isSettingsPage = pathname.startsWith('/settings');
 
   const navItems = [
     { href: '/', label: 'Generator' },
@@ -37,9 +35,8 @@ export function AppHeader() {
     <header className="fixed top-0 z-30 flex h-16 w-full shrink-0 items-center gap-4 border-b bg-card px-4 sm:px-6">
       
       <div className="flex items-center gap-4">
-        {/* Mobile: Show correct trigger based on page */}
+        {/* Mobile: Show nav */}
         <div className="md:hidden">
-          {isSettingsPage ? <SidebarTrigger /> : (
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="shrink-0">
@@ -72,7 +69,6 @@ export function AppHeader() {
                 </nav>
               </SheetContent>
             </Sheet>
-          )}
         </div>
 
         {/* Desktop: Show full nav */}

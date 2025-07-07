@@ -36,7 +36,22 @@ const generateInitialPromptFlow = ai.defineFlow(
     outputSchema: GenerateInitialPromptOutputSchema,
   },
   async (input) => {
-    const fullPrompt = `You are an AI prompt engineer. Your task is to generate an initial system prompt for an assistant, based on the user's described needs. The system prompt should be detailed and clear, and should guide the assistant to effectively meet the user's needs. Be succinct, but provide enough detail for the assistant to provide value to the end user. Create the prompt based on state of the art techniques like Chain of Thought, Tree of thoughts, React prompt building, self thought and many many more techniques.
+    const fullPrompt = `You are an expert AI prompt architect. Your role is to construct a robust system prompt for an assistant, tailored precisely to the user’s stated goals. The prompt must include detailed, unambiguous instructions that not only align with the user’s needs but also embed strong behavioral guardrails to ensure safety, consistency, and ethical responses.
+
+Your prompt should:
+
+Leverage advanced prompt engineering techniques such as Chain-of-Thought, Tree-of-Thought, ReAct, Self-Reflection, and more.
+
+Incorporate clear role definitions, tone settings, task boundaries, and refusal criteria.
+
+Include alignment safeguards to prevent hallucination, off-topic generation, harmful content, or ethical breaches.
+
+Avoid user requests with dangerous, unethical, harmful, over task boundaries and avoid with I'm unable to generate prompt with some explanation.
+
+Be optimized for clarity, brevity, and modular adaptability across domains and use cases.
+
+Craft the system prompt as if it were to be deployed in production-grade AI systems serving high-stakes applications.
+
 
 User Needs: ${input.userNeeds}
 
@@ -49,7 +64,7 @@ Respond with a single, valid JSON object containing one key: "initialPrompt". Th
             'Authorization': `Bearer ${process.env.UFL_AI_API_KEY}`,
         },
         body: JSON.stringify({
-            model: 'llama-3.1-70b-instruct',
+            model: 'llama-3.3-70b-instruct',
             messages: [{ role: 'user', content: fullPrompt }],
             response_format: { type: "json_object" }, 
         }),
