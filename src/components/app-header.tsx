@@ -19,10 +19,11 @@ import { useTheme } from 'next-themes';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export function AppHeader() {
   const { isAuthenticated, login, logout } = useAuth();
-  const { setTheme, theme } = useTheme();
+  const { setTheme } = useTheme();
   const pathname = usePathname();
 
   const navItems = [
@@ -32,118 +33,134 @@ export function AppHeader() {
   ];
 
   return (
-    <header className="fixed top-0 z-30 flex h-16 w-full shrink-0 items-center gap-4 border-b bg-card px-4 sm:px-6">
-      
-      <div className="flex items-center gap-4">
-        {/* Mobile: Show nav */}
-        <div className="md:hidden">
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="shrink-0">
-                  <Menu className="h-5 w-5" />
-                  <span className="sr-only">Toggle navigation menu</span>
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left">
-                <SheetHeader className="sr-only">
-                  <SheetTitle>Navigation Menu</SheetTitle>
-                  <SheetDescription>Select a page to navigate to.</SheetDescription>
-                </SheetHeader>
-                <nav className="grid gap-6 text-lg font-medium">
-                  <Link href="/" className="flex items-center gap-2 text-lg font-semibold">
-                    <Image src="/NavGAI-19.png" width={25} height={25} alt="NaviGator Logo" />
-                    <span className="font-bold">NaviGator Sailor</span>
-                  </Link>
-                  {navItems.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={cn(
-                        'text-muted-foreground hover:text-foreground',
-                        pathname === item.href && 'font-semibold text-foreground'
-                      )}
-                    >
-                      {item.label}
+    <TooltipProvider>
+      <header className="fixed top-0 z-30 flex h-16 w-full shrink-0 items-center gap-4 border-b bg-card px-4 sm:px-6">
+        
+        <div className="flex items-center gap-4">
+          {/* Mobile: Show nav */}
+          <div className="md:hidden">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="shrink-0">
+                    <Menu className="h-5 w-5" />
+                    <span className="sr-only">Toggle navigation menu</span>
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left">
+                  <SheetHeader className="sr-only">
+                    <SheetTitle>Navigation Menu</SheetTitle>
+                    <SheetDescription>Select a page to navigate to.</SheetDescription>
+                  </SheetHeader>
+                  <nav className="grid gap-6 text-lg font-medium">
+                    <Link href="/" className="flex items-center gap-2 text-lg font-semibold">
+                      <Image src="/NavGAI-19.png" width={25} height={25} alt="NaviGator Logo" />
+                      <span className="font-bold">NaviGator Sailor</span>
                     </Link>
-                  ))}
-                </nav>
-              </SheetContent>
-            </Sheet>
+                    {navItems.map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={cn(
+                          'text-muted-foreground hover:text-foreground',
+                          pathname === item.href && 'font-semibold text-foreground'
+                        )}
+                      >
+                        {item.label}
+                      </Link>
+                    ))}
+                  </nav>
+                </SheetContent>
+              </Sheet>
+          </div>
+
+          {/* Desktop: Show full nav */}
+          <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
+            <Link href="/" className="flex items-center gap-2 text-lg font-semibold md:text-base">
+              <Image src="/NavGAI-19.png" width={25} height={25} alt="NaviGator Logo" />
+              <h1 className="text-xl font-bold tracking-tight">NaviGator Sailor</h1>
+            </Link>
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  'relative rounded-full px-3 py-1.5 text-muted-foreground transition-colors duration-300 hover:bg-muted',
+                  pathname === item.href
+                    ? 'text-accent-foreground'
+                    : 'hover:text-foreground'
+                )}
+              >
+                <AnimatePresence>
+                  {pathname === item.href && (
+                    <motion.span
+                      className="absolute inset-0 z-0 rounded-full bg-accent"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1, transition: { duration: 0.25, ease: 'easeOut' } }}
+                      exit={{ opacity: 0, transition: { duration: 0.1, ease: 'easeIn' } }}
+                    />
+                  )}
+                </AnimatePresence>
+                <span className="relative z-10">{item.label}</span>
+              </Link>
+            ))}
+          </nav>
         </div>
 
-        {/* Desktop: Show full nav */}
-        <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
-          <Link href="/" className="flex items-center gap-2 text-lg font-semibold md:text-base">
-            <Image src="/NavGAI-19.png" width={25} height={25} alt="NaviGator Logo" />
-            <h1 className="text-xl font-bold tracking-tight">NaviGator Sailor</h1>
-          </Link>
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                'relative rounded-full px-3 py-1.5 transition-colors duration-300',
-                pathname === item.href
-                  ? 'text-accent-foreground'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+        <div className="ml-auto flex items-center gap-2">
+          <DropdownMenu>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                    <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                    <span className="sr-only">Toggle theme</span>
+                  </Button>
+                </DropdownMenuTrigger>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Toggle Theme</p>
+              </TooltipContent>
+            </Tooltip>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setTheme('light')}>Light</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTheme('dark')}>Dark</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTheme('system')}>System</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <DropdownMenu>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-full">
+                    <UserCircle className="h-6 w-6" />
+                    <span className="sr-only">Toggle user menu</span>
+                  </Button>
+                </DropdownMenuTrigger>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>My Account</p>
+              </TooltipContent>
+            </Tooltip>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {isAuthenticated ? (
+                <>
+                  <DropdownMenuItem asChild>
+                    <Link href="/settings" className="cursor-pointer">Settings</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={logout} className="cursor-pointer">Sign Out</DropdownMenuItem>
+                </>
+              ) : (
+                <DropdownMenuItem onClick={login} className="cursor-pointer">Sign In with GatorLink</DropdownMenuItem>
               )}
-            >
-              <AnimatePresence>
-                {pathname === item.href && (
-                  <motion.span
-                    className="absolute inset-0 z-0 rounded-full bg-accent"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1, transition: { duration: 0.25, ease: 'easeOut' } }}
-                    exit={{ opacity: 0, transition: { duration: 0.1, ease: 'easeIn' } }}
-                  />
-                )}
-              </AnimatePresence>
-              <span className="relative z-10">{item.label}</span>
-            </Link>
-          ))}
-        </nav>
-      </div>
-
-      <div className="ml-auto flex items-center gap-2">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-              <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-              <span className="sr-only">Toggle theme</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setTheme('light')}>Light</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setTheme('dark')}>Dark</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setTheme('system')}>System</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <UserCircle className="h-6 w-6" />
-              <span className="sr-only">Toggle user menu</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {isAuthenticated ? (
-              <>
-                <DropdownMenuItem asChild>
-                  <Link href="/settings" className="cursor-pointer">Settings</Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={logout} className="cursor-pointer">Sign Out</DropdownMenuItem>
-              </>
-            ) : (
-              <DropdownMenuItem onClick={login} className="cursor-pointer">Sign In with GatorLink</DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    </header>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </header>
+    </TooltipProvider>
   );
 }
