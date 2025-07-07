@@ -393,7 +393,7 @@ export function PromptForgeClient() {
       return;
     }
     navigator.clipboard.writeText(currentPrompt);
-    window.open('https://assistant.ai.it.ufl.edu/admin/', '_blank', 'noopener,noreferrer');
+    window.open('https://assistant.ai.it.ufl.edu/admin/indexing/status', '_blank', 'noopener,noreferrer');
     toast({
       title: 'Prompt Copied & Portal Opened',
       description: 'The link requires authorization and sign-in.',
