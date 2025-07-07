@@ -1,15 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { User, Palette, KeyRound, Info } from 'lucide-react';
 
 const navItems = [
@@ -28,7 +22,6 @@ const navIcons: { [key: string]: React.ElementType } = {
 
 export function SettingsNav() {
   const pathname = usePathname();
-  const router = useRouter();
 
   return (
     <>
@@ -56,24 +49,29 @@ export function SettingsNav() {
 
       {/* Mobile Navigation */}
       <div className="md:hidden">
-        <Select value={pathname} onValueChange={(value) => router.push(value)}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select a setting" />
-          </SelectTrigger>
-          <SelectContent>
+        <ScrollArea className="w-full whitespace-nowrap">
+          <nav className="flex w-max items-center space-x-1 border-b">
             {navItems.map((item) => {
               const Icon = navIcons[item.href];
               return (
-                <SelectItem key={item.href} value={item.href}>
-                  <div className="flex items-center gap-2">
-                    {Icon && <Icon className="h-4 w-4" />}
-                    {item.label}
-                  </div>
-                </SelectItem>
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    'flex items-center gap-2 whitespace-nowrap px-4 py-3 text-sm font-medium transition-colors',
+                    pathname === item.href
+                      ? 'border-b-2 border-primary text-primary'
+                      : 'border-b-2 border-transparent text-muted-foreground hover:text-primary'
+                  )}
+                >
+                  {Icon && <Icon className="h-4 w-4 flex-shrink-0" />}
+                  {item.label}
+                </Link>
               );
             })}
-          </SelectContent>
-        </Select>
+          </nav>
+          <ScrollBar orientation="horizontal" className="invisible" />
+        </ScrollArea>
       </div>
     </>
   );
