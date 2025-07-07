@@ -1,3 +1,4 @@
+
 // src/ai/flows/evaluate-and-iterate-prompt.ts
 'use server';
 
@@ -62,10 +63,14 @@ const evaluateAndIteratePromptFlow = ai.defineFlow(
     outputSchema: EvaluateAndIteratePromptOutputSchema,
   },
   async (input) => {
+    const improvementInstruction = input.retrievedContent
+      ? `1.  **Improvement:** First, analyze the provided existing prompt, user needs, and especially the **Knowledge Base Content** below. Your primary task is to generate an **improvedPrompt** that directly incorporates facts, terminology, and context from the knowledge base. The goal is to make the prompt more effective and factually grounded.`
+      : `1.  **Improvement:** First, analyze the provided existing prompt and user needs. Generate an **improvedPrompt** that is more effective, clear, and aligned with the user's goals.`;
+
     let fullPrompt = `You are an AI evaluation system that operates using the principles of the 'deepeval' framework. Your task is to perform an evaluation and improvement cycle on a given system prompt.
 
 **Cycle Steps:**
-1.  **Improvement:** First, analyze the provided existing prompt, user needs, and any contextual data. Generate an **improvedPrompt** that is more effective, clear, and aligned with the user's goals.
+${improvementInstruction}
 2.  **Evaluation:** Second, evaluate your new **improvedPrompt** by simulating \`deepeval\` metrics. For each metric, provide a score from 0.0 to 1.0, a concise summary of your reasoning, and a list of hypothetical test cases you would use for a comprehensive evaluation.
 
 **Input Data:**
@@ -77,7 +82,7 @@ ${input.userNeeds}
 `;
     if (input.retrievedContent) {
         fullPrompt += `
-**Knowledge Base Content (for FaithfulnessMetric):**
+**Knowledge Base Content:**
 ${input.retrievedContent}
 `;
     }
