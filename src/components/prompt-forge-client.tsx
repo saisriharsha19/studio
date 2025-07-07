@@ -59,6 +59,8 @@ import {
 import { usePromptHistory } from '@/hooks/use-prompts';
 import { usePromptForge } from '@/hooks/use-prompt-forge';
 import { useLibrary } from '@/hooks/use-library';
+import { Switch } from '@/components/ui/switch';
+import { Slider } from '@/components/ui/slider';
 
 type LoadingStates = {
   generating: boolean;
@@ -81,6 +83,8 @@ export function PromptForgeClient() {
     uploadedFileContent, setUploadedFileContent,
     fewShotExamples, setFewShotExamples,
     scrapeUrl, setScrapeUrl,
+    includeSubdomains, setIncludeSubdomains,
+    maxSubdomains, setMaxSubdomains,
     uploadedFileName, setUploadedFileName,
     iterationComments, setIterationComments,
     suggestions, setSuggestions,
@@ -140,8 +144,21 @@ export function PromptForgeClient() {
     setLoading(prev => ({ ...prev, scraping: true }));
     startTransition(async () => {
       try {
-        const result = await handleScrapeUrl({ url: scrapeUrl });
-        setKnowledgeBase(prev => `${prev}\n\n${result.content}`.trim());
+        const result = await handleScrapeUrl({
+          url: scrapeUrl,
+          includeSubdomains,
+          maxSubdomains,
+        });
+
+        let scrapedContent = result.content;
+        if (result.subdomains && result.subdomains.length > 0) {
+            const subdomainContent = result.subdomains
+                .map(sub => `--- Subdomain: ${sub.subdomain} ---\n${sub.content}`)
+                .join('\n\n');
+            scrapedContent += `\n\n${subdomainContent}`;
+        }
+
+        setKnowledgeBase(prev => `${prev}\n\n${scrapedContent}`.trim());
         toast({ title: 'Success', description: 'Content fetched and added to knowledge base.' });
       } catch (error: any) {
         toast({
@@ -494,7 +511,7 @@ export function PromptForgeClient() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="absolute top-2 right-2"
+                        className="absolute top-3 right-2"
                         onClick={() => copyToClipboard(currentPrompt)}
                         aria-label="Copy generated prompt"
                       >
@@ -530,25 +547,64 @@ export function PromptForgeClient() {
                   <div className="space-y-4">
                     <Label className="text-base">Knowledge Base from URL (Optional)</Label>
                     <div className="flex items-center gap-2">
-                        <Input
-                          id="knowledge-base-url"
-                          aria-label="Knowledge base URL"
-                          placeholder="https://example.com/knowledge"
-                          value={scrapeUrl}
-                          onChange={(e) => setScrapeUrl(e.target.value)}
-                          disabled={loading.scraping}
-                        />
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="outline" size="sm" onClick={onFetchContent} disabled={isLoading || loading.scraping}>
-                                {loading.scraping ? <Loader2 className="animate-spin"/> : <Globe />}
-                                Fetch Content
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Scrape content from the URL for the knowledge base.</p>
-                          </TooltipContent>
-                        </Tooltip>
+                      <Input
+                        id="knowledge-base-url"
+                        aria-label="Knowledge base URL"
+                        placeholder="https://example.com/knowledge"
+                        value={scrapeUrl}
+                        onChange={(e) => setScrapeUrl(e.target.value)}
+                        disabled={loading.scraping}
+                      />
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={onFetchContent}
+                            disabled={isLoading || loading.scraping}
+                          >
+                            {loading.scraping ? (
+                              <Loader2 className="animate-spin" />
+                            ) : (
+                              <Globe />
+                            )}
+                            Fetch Content
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>
+                            Scrape content from the URL for the knowledge base.
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <div className="space-y-4 pt-2">
+                        <div className="flex items-center space-x-2">
+                            <Switch
+                                id="include-subdomains"
+                                checked={includeSubdomains}
+                                onCheckedChange={setIncludeSubdomains}
+                                disabled={loading.scraping}
+                            />
+                            <Label htmlFor="include-subdomains" className="font-normal text-muted-foreground">
+                                Automatically discover and scrape subdomains
+                            </Label>
+                        </div>
+                        {includeSubdomains && (
+                            <div className="space-y-2 pl-2 pt-2 animate-in fade-in-0 duration-300">
+                                <Label htmlFor="max-subdomains">Max subdomains to scrape: {maxSubdomains}</Label>
+                                <Slider
+                                    id="max-subdomains"
+                                    min={1}
+                                    max={50}
+                                    step={1}
+                                    value={[maxSubdomains]}
+                                    onValueChange={(value) => setMaxSubdomains(value[0])}
+                                    disabled={loading.scraping}
+                                    className="w-[95%]"
+                                />
+                            </div>
+                        )}
                     </div>
                   </div>
 

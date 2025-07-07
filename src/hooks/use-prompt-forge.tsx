@@ -18,6 +18,10 @@ type PromptForgeContextType = {
   setFewShotExamples: Dispatch<SetStateAction<string>>;
   scrapeUrl: string;
   setScrapeUrl: Dispatch<SetStateAction<string>>;
+  includeSubdomains: boolean;
+  setIncludeSubdomains: Dispatch<SetStateAction<boolean>>;
+  maxSubdomains: number;
+  setMaxSubdomains: Dispatch<SetStateAction<number>>;
   uploadedFileName: string;
   setUploadedFileName: Dispatch<SetStateAction<string>>;
   iterationComments: string;
@@ -40,6 +44,8 @@ export function PromptForgeProvider({ children }: { children: ReactNode }) {
   const [uploadedFileContent, setUploadedFileContent] = useState('');
   const [fewShotExamples, setFewShotExamples] = useState('');
   const [scrapeUrl, setScrapeUrl] = useState('');
+  const [includeSubdomains, setIncludeSubdomains] = useState(false);
+  const [maxSubdomains, setMaxSubdomains] = useState(10);
   const [uploadedFileName, setUploadedFileName] = useState('');
   const [iterationComments, setIterationComments] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -54,6 +60,8 @@ export function PromptForgeProvider({ children }: { children: ReactNode }) {
     uploadedFileContent, setUploadedFileContent,
     fewShotExamples, setFewShotExamples,
     scrapeUrl, setScrapeUrl,
+    includeSubdomains, setIncludeSubdomains,
+    maxSubdomains, setMaxSubdomains,
     uploadedFileName, setUploadedFileName,
     iterationComments, setIterationComments,
     suggestions, setSuggestions,
