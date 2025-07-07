@@ -36,6 +36,7 @@ import {
   handleEvaluateAndIterate,
   handleIterateOnPrompt,
   handleGetPromptSuggestions,
+  handleScrapeUrl,
 } from '@/app/actions';
 import { Badge, badgeVariants } from './ui/badge';
 import { Skeleton } from './ui/skeleton';
@@ -63,6 +64,7 @@ type LoadingStates = {
   generating: boolean;
   evaluating: boolean;
   iterating: boolean;
+  scraping: boolean;
 };
 
 export function PromptForgeClient() {
@@ -78,7 +80,7 @@ export function PromptForgeClient() {
     knowledgeBase, setKnowledgeBase,
     uploadedFileContent, setUploadedFileContent,
     fewShotExamples, setFewShotExamples,
-    knowledgeBaseUrls, setKnowledgeBaseUrls,
+    scrapeUrl, setScrapeUrl,
     uploadedFileName, setUploadedFileName,
     iterationComments, setIterationComments,
     suggestions, setSuggestions,
@@ -97,6 +99,7 @@ export function PromptForgeClient() {
     generating: false,
     evaluating: false,
     iterating: false,
+    scraping: false,
   });
 
   const [copied, setCopied] = useState(false);
@@ -125,19 +128,31 @@ export function PromptForgeClient() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleUrlChange = (index: number, value: string) => {
-    const newUrls = [...knowledgeBaseUrls];
-    newUrls[index] = value;
-    setKnowledgeBaseUrls(newUrls);
-  };
-
-  const addUrlField = () => {
-    setKnowledgeBaseUrls([...knowledgeBaseUrls, '']);
-  };
-
-  const removeUrlField = (index: number) => {
-    const newUrls = knowledgeBaseUrls.filter((_, i) => i !== index);
-    setKnowledgeBaseUrls(newUrls);
+  const onFetchContent = () => {
+    if (!scrapeUrl) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Please enter a URL to fetch content from.',
+      });
+      return;
+    }
+    setLoading(prev => ({ ...prev, scraping: true }));
+    startTransition(async () => {
+      try {
+        const result = await handleScrapeUrl({ url: scrapeUrl });
+        setKnowledgeBase(prev => `${prev}\n\n${result.content}`.trim());
+        toast({ title: 'Success', description: 'Content fetched and added to knowledge base.' });
+      } catch (error: any) {
+        toast({
+          variant: 'destructive',
+          title: 'Scraping Failed',
+          description: error.message,
+        });
+      } finally {
+        setLoading(prev => ({ ...prev, scraping: false }));
+      }
+    });
   };
 
   const processFile = (file: File) => {
@@ -393,15 +408,11 @@ export function PromptForgeClient() {
       return;
     }
     
-    // Copy the raw prompt to the clipboard.
     navigator.clipboard.writeText(currentPrompt);
-
-    // Open the portal in a new tab.
     window.open('https://assistant.ai.it.ufl.edu/admin/assistants/new', '_blank', 'noopener,noreferrer');
-
-    // Notify the user.
+    
     toast({
-      title: 'Prompt Copied & Portal Opened',
+      title: 'Prompt Copied!',
       description: 'The prompt has been copied. Please paste it into the portal, which requires sign-in.',
     });
   };
@@ -475,7 +486,7 @@ export function PromptForgeClient() {
                   placeholder="Your generated or refined prompt will appear here."
                   value={currentPrompt}
                   onChange={(e) => setCurrentPrompt(e.target.value)}
-                  className="min-h-[200px] pr-12 pb-12"
+                  className="min-h-[200px] pr-12"
                 />
                 {currentPrompt && (
                   <Tooltip>
@@ -483,7 +494,7 @@ export function PromptForgeClient() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="absolute bottom-2 right-2"
+                        className="absolute top-2 right-2"
                         onClick={() => copyToClipboard(currentPrompt)}
                         aria-label="Copy generated prompt"
                       >
@@ -517,60 +528,27 @@ export function PromptForgeClient() {
               ) : (
                 <div className="space-y-10">
                   <div className="space-y-4">
-                    <Label className="text-base">Knowledge Base URLs (Optional)</Label>
-                    <div className="space-y-2">
-                      {knowledgeBaseUrls.map((url, index) => (
-                        <div key={index} className="flex items-center gap-2">
-                          <Input
-                            id={`knowledge-base-url-${index}`}
-                            aria-label={`Knowledge base URL ${index + 1}`}
-                            placeholder="https://example.com/knowledge"
-                            value={url}
-                            onChange={(e) => handleUrlChange(index, e.target.value)}
-                          />
-                          {knowledgeBaseUrls.length > 1 ? (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => removeUrlField(index)}
-                              className="shrink-0"
-                            >
-                              <X className="h-4 w-4" />
-                              <span className="sr-only">Remove URL {index + 1}</span>
+                    <Label className="text-base">Knowledge Base from URL (Optional)</Label>
+                    <div className="flex items-center gap-2">
+                        <Input
+                          id="knowledge-base-url"
+                          aria-label="Knowledge base URL"
+                          placeholder="https://example.com/knowledge"
+                          value={scrapeUrl}
+                          onChange={(e) => setScrapeUrl(e.target.value)}
+                          disabled={loading.scraping}
+                        />
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="outline" size="sm" onClick={onFetchContent} disabled={isLoading || loading.scraping}>
+                                {loading.scraping ? <Loader2 className="animate-spin"/> : <Globe />}
+                                Fetch Content
                             </Button>
-                          ) : null}
-                        </div>
-                      ))}
-                    </div>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={addUrlField}
-                          >
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add URL
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Add another URL field for the knowledge base.</p>
-                        </TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="outline" size="sm" onClick={() => toast({ title: "Coming Soon!", description: "Web scraping functionality is not yet implemented."})} aria-disabled="true">
-                              <Globe className="mr-2 h-4 w-4"/>
-                              Fetch Content
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Scrape content from URLs for the knowledge base.</p>
-                        </TooltipContent>
-                      </Tooltip>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Scrape content from the URL for the knowledge base.</p>
+                          </TooltipContent>
+                        </Tooltip>
                     </div>
                   </div>
 
@@ -930,7 +908,7 @@ export function PromptForgeClient() {
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Sends the prompt to the NaviGator Assistant portal.</p>
+                      <p>Copies prompt and opens the NaviGator Assistant portal.</p>
                     </TooltipContent>
                   </Tooltip>
                   <Tooltip>

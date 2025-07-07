@@ -16,8 +16,8 @@ type PromptForgeContextType = {
   setUploadedFileContent: Dispatch<SetStateAction<string>>;
   fewShotExamples: string;
   setFewShotExamples: Dispatch<SetStateAction<string>>;
-  knowledgeBaseUrls: string[];
-  setKnowledgeBaseUrls: Dispatch<SetStateAction<string[]>>;
+  scrapeUrl: string;
+  setScrapeUrl: Dispatch<SetStateAction<string>>;
   uploadedFileName: string;
   setUploadedFileName: Dispatch<SetStateAction<string>>;
   iterationComments: string;
@@ -39,7 +39,7 @@ export function PromptForgeProvider({ children }: { children: ReactNode }) {
   const [knowledgeBase, setKnowledgeBase] = useState('');
   const [uploadedFileContent, setUploadedFileContent] = useState('');
   const [fewShotExamples, setFewShotExamples] = useState('');
-  const [knowledgeBaseUrls, setKnowledgeBaseUrls] = useState(['']);
+  const [scrapeUrl, setScrapeUrl] = useState('');
   const [uploadedFileName, setUploadedFileName] = useState('');
   const [iterationComments, setIterationComments] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -53,7 +53,7 @@ export function PromptForgeProvider({ children }: { children: ReactNode }) {
     knowledgeBase, setKnowledgeBase,
     uploadedFileContent, setUploadedFileContent,
     fewShotExamples, setFewShotExamples,
-    knowledgeBaseUrls, setKnowledgeBaseUrls,
+    scrapeUrl, setScrapeUrl,
     uploadedFileName, setUploadedFileName,
     iterationComments, setIterationComments,
     suggestions, setSuggestions,

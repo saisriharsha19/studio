@@ -31,6 +31,11 @@ import {
     type GeneratePromptMetadataInput,
     type GeneratePromptMetadataOutput,
 } from '@/ai/flows/generate-prompt-tags';
+import {
+    scrapeUrl,
+    type ScrapeUrlInput,
+    type ScrapeUrlOutput
+} from '@/ai/flows/scrape-url-flow';
 import { db } from '@/lib/db';
 import type { Prompt } from '@/hooks/use-prompts';
 import { revalidatePath } from 'next/cache';
@@ -126,6 +131,19 @@ async function handleGeneratePromptTags(input: GeneratePromptMetadataInput): Pro
           return { summary: "Could not generate summary.", tags: [] };
       }
       throw new Error(`An error occurred while generating metadata: ${getErrorMessage(error)}`);
+    }
+}
+
+export async function handleScrapeUrl(input: ScrapeUrlInput): Promise<ScrapeUrlOutput> {
+    try {
+      const output = await scrapeUrl(input);
+      if (!output) {
+        throw new Error('No content received from URL.');
+      }
+      return output;
+    } catch (error) {
+      console.error('Error in handleScrapeUrl:', error);
+      throw new Error(`An error occurred while scraping the URL: ${getErrorMessage(error)}`);
     }
 }
 
