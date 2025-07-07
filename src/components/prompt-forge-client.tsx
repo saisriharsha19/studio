@@ -383,6 +383,23 @@ export function PromptForgeClient() {
     addLibraryPrompt(currentPrompt);
   };
 
+  const handleCreateAssistant = () => {
+    if (!currentPrompt) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Please generate a prompt first.',
+      });
+      return;
+    }
+    navigator.clipboard.writeText(currentPrompt);
+    window.open('https://assistant.ai.it.ufl.edu/admin/', '_blank', 'noopener,noreferrer');
+    toast({
+      title: 'Prompt Copied & Portal Opened',
+      description: 'The link requires authorization and sign-in.',
+    });
+  };
+
   const isLoading = isPending || Object.values(loading).some(Boolean);
 
   return (
@@ -900,14 +917,14 @@ export function PromptForgeClient() {
                       <Button
                         className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
                         disabled={isLoading || !currentPrompt}
-                        onClick={() => toast({ title: "Onyx Integration", description: "This would trigger agent creation in the Onyx (Danswer) system." })}
+                        onClick={handleCreateAssistant}
                       >
                         <Rocket />
-                        Create NaviGator Assistant 
+                        Create NaviGator Assistant
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Deploy this prompt as a new assistant in the NaviGator/Onyx system.</p>
+                      <p>Copies the prompt and opens the NaviGator Assistant portal.</p>
                     </TooltipContent>
                   </Tooltip>
                   <Tooltip>
