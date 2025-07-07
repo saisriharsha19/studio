@@ -12,6 +12,7 @@ import { z } from 'genkit';
 
 const ScrapeUrlInputSchema = z.object({
   url: z.string().url('Please provide a valid URL.'),
+  sitemapUrl: z.string().url().optional().describe('Direct URL to a sitemap.xml file.'),
   includeSubdomains: z.boolean().optional().default(false).describe('Whether to automatically discover and scrape subdomains'),
   maxSubdomains: z.number().int().min(1).max(50).optional().default(10).describe('Maximum number of subdomains to scrape (1-50)'),
 });
@@ -39,7 +40,7 @@ const scrapeUrlFlow = ai.defineFlow(
     inputSchema: ScrapeUrlInputSchema,
     outputSchema: ScrapeUrlOutputSchema,
   },
-  async ({ url, includeSubdomains, maxSubdomains }) => {
+  async ({ url, includeSubdomains, maxSubdomains, sitemapUrl }) => {
     let attempts = 0;
     const maxAttempts = 3;
     const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -102,7 +103,7 @@ const scrapeUrlFlow = ai.defineFlow(
         
         // Handle subdomain discovery if requested
         if (includeSubdomains) {
-          const subdomainResults = await discoverFromSitemap(normalizedUrl, maxSubdomains || 10);
+          const subdomainResults = await discoverFromSitemap(normalizedUrl, maxSubdomains || 10, sitemapUrl);
           result.subdomains = subdomainResults;
         }
         
@@ -134,38 +135,42 @@ const scrapeUrlFlow = ai.defineFlow(
 /**
  * Discovers subdomains and URLs from sitemap
  */
-async function discoverFromSitemap(originalUrl: string, maxSubdomains: number = 10): Promise<Array<{subdomain: string, content: string, error?: string}>> {
+async function discoverFromSitemap(originalUrl: string, maxSubdomains: number = 10, directSitemapUrl?: string): Promise<Array<{subdomain: string, content: string, error?: string}>> {
   const urlObj = new URL(originalUrl);
   const baseDomain = urlObj.hostname;
-  
-  // Check for sitemaps on both root and www domains to improve reliability
-  const potentialBases = new Set<string>();
-  potentialBases.add(`${urlObj.protocol}//${baseDomain}`);
-  if (baseDomain.startsWith('www.')) {
-    potentialBases.add(`${urlObj.protocol}//${baseDomain.replace('www.', '')}`);
+  const sitemapUrlsToProbe: string[] = [];
+
+  if (directSitemapUrl) {
+    sitemapUrlsToProbe.push(directSitemapUrl);
   } else {
-    potentialBases.add(`${urlObj.protocol}//www.${baseDomain}`);
-  }
+    // Check for sitemaps on both root and www domains to improve reliability
+    const potentialBases = new Set<string>();
+    potentialBases.add(`${urlObj.protocol}//${baseDomain}`);
+    if (baseDomain.startsWith('www.')) {
+      potentialBases.add(`${urlObj.protocol}//${baseDomain.replace('www.', '')}`);
+    } else {
+      potentialBases.add(`${urlObj.protocol}//www.${baseDomain}`);
+    }
 
-  const sitemapLocations = [
-    '/robots.txt', // Check robots.txt first, as it often points to the correct sitemap
-    '/sitemap.xml',
-    '/sitemap_index.xml',
-    '/sitemaps.xml',
-    '/sitemap/sitemap.xml',
-  ];
+    const sitemapLocations = [
+      '/robots.txt', // Check robots.txt first, as it often points to the correct sitemap
+      '/sitemap.xml',
+      '/sitemap_index.xml',
+      '/sitemaps.xml',
+      '/sitemap/sitemap.xml',
+    ];
 
-  const sitemapUrls: string[] = [];
-  potentialBases.forEach(base => {
-    sitemapLocations.forEach(loc => {
-      sitemapUrls.push(base + loc);
+    potentialBases.forEach(base => {
+      sitemapLocations.forEach(loc => {
+        sitemapUrlsToProbe.push(base + loc);
+      });
     });
-  });
+  }
   
   const discoveredUrls = new Set<string>();
   
   // Try to find sitemaps
-  for (const sitemapUrl of sitemapUrls) {
+  for (const sitemapUrl of sitemapUrlsToProbe) {
     try {
       const urls = await extractUrlsFromSitemap(sitemapUrl);
       urls.forEach(url => discoveredUrls.add(url));

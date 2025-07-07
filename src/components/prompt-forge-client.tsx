@@ -83,6 +83,7 @@ export function PromptForgeClient() {
     uploadedFileContent, setUploadedFileContent,
     fewShotExamples, setFewShotExamples,
     scrapeUrl, setScrapeUrl,
+    sitemapUrl, setSitemapUrl,
     includeSubdomains, setIncludeSubdomains,
     maxSubdomains, setMaxSubdomains,
     uploadedFileName, setUploadedFileName,
@@ -148,6 +149,7 @@ export function PromptForgeClient() {
           url: scrapeUrl,
           includeSubdomains,
           maxSubdomains,
+          sitemapUrl: sitemapUrl || undefined,
         });
 
         let scrapedContent = result.content;
@@ -424,7 +426,7 @@ export function PromptForgeClient() {
       });
       return;
     }
-    
+
     navigator.clipboard.writeText(currentPrompt);
     window.open('https://assistant.ai.it.ufl.edu/admin/assistants/new', '_blank', 'noopener,noreferrer');
     
@@ -591,18 +593,31 @@ export function PromptForgeClient() {
                             </Label>
                         </div>
                         {includeSubdomains && (
-                            <div className="space-y-2 pl-2 pt-2 animate-in fade-in-0 duration-300">
-                                <Label htmlFor="max-subdomains">Max subdomains to scrape: {maxSubdomains}</Label>
-                                <Slider
-                                    id="max-subdomains"
-                                    min={1}
-                                    max={50}
-                                    step={1}
-                                    value={[maxSubdomains]}
-                                    onValueChange={(value) => setMaxSubdomains(value[0])}
-                                    disabled={loading.scraping}
-                                    className="w-[95%]"
-                                />
+                            <div className="space-y-4 pl-2 pt-2 animate-in fade-in-0 duration-300">
+                                <div>
+                                    <Label htmlFor="max-subdomains" className="font-normal text-sm">Max subdomains to scrape: {maxSubdomains}</Label>
+                                    <Slider
+                                        id="max-subdomains"
+                                        min={1}
+                                        max={50}
+                                        step={1}
+                                        value={[maxSubdomains]}
+                                        onValueChange={(value) => setMaxSubdomains(value[0])}
+                                        disabled={loading.scraping}
+                                        className="w-[95%] pt-2"
+                                    />
+                                </div>
+                                <div className="pt-2">
+                                    <Label htmlFor="sitemap-url" className="text-sm font-normal text-muted-foreground">Or provide direct sitemap URL (optional)</Label>
+                                    <Input
+                                        id="sitemap-url"
+                                        placeholder="https://example.com/sitemap.xml"
+                                        value={sitemapUrl}
+                                        onChange={(e) => setSitemapUrl(e.target.value)}
+                                        disabled={loading.scraping}
+                                        className="h-9 mt-1"
+                                    />
+                                </div>
                             </div>
                         )}
                     </div>

@@ -18,6 +18,8 @@ type PromptForgeContextType = {
   setFewShotExamples: Dispatch<SetStateAction<string>>;
   scrapeUrl: string;
   setScrapeUrl: Dispatch<SetStateAction<string>>;
+  sitemapUrl: string;
+  setSitemapUrl: Dispatch<SetStateAction<string>>;
   includeSubdomains: boolean;
   setIncludeSubdomains: Dispatch<SetStateAction<boolean>>;
   maxSubdomains: number;
@@ -44,6 +46,7 @@ export function PromptForgeProvider({ children }: { children: ReactNode }) {
   const [uploadedFileContent, setUploadedFileContent] = useState('');
   const [fewShotExamples, setFewShotExamples] = useState('');
   const [scrapeUrl, setScrapeUrl] = useState('');
+  const [sitemapUrl, setSitemapUrl] = useState('');
   const [includeSubdomains, setIncludeSubdomains] = useState(false);
   const [maxSubdomains, setMaxSubdomains] = useState(10);
   const [uploadedFileName, setUploadedFileName] = useState('');
@@ -60,6 +63,7 @@ export function PromptForgeProvider({ children }: { children: ReactNode }) {
     uploadedFileContent, setUploadedFileContent,
     fewShotExamples, setFewShotExamples,
     scrapeUrl, setScrapeUrl,
+    sitemapUrl, setSitemapUrl,
     includeSubdomains, setIncludeSubdomains,
     maxSubdomains, setMaxSubdomains,
     uploadedFileName, setUploadedFileName,
