@@ -28,14 +28,14 @@ export default function SettingsLayout({
             </div>
             <div className="grid grid-cols-1 gap-12">
                 {isAuthenticated ? (
-                   <div className='space-y-8 rounded-lg border bg-card p-6'>
+                   <div className='rounded-lg border bg-card'>
                      <SettingsNav />
-                     <div className="pt-2">
+                     <div className="p-6 pt-8">
                         {children}
                      </div>
                    </div>
                 ) : (
-                <div className="flex h-full min-h-[40vh] items-center justify-center rounded-lg border-2 border-dashed bg-card p-6 text-center sm:p-8 lg:p-12">
+                <div className="flex flex-col h-full min-h-[40vh] items-center justify-center rounded-lg border-2 border-dashed bg-card p-6 text-center sm:p-8 lg:p-12">
                     <UserCircle className="h-12 w-12 text-muted-foreground sm:h-16 sm:w-16" />
                     <h2 className="mt-6 text-xl font-semibold tracking-tight sm:text-2xl">Access Your Settings</h2>
                     <p className="mt-2 text-muted-foreground">
