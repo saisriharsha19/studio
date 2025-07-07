@@ -26,7 +26,7 @@ export function SettingsNav() {
   return (
     <>
       {/* Desktop Navigation */}
-      <nav className="hidden md:flex items-center space-x-2 lg:space-x-4 border-b">
+      <nav className="hidden md:flex items-center space-x-2 lg:space-x-4 border-b px-6">
         {navItems.map((item) => {
           const Icon = navIcons[item.href];
           return (
@@ -50,7 +50,7 @@ export function SettingsNav() {
       {/* Mobile Navigation */}
       <div className="md:hidden">
         <ScrollArea className="w-full whitespace-nowrap">
-          <nav className="flex w-max items-center space-x-1 border-b">
+          <nav className="flex w-max items-center border-b px-4">
             {navItems.map((item) => {
               const Icon = navIcons[item.href];
               return (
@@ -58,10 +58,10 @@ export function SettingsNav() {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    'flex items-center gap-2 whitespace-nowrap px-4 py-3 text-sm font-medium transition-colors',
+                    'flex shrink-0 items-center gap-2 whitespace-nowrap px-4 py-3 text-sm font-medium transition-colors hover:text-primary',
                     pathname === item.href
                       ? 'border-b-2 border-primary text-primary'
-                      : 'border-b-2 border-transparent text-muted-foreground hover:text-primary'
+                      : 'border-b-2 border-transparent text-muted-foreground'
                   )}
                 >
                   {Icon && <Icon className="h-4 w-4 flex-shrink-0" />}
@@ -70,7 +70,7 @@ export function SettingsNav() {
               );
             })}
           </nav>
-          <ScrollBar orientation="horizontal" className="invisible" />
+          <ScrollBar orientation="horizontal" />
         </ScrollArea>
       </div>
     </>
