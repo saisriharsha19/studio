@@ -190,8 +190,8 @@ export function PromptHistoryClient() {
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="group" aria-label="Delete prompt">
-                                  <Trash2 className="h-4 w-4 text-destructive group-hover:text-destructive/80" />
+                                <Button variant="ghost" size="icon" className="group focus-visible:bg-accent" aria-label="Delete prompt">
+                                  <Trash2 className="h-4 w-4 text-destructive dark:text-red-500 group-hover:text-accent-foreground group-focus-visible:text-accent-foreground" />
                                 </Button>
                               </AlertDialogTrigger>
                             </TooltipTrigger>
