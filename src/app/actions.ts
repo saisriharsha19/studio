@@ -154,8 +154,8 @@ const MAX_HISTORY_PROMPTS_PER_USER = 20;
 export async function getHistoryPromptsFromDB(userId: string): Promise<Prompt[]> {
   if (!userId) return [];
   try {
-    const stmt = db.prepare('SELECT * FROM prompts WHERE userId = ? ORDER BY createdAt DESC');
-    const prompts = stmt.all(userId) as Prompt[];
+    const sql = 'SELECT * FROM prompts WHERE userId = ? ORDER BY createdAt DESC';
+    const prompts = await db.query<Prompt>(sql, [userId]);
     return prompts;
   } catch (error) {
     console.error('Failed to get history prompts:', error);
@@ -167,13 +167,13 @@ export async function addHistoryPromptToDB(promptText: string, userId: string): 
   if (!userId) throw new Error('User not authenticated.');
 
   try {
-    const countStmt = db.prepare('SELECT COUNT(*) as count FROM prompts WHERE userId = ?');
-    const { count } = countStmt.get(userId) as { count: number };
+    const countSql = 'SELECT COUNT(*) as count FROM prompts WHERE userId = ?';
+    const countResult = await db.query<{ count: number | string }>(countSql, [userId]);
+    const count = Number(countResult[0]?.count || 0);
 
     if (count >= MAX_HISTORY_PROMPTS_PER_USER) {
-      // If limit is reached, delete the oldest prompt
-      const oldestStmt = db.prepare('DELETE FROM prompts WHERE id = (SELECT id FROM prompts WHERE userId = ? ORDER BY createdAt ASC LIMIT 1)');
-      oldestStmt.run(userId);
+      const oldestSql = 'DELETE FROM prompts WHERE id = (SELECT id FROM prompts WHERE userId = ? ORDER BY createdAt ASC LIMIT 1)';
+      await db.run(oldestSql, [userId]);
     }
 
     const newPrompt: Prompt = {
@@ -183,10 +183,8 @@ export async function addHistoryPromptToDB(promptText: string, userId: string): 
       createdAt: new Date().toISOString(),
     };
 
-    const stmt = db.prepare(
-      'INSERT INTO prompts (id, userId, text, createdAt) VALUES (?, ?, ?, ?)'
-    );
-    stmt.run(newPrompt.id, newPrompt.userId, newPrompt.text, newPrompt.createdAt);
+    const insertSql = 'INSERT INTO prompts (id, userId, text, createdAt) VALUES (?, ?, ?, ?)';
+    await db.run(insertSql, [newPrompt.id, newPrompt.userId, newPrompt.text, newPrompt.createdAt]);
     revalidatePath('/history');
     return newPrompt;
   } catch (error: any) {
@@ -199,10 +197,10 @@ export async function deleteHistoryPromptFromDB(id: string, userId: string): Pro
   if (!userId) throw new Error('User not authenticated.');
 
   try {
-    const stmt = db.prepare('DELETE FROM prompts WHERE id = ? AND userId = ?');
-    const result = stmt.run(id, userId);
+    const sql = 'DELETE FROM prompts WHERE id = ? AND userId = ?';
+    const result = await db.run(sql, [id, userId]);
     revalidatePath('/history');
-    if (result.changes === 0) {
+    if (result.rowCount === 0) {
       throw new Error("Prompt not found or you don't have permission to delete it.");
     }
     return { success: true };
@@ -232,25 +230,28 @@ export async function getLibraryPromptsFromDB(userId: string | null): Promise<Pr
       GROUP BY lp.id
       ORDER BY stars DESC, lp.createdAt DESC
     `;
-    const stmt = db.prepare(sql);
-    const results = userId ? stmt.all(userId) : stmt.all();
+    const params = userId ? [userId] : [];
+    const results = await db.query<any>(sql, params);
 
     return results.map((p: any) => {
       let parsedTags: string[] = [];
       // Check if tags is a JSON string before parsing
-      if (p.tags && p.tags.startsWith('[')) {
+      if (p.tags && typeof p.tags === 'string' && p.tags.startsWith('[')) {
           try {
               parsedTags = JSON.parse(p.tags);
           } catch (e) {
               // Ignore parse errors for old data
           }
+      } else if (Array.isArray(p.tags)) {
+        // Postgres might return it as an array directly
+        parsedTags = p.tags;
       }
       return {
         ...p,
-        isStarredByUser: !!p.isStarredByUser,
+        isStarredByUser: !!p.isstarredbyuser, // Postgres returns lowercase
+        stars: Number(p.stars),
         tags: parsedTags,
-        // The previous version stored summary in the 'tags' column, so we keep it as a fallback for old data.
-        summary: p.summary || p.tags,
+        summary: p.summary || p.tags, // Fallback for old data
       };
     });
   } catch (error) {
@@ -263,10 +264,9 @@ export async function addLibraryPromptToDB(promptText: string, userId: string): 
   if (!userId) throw new Error('User not authenticated.');
 
   try {
-    // Avoid adding duplicates to the public library
-    const existsStmt = db.prepare('SELECT 1 FROM library_prompts WHERE text = ?');
-    const exists = existsStmt.get(promptText);
-    if (exists) {
+    const existsSql = 'SELECT 1 FROM library_prompts WHERE text = ?';
+    const existingPrompts = await db.query(existsSql, [promptText]);
+    if (existingPrompts.length > 0) {
         throw new Error('This prompt is already in the library.');
     }
 
@@ -281,14 +281,11 @@ export async function addLibraryPromptToDB(promptText: string, userId: string): 
       tags: JSON.stringify(tags),
     };
 
-    const stmt = db.prepare(
-      'INSERT INTO library_prompts (id, userId, text, createdAt, summary, tags) VALUES (@id, @userId, @text, @createdAt, @summary, @tags)'
-    );
-    stmt.run(newPromptData);
+    const insertSql = 'INSERT INTO library_prompts (id, userId, text, createdAt, summary, tags) VALUES (?, ?, ?, ?, ?, ?)';
+    await db.run(insertSql, [newPromptData.id, newPromptData.userId, newPromptData.text, newPromptData.createdAt, newPromptData.summary, newPromptData.tags]);
     
     revalidatePath('/library');
     
-    // Return a fully formed Prompt object, matching getLibraryPromptsFromDB
     return {
         id: newPromptData.id,
         userId: newPromptData.userId,
@@ -308,18 +305,16 @@ export async function addLibraryPromptToDB(promptText: string, userId: string): 
 export async function deleteLibraryPromptFromDB(promptId: string, userId: string): Promise<{ success: boolean }> {
   if (!userId) throw new Error('User not authenticated.');
   
-  // In a real app, you'd have a proper role check. Here, we'll use the mock admin ID.
   const isAdmin = userId === 'mock-user-123';
   if (!isAdmin) {
     throw new Error('You do not have permission to delete library prompts.');
   }
 
   try {
-    // The ON DELETE CASCADE in the schema will handle deleting from prompt_stars
-    const stmt = db.prepare('DELETE FROM library_prompts WHERE id = ?');
-    const result = stmt.run(promptId);
+    const sql = 'DELETE FROM library_prompts WHERE id = ?';
+    const result = await db.run(sql, [promptId]);
     
-    if (result.changes === 0) {
+    if (result.rowCount === 0) {
       throw new Error("Prompt not found.");
     }
 
@@ -335,17 +330,16 @@ export async function toggleStarForPrompt(promptId: string, userId: string): Pro
   if (!userId) throw new Error('User not authenticated.');
 
   try {
-    const existingStarStmt = db.prepare('SELECT 1 FROM prompt_stars WHERE promptId = ? AND userId = ?');
-    const existingStar = existingStarStmt.get(promptId, userId);
+    const selectSql = 'SELECT 1 FROM prompt_stars WHERE promptId = ? AND userId = ?';
+    const existingStars = await db.query(selectSql, [promptId, userId]);
+    const isStarred = existingStars.length > 0;
 
-    if (existingStar) {
-      // User has already starred, so unstar it.
-      const deleteStmt = db.prepare('DELETE FROM prompt_stars WHERE promptId = ? AND userId = ?');
-      deleteStmt.run(promptId, userId);
+    if (isStarred) {
+      const deleteSql = 'DELETE FROM prompt_stars WHERE promptId = ? AND userId = ?';
+      await db.run(deleteSql, [promptId, userId]);
     } else {
-      // User has not starred, so star it.
-      const insertStmt = db.prepare('INSERT INTO prompt_stars (promptId, userId) VALUES (?, ?)');
-      insertStmt.run(promptId, userId);
+      const insertSql = 'INSERT INTO prompt_stars (promptId, userId) VALUES (?, ?)';
+      await db.run(insertSql, [promptId, userId]);
     }
     
     revalidatePath('/library');

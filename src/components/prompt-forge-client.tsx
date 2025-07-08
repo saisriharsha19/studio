@@ -518,7 +518,7 @@ export function PromptForgeClient() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="absolute top-2 right-2"
+                        className="absolute top-3 right-3 h-8 w-8"
                         onClick={() => copyToClipboard(currentPrompt)}
                         aria-label="Copy generated prompt"
                       >
