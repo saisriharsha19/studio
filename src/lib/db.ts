@@ -72,7 +72,7 @@ function initializeDbClient(): DbClient {
     console.log('Using SQLite for development.');
     const client = createSqliteClient();
     
-    // For SQLite, we can create tables on the fly.
+    // For SQLite, we can create tables and indexes on the fly.
     // For Postgres, migrations should be handled by a separate script/service.
     client.exec(`
       CREATE TABLE IF NOT EXISTS prompts (
@@ -80,9 +80,9 @@ function initializeDbClient(): DbClient {
         userId TEXT NOT NULL,
         text TEXT NOT NULL,
         createdAt TEXT NOT NULL
-      )
-    `);
-    client.exec(`
+      );
+      CREATE INDEX IF NOT EXISTS idx_prompts_userId ON prompts(userId);
+
       CREATE TABLE IF NOT EXISTS library_prompts (
         id TEXT PRIMARY KEY,
         userId TEXT NOT NULL,
@@ -90,15 +90,16 @@ function initializeDbClient(): DbClient {
         createdAt TEXT NOT NULL,
         summary TEXT,
         tags TEXT
-      )
-    `);
-    client.exec(`
+      );
+
       CREATE TABLE IF NOT EXISTS prompt_stars (
         promptId TEXT NOT NULL,
         userId TEXT NOT NULL,
         PRIMARY KEY (promptId, userId),
         FOREIGN KEY (promptId) REFERENCES library_prompts(id) ON DELETE CASCADE
-      )
+      );
+      CREATE INDEX IF NOT EXISTS idx_prompt_stars_promptId ON prompt_stars(promptId);
+      CREATE INDEX IF NOT EXISTS idx_prompt_stars_userId ON prompt_stars(userId);
     `);
     return client;
   }
