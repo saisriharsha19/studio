@@ -30,6 +30,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogClose,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Clipboard, Check, Search, Star, Trash2, Eye } from 'lucide-react';
@@ -101,9 +102,9 @@ export function LibraryClient() {
     <TooltipProvider>
         <Dialog open={!!viewingPrompt} onOpenChange={(isOpen) => !isOpen && setViewingPrompt(null)}>
             <DialogContent className="sm:max-w-2xl">
-                <DialogHeader className="text-center sm:text-left">
+                <DialogHeader>
                     <DialogTitle>{viewingPrompt?.summary || 'Prompt Details'}</DialogTitle>
-                    <DialogDescription className="text-primary-foreground/80">
+                    <DialogDescription>
                         Full content of the selected prompt. You can copy it from here.
                     </DialogDescription>
                 </DialogHeader>
@@ -119,11 +120,11 @@ export function LibraryClient() {
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="absolute top-9 right-9 h-8 w-8 bg-muted/80 hover:bg-accent hover:text-accent-foreground"
+                                    className="absolute top-9 right-12 h-9 w-9 bg-muted/80 hover:bg-accent hover:text-accent-foreground"
                                     onClick={() => copyToClipboard(viewingPrompt)}
                                     aria-label="Copy prompt"
                                 >
-                                    {copiedId === viewingPrompt.id ? <Check className="text-primary" /> : <Clipboard />}
+                                    {copiedId === viewingPrompt.id ? <Check className="text-primary" /> : <Clipboard className="h-5 w-5" />}
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -149,14 +150,14 @@ export function LibraryClient() {
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="h-6 w-6 shrink-0 text-primary sm:h-8 sm:w-8"
+                className="h-6 w-6 shrink-0 text-accent sm:h-8 sm:w-8"
                 aria-hidden="true"
               >
                 <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
                 <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
               </svg>
               <div>
-                <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Prompt Library</h1>
+                <h1 className="text-2xl font-bold tracking-tight text-primary sm:text-3xl">Prompt Library</h1>
                 <p className="text-sm text-muted-foreground">
                   A public collection of curated prompts submitted by the community.
                 </p>
@@ -275,7 +276,7 @@ export function LibraryClient() {
                                     <Tooltip>
                                         <TooltipTrigger asChild>
                                         <AlertDialogTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="group text-destructive/70 hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:ring-accent" aria-label="Delete prompt">
+                                            <Button variant="ghost" size="icon" className="text-destructive/70 hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:ring-accent" aria-label="Delete prompt">
                                                 <Trash2 className="h-4 w-4 transition-colors" />
                                             </Button>
                                         </AlertDialogTrigger>
@@ -287,7 +288,7 @@ export function LibraryClient() {
                                     <AlertDialogContent>
                                         <AlertDialogHeader className="text-center sm:text-left">
                                         <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                        <AlertDialogDescription className="text-primary-foreground/80">
+                                        <AlertDialogDescription>
                                             This action cannot be undone. This will permanently delete this prompt from the public library.
                                         </AlertDialogDescription>
                                         </AlertDialogHeader>
