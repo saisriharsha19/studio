@@ -74,7 +74,7 @@ export function AppHeader() {
           </div>
 
           {/* Desktop: Show full nav */}
-          <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
+          <nav className="hidden flex-col gap-6 font-medium md:flex md:flex-row md:items-center md:gap-5 lg:gap-6">
             <Link href="/" className="flex items-center gap-2 text-lg font-semibold md:text-base">
               <Image src="/NavGAI-19.png" width={25} height={25} alt="NaviGator Logo" />
               <h1 className="text-xl font-bold tracking-tight">NaviGator Sailor</h1>
@@ -84,7 +84,7 @@ export function AppHeader() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'relative rounded-full px-3 py-1.5 text-muted-foreground transition-colors duration-300 hover:bg-muted',
+                  'relative rounded-full px-3 py-1.5 text-sm text-muted-foreground transition-colors duration-300 hover:bg-muted',
                   pathname === item.href
                     ? 'text-accent-foreground'
                     : 'hover:text-foreground'

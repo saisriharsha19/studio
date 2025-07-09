@@ -442,7 +442,7 @@ export function PromptForgeClient() {
 
   return (
     <TooltipProvider>
-      <div className="grid grid-cols-1 gap-12 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-5 lg:gap-12">
         <div className="space-y-12 lg:col-span-3">
           <Card>
             <CardHeader>

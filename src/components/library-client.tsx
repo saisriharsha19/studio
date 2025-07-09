@@ -163,7 +163,7 @@ export function LibraryClient() {
               </div>
             </div>
           </div>
-          <div className="relative w-full sm:w-72">
+          <div className="relative w-full md:w-80">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input 
               placeholder="Search library..."
@@ -276,7 +276,7 @@ export function LibraryClient() {
                                         <TooltipTrigger asChild>
                                         <AlertDialogTrigger asChild>
                                             <Button variant="ghost" size="icon" className="group" aria-label="Delete prompt">
-                                                <Trash2 className="h-4 w-4 text-muted-foreground group-hover:text-destructive" />
+                                                <Trash2 className="h-4 w-4 text-destructive/70 transition-colors group-hover:text-destructive" />
                                             </Button>
                                         </AlertDialogTrigger>
                                         </TooltipTrigger>
