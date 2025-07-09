@@ -30,7 +30,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogClose,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Clipboard, Check, Search, Star, Trash2, Eye } from 'lucide-react';
@@ -120,11 +119,11 @@ export function LibraryClient() {
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="absolute top-8 right-12 h-10 w-10 bg-muted/80 hover:bg-accent hover:text-accent-foreground"
+                                    className="absolute top-8 right-12 h-10 w-10 hover:bg-accent hover:text-accent-foreground"
                                     onClick={() => copyToClipboard(viewingPrompt)}
                                     aria-label="Copy prompt"
                                 >
-                                    {copiedId === viewingPrompt.id ? <Check className="text-primary" /> : <Clipboard className="h-5 w-5" />}
+                                    {copiedId === viewingPrompt.id ? <Check className="h-6 w-6 text-primary" /> : <Clipboard className="h-6 w-6" />}
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -169,7 +168,7 @@ export function LibraryClient() {
             <Input 
               placeholder="Search library..."
               aria-label="Search prompt library"
-              className="h-11 w-full rounded-full border-transparent bg-muted pl-12 pr-4 transition-colors focus:bg-background focus:ring-2 focus:ring-ring"
+              className="h-11 w-full rounded-full border-transparent bg-muted pl-12 pr-4 transition-colors focus:bg-background focus:ring-2 focus:ring-ring dark:focus:ring-accent"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -276,7 +275,7 @@ export function LibraryClient() {
                                     <Tooltip>
                                         <TooltipTrigger asChild>
                                         <AlertDialogTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="text-accent/70 hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:ring-accent" aria-label="Delete prompt">
+                                            <Button variant="ghost" size="icon" className="text-destructive/70 hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:ring-accent" aria-label="Delete prompt">
                                                 <Trash2 className="h-4 w-4 transition-colors" />
                                             </Button>
                                         </AlertDialogTrigger>
