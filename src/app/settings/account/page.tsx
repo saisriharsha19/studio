@@ -83,7 +83,7 @@ export default function AccountSettingsPage() {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDeleteAccount} variant="destructive">Continue</AlertDialogAction>
+                  <AlertDialogAction onClick={handleDeleteAccount}>Continue</AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
