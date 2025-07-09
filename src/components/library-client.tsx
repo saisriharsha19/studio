@@ -28,7 +28,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogDescription,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -183,35 +182,33 @@ export function LibraryClient() {
 
                   return (
                       <li key={prompt.id}>
-                          <article className="flex flex-col rounded-lg border bg-card text-card-foreground shadow-sm">
-                              <header className="flex flex-col space-y-1.5 p-6">
-                                  <h3 className="text-lg font-medium leading-snug">
+                          <Card className="flex flex-col">
+                              <CardHeader>
+                                  <CardTitle>
                                       {prompt.summary || 'No summary available.'}
-                                  </h3>
-                              </header>
+                                  </CardTitle>
+                              </CardHeader>
                               
-                              <div className="p-6 pt-0 flex flex-col flex-grow min-h-0">
-                                  <div className='flex flex-col flex-grow min-h-0'>
-                                      {prompt.tags && prompt.tags.length > 0 && (
-                                          <ul className="flex flex-wrap gap-1.5 pb-4 flex-shrink-0" aria-label="Prompt tags">
-                                              {prompt.tags.map((tag, index) => (
-                                                  <li key={index}>
-                                                    <Badge variant="secondary" className="font-normal">
-                                                        {tag}
-                                                    </Badge>
-                                                  </li>
-                                              ))}
-                                          </ul>
-                                      )}
-                                      <div className="flex-grow min-h-0 flex flex-col justify-center">
-                                        <p className="text-sm text-foreground/80 line-clamp-6">
-                                            {prompt.text}
-                                        </p>
-                                      </div>
+                              <CardContent className="flex flex-col flex-grow min-h-0">
+                                  {prompt.tags && prompt.tags.length > 0 && (
+                                      <ul className="flex flex-wrap gap-1.5 pb-4 flex-shrink-0" aria-label="Prompt tags">
+                                          {prompt.tags.map((tag, index) => (
+                                              <li key={index}>
+                                                <Badge variant="secondary" className="font-normal">
+                                                    {tag}
+                                                </Badge>
+                                              </li>
+                                          ))}
+                                      </ul>
+                                  )}
+                                  <div className="flex-grow min-h-0 flex flex-col justify-center">
+                                    <p className="text-sm text-foreground/80 line-clamp-6">
+                                        {prompt.text}
+                                    </p>
                                   </div>
-                              </div>
+                              </CardContent>
                               
-                              <footer className="flex items-center justify-between p-6 pt-2 flex-shrink-0 mt-auto">
+                              <CardFooter className="flex items-center justify-between pt-2 mt-auto flex-shrink-0">
                                 <Button
                                     variant="link"
                                     className={cn("text-sm font-medium p-0 h-auto", !needsExpansion && "invisible")}
@@ -290,8 +287,8 @@ export function LibraryClient() {
                                           </AlertDialog>
                                       )}
                                   </div>
-                              </footer>
-                          </article>
+                              </CardFooter>
+                          </Card>
                       </li>
                   );
               })}
