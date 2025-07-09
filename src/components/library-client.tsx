@@ -23,6 +23,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Clipboard, Check, Search, Star, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -35,7 +43,7 @@ import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from './ui/t
 
 function PromptCardSkeleton() {
   return (
-    <Card className="flex flex-col h-96">
+    <Card className="flex flex-col">
       <CardHeader>
         <Skeleton className="h-5 w-3/4" />
       </CardHeader>
@@ -67,20 +75,8 @@ export function LibraryClient() {
   const { isAuthenticated, isAdmin } = useAuth();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [expandedIds, setExpandedIds] = useState(new Set<string>());
+  const [viewingPrompt, setViewingPrompt] = useState<Prompt | null>(null);
   const { toast } = useToast();
-
-  const toggleExpanded = (id: string) => {
-    setExpandedIds(prev => {
-        const newSet = new Set(prev);
-        if (newSet.has(id)) {
-            newSet.delete(id);
-        } else {
-            newSet.add(id);
-        }
-        return newSet;
-    });
-  };
 
   const copyToClipboard = (prompt: Prompt) => {
     navigator.clipboard.writeText(prompt.text);
@@ -99,6 +95,42 @@ export function LibraryClient() {
 
   return (
     <TooltipProvider>
+        <Dialog open={!!viewingPrompt} onOpenChange={(isOpen) => !isOpen && setViewingPrompt(null)}>
+            <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>{viewingPrompt?.summary || 'Prompt Details'}</DialogTitle>
+                    <DialogDescription>
+                        Full content of the selected prompt. You can copy it from here.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="relative">
+                    <ScrollArea className="h-96 w-full rounded-md border bg-muted/50 p-4">
+                        <p className="text-sm text-foreground whitespace-pre-wrap">
+                            {viewingPrompt?.text}
+                        </p>
+                    </ScrollArea>
+                    {viewingPrompt && (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="absolute top-3 right-3 h-8 w-8 bg-muted/80 hover:bg-muted"
+                                    onClick={() => copyToClipboard(viewingPrompt)}
+                                    aria-label="Copy prompt"
+                                >
+                                    {copiedId === viewingPrompt.id ? <Check className="text-primary" /> : <Clipboard />}
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Copy prompt</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    )}
+                </div>
+            </DialogContent>
+        </Dialog>
+
       <div className="container mx-auto max-w-7xl py-8 px-4 sm:px-6 lg:px-8">
         <div className="mb-8 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="rounded-lg bg-muted p-6">
@@ -113,7 +145,7 @@ export function LibraryClient() {
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="h-6 w-6 shrink-0 text-accent sm:h-8 sm:w-8"
+                className="h-6 w-6 shrink-0 text-primary sm:h-8 sm:w-8"
                 aria-hidden="true"
               >
                 <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
@@ -147,12 +179,11 @@ export function LibraryClient() {
           ) : filteredPrompts.length > 0 ? (
             <ul className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filteredPrompts.map((prompt) => {
-                  const isExpanded = expandedIds.has(prompt.id);
                   const needsExpansion = prompt.text.length > 250;
 
                   return (
                       <li key={prompt.id}>
-                          <article className="flex flex-col h-96 rounded-lg border bg-card text-card-foreground shadow-sm">
+                          <article className="flex flex-col rounded-lg border bg-card text-card-foreground shadow-sm">
                               <header className="flex flex-col space-y-1.5 p-6">
                                   <h3 className="text-lg font-medium leading-snug">
                                       {prompt.summary || 'No summary available.'}
@@ -173,32 +204,23 @@ export function LibraryClient() {
                                           </ul>
                                       )}
                                       <div className="flex-grow min-h-0 flex flex-col justify-center">
-                                          {isExpanded ? (
-                                              <ScrollArea className="h-full rounded-md bg-muted p-3">
-                                                  <p className="text-sm text-foreground/80 whitespace-pre-wrap">
-                                                      {prompt.text}
-                                                  </p>
-                                              </ScrollArea>
-                                          ) : (
-                                              <p className="text-sm text-foreground/80 line-clamp-6">
-                                                  {prompt.text}
-                                              </p>
-                                          )}
+                                        <p className="text-sm text-foreground/80 line-clamp-6">
+                                            {prompt.text}
+                                        </p>
                                       </div>
                                   </div>
                               </div>
                               
                               <footer className="flex items-center justify-between p-6 pt-2 flex-shrink-0 mt-auto">
-                                  <button 
-                                      onClick={() => toggleExpanded(prompt.id)} 
-                                      className={cn(
-                                          "text-sm font-medium text-primary hover:underline dark:text-primary-foreground",
-                                          !needsExpansion && 'invisible'
-                                      )}
-                                      disabled={!needsExpansion}
-                                  >
-                                      {isExpanded ? "Show less" : "Show more"}
-                                  </button>
+                                    <DialogTrigger asChild>
+                                        <Button
+                                            variant="link"
+                                            className={cn("text-sm font-medium p-0 h-auto", !needsExpansion && "invisible")}
+                                            onClick={() => setViewingPrompt(prompt)}
+                                        >
+                                            Show more
+                                        </Button>
+                                    </DialogTrigger>
                                   
                                   <div className='flex items-center'>
                                       <Tooltip>
@@ -244,8 +266,8 @@ export function LibraryClient() {
                                             <Tooltip>
                                               <TooltipTrigger asChild>
                                                 <AlertDialogTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="group focus-visible:bg-accent" aria-label="Delete prompt">
-                                                        <Trash2 className="h-4 w-4 text-destructive dark:text-red-500 group-hover:text-accent-foreground group-focus-visible:text-accent-foreground" />
+                                                    <Button variant="ghost" size="icon" className="group" aria-label="Delete prompt">
+                                                        <Trash2 className="h-4 w-4 text-muted-foreground group-hover:text-destructive" />
                                                     </Button>
                                                 </AlertDialogTrigger>
                                               </TooltipTrigger>
@@ -262,7 +284,7 @@ export function LibraryClient() {
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>
                                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => deleteLibraryPrompt(prompt.id)}>
+                                                <AlertDialogAction onClick={() => deleteLibraryPrompt(prompt.id)} className={cn(buttonVariants({variant: 'destructive'}))}>
                                                     Delete
                                                 </AlertDialogAction>
                                                 </AlertDialogFooter>

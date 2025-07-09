@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { usePromptHistory, type Prompt } from '@/hooks/use-prompts';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -23,14 +23,23 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Clipboard, Check, Trash2, Search, UserCircle, Lock } from 'lucide-react';
+import { Clipboard, Check, Trash2, Search, UserCircle, Lock, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { Input } from './ui/input';
 import { Skeleton } from './ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { cn } from '@/lib/utils';
 
 function PromptCardSkeleton() {
   return (
@@ -47,6 +56,7 @@ function PromptCardSkeleton() {
       <CardFooter className="flex justify-end gap-2">
         <Skeleton className="h-8 w-8 rounded-full" />
         <Skeleton className="h-8 w-8 rounded-full" />
+        <Skeleton className="h-8 w-8 rounded-full" />
       </CardFooter>
     </Card>
   );
@@ -57,6 +67,7 @@ export function PromptHistoryClient() {
   const { isAuthenticated, login } = useAuth();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [viewingPrompt, setViewingPrompt] = useState<Prompt | null>(null);
   const { toast } = useToast();
 
   const copyToClipboard = (prompt: Prompt) => {
@@ -97,6 +108,41 @@ export function PromptHistoryClient() {
 
   return (
     <TooltipProvider>
+      <Dialog open={!!viewingPrompt} onOpenChange={(isOpen) => !isOpen && setViewingPrompt(null)}>
+        <DialogContent className="sm:max-w-2xl">
+            <DialogHeader>
+                <DialogTitle>{viewingPrompt ? getPromptTitle(viewingPrompt.text) : 'Prompt Details'}</DialogTitle>
+                <DialogDescription>
+                    Full content of the selected prompt. You can copy it from here.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="relative">
+                <ScrollArea className="h-96 w-full rounded-md border bg-muted/50 p-4">
+                    <p className="text-sm text-foreground whitespace-pre-wrap">
+                        {viewingPrompt?.text}
+                    </p>
+                </ScrollArea>
+                {viewingPrompt && (
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="absolute top-3 right-3 h-8 w-8 bg-muted/80 hover:bg-muted"
+                                onClick={() => copyToClipboard(viewingPrompt)}
+                                aria-label="Copy prompt"
+                            >
+                                {copiedId === viewingPrompt.id ? <Check className="text-primary" /> : <Clipboard />}
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Copy prompt</p>
+                        </TooltipContent>
+                    </Tooltip>
+                )}
+            </div>
+        </DialogContent>
+      </Dialog>
       <div className="container mx-auto max-w-7xl py-8 px-4 sm:px-6 lg:px-8">
         <div className="mb-8 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="rounded-lg bg-muted p-6">
@@ -111,7 +157,7 @@ export function PromptHistoryClient() {
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="h-6 w-6 shrink-0 text-accent sm:h-8 sm:w-8"
+                className="h-6 w-6 shrink-0 text-primary sm:h-8 sm:w-8"
                 aria-hidden="true"
               >
                 <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
@@ -165,6 +211,24 @@ export function PromptHistoryClient() {
                       </p>
                     </CardContent>
                     <CardFooter className="flex justify-end gap-2">
+                       <Tooltip>
+                        <TooltipTrigger asChild>
+                           <DialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setViewingPrompt(prompt)}
+                                aria-label="View prompt"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                           </DialogTrigger>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>View full prompt</p>
+                        </TooltipContent>
+                      </Tooltip>
+
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
@@ -190,9 +254,9 @@ export function PromptHistoryClient() {
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="group focus-visible:bg-accent" aria-label="Delete prompt">
-                                  <Trash2 className="h-4 w-4 text-destructive dark:text-red-500 group-hover:text-accent-foreground group-focus-visible:text-accent-foreground" />
-                                </Button>
+                                  <Button variant="ghost" size="icon" className="group" aria-label="Delete prompt">
+                                      <Trash2 className="h-4 w-4 text-muted-foreground group-hover:text-destructive" />
+                                  </Button>
                               </AlertDialogTrigger>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -208,7 +272,7 @@ export function PromptHistoryClient() {
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => deletePrompt(prompt.id)}>
+                              <AlertDialogAction onClick={() => deletePrompt(prompt.id)} className={cn(buttonVariants({variant: 'destructive'}))}>
                                 Delete
                               </AlertDialogAction>
                             </AlertDialogFooter>
