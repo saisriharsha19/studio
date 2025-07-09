@@ -185,7 +185,7 @@ export function LibraryClient() {
               {filteredPrompts.map((prompt) => (
                   <li key={prompt.id}>
                       <Card className="flex flex-col">
-                          <CardHeader>
+                          <CardHeader className="p-4 sm:p-6">
                               <CardTitle>
                                   {prompt.summary || 'No summary available.'}
                               </CardTitle>
@@ -197,7 +197,7 @@ export function LibraryClient() {
                               </CardDescription>
                           </CardHeader>
                           
-                          <CardContent className="flex-grow space-y-4">
+                          <CardContent className="flex-grow space-y-4 p-4 pt-0 sm:p-6">
                               {prompt.tags && prompt.tags.length > 0 && (
                                   <ul className="flex flex-wrap gap-1.5" aria-label="Prompt tags">
                                       {prompt.tags.map((tag, index) => (
@@ -214,7 +214,7 @@ export function LibraryClient() {
                                 </p>
                           </CardContent>
                           
-                          <CardFooter className="flex items-center justify-between">
+                          <CardFooter className="flex items-center justify-between p-4 pt-0 sm:p-6">
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button 
@@ -275,8 +275,8 @@ export function LibraryClient() {
                                     <Tooltip>
                                         <TooltipTrigger asChild>
                                         <AlertDialogTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="group hover:bg-destructive focus-visible:bg-destructive focus-visible:ring-destructive" aria-label="Delete prompt">
-                                                <Trash2 className="h-4 w-4 text-destructive/80 transition-colors group-hover:text-destructive-foreground group-focus-visible:text-destructive-foreground" />
+                                            <Button variant="ghost" size="icon" className="group hover:bg-accent focus-visible:bg-accent focus-visible:ring-accent" aria-label="Delete prompt">
+                                                <Trash2 className="h-4 w-4 text-destructive transition-colors group-hover:text-accent-foreground group-focus-visible:text-accent-foreground" />
                                             </Button>
                                         </AlertDialogTrigger>
                                         </TooltipTrigger>
