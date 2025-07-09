@@ -185,11 +185,11 @@ export function PromptHistoryClient() {
 
         <ScrollArea className="h-full">
           {isLoading ? (
-            <ul className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <ul className="grid grid-cols-1 gap-6">
               {Array.from({ length: 8 }).map((_, i) => <li key={i}><PromptCardSkeleton /></li>)}
             </ul>
           ) : filteredPrompts.length > 0 ? (
-            <ul className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <ul className="grid grid-cols-1 gap-6">
               {filteredPrompts.map((prompt) => (
                 <li key={prompt.id}>
                   <Card className="flex flex-col">

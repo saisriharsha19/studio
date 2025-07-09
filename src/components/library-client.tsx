@@ -8,6 +8,7 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import {
   Card,
   CardContent,
+  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -31,7 +32,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Clipboard, Check, Search, Star, Trash2 } from 'lucide-react';
+import { Clipboard, Check, Search, Star, Trash2, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from './ui/input';
 import { Skeleton } from './ui/skeleton';
@@ -39,35 +40,39 @@ import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 import { Badge } from './ui/badge';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
+import { formatDistanceToNow } from 'date-fns';
 
 function PromptCardSkeleton() {
   return (
     <Card className="flex flex-col">
       <CardHeader>
         <Skeleton className="h-5 w-3/4" />
+        <Skeleton className="h-4 w-1/4 mt-2" />
       </CardHeader>
-      <CardContent className="flex flex-col flex-grow min-h-0">
-        <div className="flex flex-wrap gap-1.5 pb-4 flex-shrink-0">
+      <CardContent className="flex-grow space-y-4">
+        <div className="flex flex-wrap gap-1.5">
             <Skeleton className="h-5 w-14 rounded-full" />
             <Skeleton className="h-5 w-20 rounded-full" />
             <Skeleton className="h-5 w-16 rounded-full" />
         </div>
-        <div className="flex-grow min-h-0 space-y-2">
+        <div className="space-y-2">
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-5/6" />
         </div>
       </CardContent>
-      <CardFooter className="flex items-center justify-between pt-2 mt-auto flex-shrink-0">
-        <Skeleton className="h-5 w-24" />
-        <div className="flex items-center">
-          <Skeleton className="h-8 w-12" />
-          <Skeleton className="h-8 w-8" />
+      <CardFooter className="flex items-center justify-between">
+        <Skeleton className="h-8 w-16" />
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-8 w-8 rounded-full" />
+          <Skeleton className="h-8 w-8 rounded-full" />
+          <Skeleton className="h-8 w-8 rounded-full" />
         </div>
       </CardFooter>
     </Card>
   );
 }
+
 
 export function LibraryClient() {
   const { libraryPrompts, toggleStar, isLoading, deleteLibraryPrompt } = useLibrary();
@@ -172,126 +177,134 @@ export function LibraryClient() {
 
         <ScrollArea className="h-full">
           {isLoading ? (
-            <ul className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <ul className="grid grid-cols-1 gap-6">
               {Array.from({ length: 8 }).map((_, i) => <li key={i}><PromptCardSkeleton /></li>)}
             </ul>
           ) : filteredPrompts.length > 0 ? (
-            <ul className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {filteredPrompts.map((prompt) => {
-                  const needsExpansion = prompt.text.length > 250;
-
-                  return (
-                      <li key={prompt.id}>
-                          <Card className="flex flex-col">
-                              <CardHeader>
-                                  <CardTitle>
-                                      {prompt.summary || 'No summary available.'}
-                                  </CardTitle>
-                              </CardHeader>
-                              
-                              <CardContent className="flex flex-col flex-grow min-h-0">
-                                  {prompt.tags && prompt.tags.length > 0 && (
-                                      <ul className="flex flex-wrap gap-1.5 pb-4 flex-shrink-0" aria-label="Prompt tags">
-                                          {prompt.tags.map((tag, index) => (
-                                              <li key={index}>
-                                                <Badge variant="secondary" className="font-normal">
-                                                    {tag}
-                                                </Badge>
-                                              </li>
-                                          ))}
-                                      </ul>
-                                  )}
-                                  <div className="flex-grow min-h-0 flex flex-col justify-center">
-                                    <p className="text-sm text-foreground/80 line-clamp-6">
-                                        {prompt.text}
-                                    </p>
-                                  </div>
-                              </CardContent>
-                              
-                              <CardFooter className="flex items-center justify-between pt-2 mt-auto flex-shrink-0">
-                                <Button
-                                    variant="link"
-                                    className={cn("text-sm font-medium p-0 h-auto", !needsExpansion && "invisible")}
-                                    onClick={() => setViewingPrompt(prompt)}
+            <ul className="grid grid-cols-1 gap-6">
+              {filteredPrompts.map((prompt) => (
+                  <li key={prompt.id}>
+                      <Card className="flex flex-col">
+                          <CardHeader>
+                              <CardTitle>
+                                  {prompt.summary || 'No summary available.'}
+                              </CardTitle>
+                              <CardDescription>
+                                Added{' '}
+                                {formatDistanceToNow(new Date(prompt.createdAt), {
+                                  addSuffix: true,
+                                })}
+                              </CardDescription>
+                          </CardHeader>
+                          
+                          <CardContent className="flex-grow space-y-4">
+                              {prompt.tags && prompt.tags.length > 0 && (
+                                  <ul className="flex flex-wrap gap-1.5" aria-label="Prompt tags">
+                                      {prompt.tags.map((tag, index) => (
+                                          <li key={index}>
+                                            <Badge variant="secondary" className="font-normal">
+                                                {tag}
+                                            </Badge>
+                                          </li>
+                                      ))}
+                                  </ul>
+                              )}
+                                <p className="text-sm text-foreground/80 line-clamp-3">
+                                    {prompt.text}
+                                </p>
+                          </CardContent>
+                          
+                          <CardFooter className="flex items-center justify-between">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button 
+                                  variant="ghost" 
+                                  className="flex items-center gap-1.5 px-2 text-sm text-muted-foreground" 
+                                  onClick={() => toggleStar(prompt.id)} 
+                                  disabled={!isAuthenticated}
+                                  aria-label={prompt.isStarredByUser ? "Un-star this prompt" : "Star this prompt"}
                                 >
-                                    Show more
+                                    <Star className={cn("h-4 w-4 transition-colors", prompt.isStarredByUser && "fill-yellow-400 text-yellow-400")} />
+                                    {prompt.stars ?? 0}
                                 </Button>
-                                  
-                                  <div className='flex items-center'>
-                                      <Tooltip>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{prompt.isStarredByUser ? "Un-star prompt" : "Star prompt"}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                              
+                            <div className='flex items-center gap-2'>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => setViewingPrompt(prompt)}
+                                            aria-label="View prompt"
+                                        >
+                                            <Eye className="h-4 w-4" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>View full prompt</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                                
+                                <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => copyToClipboard(prompt)}
+                                        aria-label="Copy prompt"
+                                    >
+                                        {copiedId === prompt.id ? (
+                                        <Check className="h-4 w-4 text-primary" />
+                                        ) : (
+                                        <Clipboard className="h-4 w-4" />
+                                        )}
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Copy prompt</p>
+                                </TooltipContent>
+                                </Tooltip>
+
+                                {isAdmin && (
+                                    <AlertDialog>
+                                    <Tooltip>
                                         <TooltipTrigger asChild>
-                                          <Button 
-                                            variant="ghost" 
-                                            className="flex items-center gap-1.5 px-2 text-sm text-muted-foreground" 
-                                            onClick={() => toggleStar(prompt.id)} 
-                                            disabled={!isAuthenticated}
-                                            aria-label={prompt.isStarredByUser ? "Un-star this prompt" : "Star this prompt"}
-                                          >
-                                              <Star className={cn("h-4 w-4 transition-colors", prompt.isStarredByUser && "fill-yellow-400 text-yellow-400")} />
-                                              {prompt.stars ?? 0}
-                                          </Button>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="group" aria-label="Delete prompt">
+                                                <Trash2 className="h-4 w-4 text-muted-foreground group-hover:text-destructive" />
+                                            </Button>
+                                        </AlertDialogTrigger>
                                         </TooltipTrigger>
                                         <TooltipContent>
-                                          <p>{prompt.isStarredByUser ? "Un-star prompt" : "Star prompt"}</p>
+                                        <p>Delete prompt</p>
                                         </TooltipContent>
-                                      </Tooltip>
-
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                          <Button
-                                              variant="ghost"
-                                              size="icon"
-                                              onClick={() => copyToClipboard(prompt)}
-                                              aria-label="Copy prompt"
-                                          >
-                                              {copiedId === prompt.id ? (
-                                              <Check className="h-4 w-4 text-primary" />
-                                              ) : (
-                                              <Clipboard className="h-4 w-4" />
-                                              )}
-                                          </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                          <p>Copy prompt</p>
-                                        </TooltipContent>
-                                      </Tooltip>
-
-                                      {isAdmin && (
-                                          <AlertDialog>
-                                            <Tooltip>
-                                              <TooltipTrigger asChild>
-                                                <AlertDialogTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="group" aria-label="Delete prompt">
-                                                        <Trash2 className="h-4 w-4 text-muted-foreground group-hover:text-destructive" />
-                                                    </Button>
-                                                </AlertDialogTrigger>
-                                              </TooltipTrigger>
-                                              <TooltipContent>
-                                                <p>Delete prompt</p>
-                                              </TooltipContent>
-                                            </Tooltip>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                                <AlertDialogDescription>
-                                                    This action cannot be undone. This will permanently delete this prompt from the public library.
-                                                </AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => deleteLibraryPrompt(prompt.id)} className={cn(buttonVariants({variant: 'destructive'}))}>
-                                                    Delete
-                                                </AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                          </AlertDialog>
-                                      )}
-                                  </div>
-                              </CardFooter>
-                          </Card>
-                      </li>
-                  );
-              })}
+                                    </Tooltip>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This action cannot be undone. This will permanently delete this prompt from the public library.
+                                        </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => deleteLibraryPrompt(prompt.id)} className={cn(buttonVariants({variant: 'destructive'}))}>
+                                            Delete
+                                        </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                    </AlertDialog>
+                                )}
+                            </div>
+                          </CardFooter>
+                      </Card>
+                  </li>
+              ))}
             </ul>
           ) : (
             <div role="region" aria-labelledby="empty-library-heading" className="flex h-[50vh] flex-col items-center justify-center rounded-lg border-2 border-dashed">
