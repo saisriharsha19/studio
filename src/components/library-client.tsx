@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import type { Prompt } from '@/hooks/use-prompts';
 import { useLibrary } from '@/hooks/use-library';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -212,15 +212,13 @@ export function LibraryClient() {
                               </div>
                               
                               <footer className="flex items-center justify-between p-6 pt-2 flex-shrink-0 mt-auto">
-                                    <DialogTrigger asChild>
-                                        <Button
-                                            variant="link"
-                                            className={cn("text-sm font-medium p-0 h-auto", !needsExpansion && "invisible")}
-                                            onClick={() => setViewingPrompt(prompt)}
-                                        >
-                                            Show more
-                                        </Button>
-                                    </DialogTrigger>
+                                <Button
+                                    variant="link"
+                                    className={cn("text-sm font-medium p-0 h-auto", !needsExpansion && "invisible")}
+                                    onClick={() => setViewingPrompt(prompt)}
+                                >
+                                    Show more
+                                </Button>
                                   
                                   <div className='flex items-center'>
                                       <Tooltip>

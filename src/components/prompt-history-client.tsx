@@ -28,7 +28,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogDescription,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -213,16 +212,14 @@ export function PromptHistoryClient() {
                     <CardFooter className="flex justify-end gap-2">
                        <Tooltip>
                         <TooltipTrigger asChild>
-                           <DialogTrigger asChild>
-                              <Button
+                            <Button
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => setViewingPrompt(prompt)}
                                 aria-label="View prompt"
-                              >
+                            >
                                 <Eye className="h-4 w-4" />
-                              </Button>
-                           </DialogTrigger>
+                            </Button>
                         </TooltipTrigger>
                         <TooltipContent>
                           <p>View full prompt</p>
