@@ -127,7 +127,7 @@ export function PromptHistoryClient() {
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                className="absolute top-9 right-9 h-8 w-8 bg-muted/80 hover:bg-muted"
+                                className="absolute top-9 right-9 h-8 w-8 bg-muted/80 hover:bg-accent hover:text-accent-foreground"
                                 onClick={() => copyToClipboard(viewingPrompt)}
                                 aria-label="Copy prompt"
                             >
@@ -212,7 +212,7 @@ export function PromptHistoryClient() {
                     <CardFooter className="flex justify-end gap-2 p-4 pt-0 sm:p-6">
                        <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button
+                           <Button
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => setViewingPrompt(prompt)}
@@ -268,7 +268,7 @@ export function PromptHistoryClient() {
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogCancel className={cn(buttonVariants({variant: 'default'}))}>Cancel</AlertDialogCancel>
                               <AlertDialogAction onClick={() => deletePrompt(prompt.id)} className={cn(buttonVariants({variant: 'destructive'}))}>
                                 Delete
                               </AlertDialogAction>

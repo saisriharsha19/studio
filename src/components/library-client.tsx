@@ -119,7 +119,7 @@ export function LibraryClient() {
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="absolute top-9 right-9 h-8 w-8 bg-muted/80 hover:bg-muted"
+                                    className="absolute top-9 right-9 h-8 w-8 bg-muted/80 hover:bg-accent hover:text-accent-foreground"
                                     onClick={() => copyToClipboard(viewingPrompt)}
                                     aria-label="Copy prompt"
                                 >
@@ -292,7 +292,7 @@ export function LibraryClient() {
                                         </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogCancel className={cn(buttonVariants({variant: 'default'}))}>Cancel</AlertDialogCancel>
                                         <AlertDialogAction onClick={() => deleteLibraryPrompt(prompt.id)} className={cn(buttonVariants({variant: 'destructive'}))}>
                                             Delete
                                         </AlertDialogAction>
