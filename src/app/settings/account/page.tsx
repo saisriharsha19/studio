@@ -76,14 +76,14 @@ export default function AccountSettingsPage() {
               <AlertDialogContent>
                 <AlertDialogHeader className="text-center sm:text-left">
                   <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                  <AlertDialogDescription className="text-primary-foreground/80">
+                  <AlertDialogDescription>
                     This action cannot be undone. This will permanently delete your account and remove
                     your data from our servers.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDeleteAccount}>Continue</AlertDialogAction>
+                  <AlertDialogAction onClick={handleDeleteAccount} variant="destructive">Continue</AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
