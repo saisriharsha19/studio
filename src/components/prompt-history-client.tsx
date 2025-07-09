@@ -109,13 +109,13 @@ export function PromptHistoryClient() {
     <TooltipProvider>
       <Dialog open={!!viewingPrompt} onOpenChange={(isOpen) => !isOpen && setViewingPrompt(null)}>
         <DialogContent className="sm:max-w-2xl">
-            <DialogHeader>
+            <DialogHeader className="text-center sm:text-left">
                 <DialogTitle>{viewingPrompt ? getPromptTitle(viewingPrompt.text) : 'Prompt Details'}</DialogTitle>
-                <DialogDescription>
+                <DialogDescription className="text-primary-foreground/80">
                     Full content of the selected prompt. You can copy it from here.
                 </DialogDescription>
             </DialogHeader>
-            <div className="relative">
+            <div className="relative p-6">
                 <ScrollArea className="h-96 w-full rounded-md border bg-muted/50 p-4">
                     <p className="text-sm text-foreground whitespace-pre-wrap">
                         {viewingPrompt?.text}
@@ -127,7 +127,7 @@ export function PromptHistoryClient() {
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                className="absolute top-3 right-3 h-8 w-8 bg-muted/80 hover:bg-muted"
+                                className="absolute top-9 right-9 h-8 w-8 bg-muted/80 hover:bg-muted"
                                 onClick={() => copyToClipboard(viewingPrompt)}
                                 aria-label="Copy prompt"
                             >
@@ -144,7 +144,7 @@ export function PromptHistoryClient() {
       </Dialog>
       <div className="container mx-auto max-w-7xl py-8 px-4 sm:px-6 lg:px-8">
         <div className="mb-8 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-          <div className="rounded-lg bg-muted p-6">
+          <div className="rounded-lg bg-muted p-6 w-full sm:w-auto">
             <div className='flex items-center gap-3 sm:gap-4'>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -171,7 +171,7 @@ export function PromptHistoryClient() {
               </div>
             </div>
           </div>
-          <div className="relative w-full md:w-80">
+          <div className="relative w-full sm:w-80">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input 
               placeholder="Search history..."
@@ -251,8 +251,8 @@ export function PromptHistoryClient() {
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="group hover:bg-accent focus-visible:bg-accent focus-visible:ring-accent" aria-label="Delete prompt">
-                                      <Trash2 className="h-4 w-4 text-destructive transition-colors group-hover:text-accent-foreground group-focus-visible:text-accent-foreground" />
+                                  <Button variant="ghost" size="icon" className="group text-destructive/70 hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:ring-accent" aria-label="Delete prompt">
+                                      <Trash2 className="h-4 w-4 transition-colors" />
                                   </Button>
                               </AlertDialogTrigger>
                             </TooltipTrigger>
@@ -261,9 +261,9 @@ export function PromptHistoryClient() {
                             </TooltipContent>
                           </Tooltip>
                           <AlertDialogContent>
-                            <AlertDialogHeader>
+                            <AlertDialogHeader className="text-center sm:text-left">
                               <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                              <AlertDialogDescription>
+                              <AlertDialogDescription className="text-primary-foreground/80">
                                 This action cannot be undone. This will permanently delete this prompt from your history.
                               </AlertDialogDescription>
                             </AlertDialogHeader>

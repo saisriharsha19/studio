@@ -74,9 +74,9 @@ export default function AccountSettingsPage() {
                 </TooltipContent>
               </Tooltip>
               <AlertDialogContent>
-                <AlertDialogHeader>
+                <AlertDialogHeader className="text-center sm:text-left">
                   <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
+                  <AlertDialogDescription className="text-primary-foreground/80">
                     This action cannot be undone. This will permanently delete your account and remove
                     your data from our servers.
                   </AlertDialogDescription>
