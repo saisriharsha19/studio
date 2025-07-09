@@ -168,7 +168,7 @@ export function LibraryClient() {
             <Input 
               placeholder="Search library..."
               aria-label="Search prompt library"
-              className="h-11 w-full rounded-full border-transparent bg-muted pl-12 pr-4 transition-colors focus:bg-background focus:ring-2 focus:ring-ring dark:focus:ring-accent"
+              className="h-11 w-full rounded-full border-transparent bg-muted pl-12 pr-4 transition-colors focus:bg-background focus:ring-2 focus:ring-ring"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />

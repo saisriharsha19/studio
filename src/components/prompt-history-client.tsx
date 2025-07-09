@@ -127,7 +127,7 @@ export function PromptHistoryClient() {
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                className="absolute top-8 right-12 h-10 w-10 bg-muted/80 hover:bg-accent hover:text-accent-foreground"
+                                className="absolute top-8 right-12 h-10 w-10 hover:bg-accent hover:text-accent-foreground"
                                 onClick={() => copyToClipboard(viewingPrompt)}
                                 aria-label="Copy prompt"
                             >
@@ -176,7 +176,7 @@ export function PromptHistoryClient() {
             <Input 
               placeholder="Search history..."
               aria-label="Search prompt history"
-              className="h-11 w-full rounded-full border-transparent bg-muted pl-12 pr-4 transition-colors focus:bg-background focus:ring-2 focus:ring-ring dark:focus:ring-accent"
+              className="h-11 w-full rounded-full border-transparent bg-muted pl-12 pr-4 transition-colors focus:bg-background focus:ring-2 focus:ring-ring"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
