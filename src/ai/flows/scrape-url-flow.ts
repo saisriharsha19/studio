@@ -45,7 +45,7 @@ const CrawlResultSchema = z.object({
   content_hash: z.string(),
   word_count: z.number(),
   links: z.array(z.string()).optional(),
-  error: z.string().optional(),
+  error: z.string().nullable().optional(),
 });
 
 const CrawlMetadataSchema = z.object({
