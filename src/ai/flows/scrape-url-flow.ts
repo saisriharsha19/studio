@@ -15,21 +15,61 @@ const ScrapeUrlInputSchema = z.object({
   sitemapUrl: z.string().url().optional().describe('Direct URL to a sitemap.xml file.'),
   includeSubdomains: z.boolean().optional().default(false).describe('Whether to automatically discover and scrape subdomains'),
   maxSubdomains: z.number().int().min(1).max(50).optional().default(10).describe('Maximum number of subdomains to scrape (1-50)'),
+  maxPages: z.number().int().min(1).max(1000).optional().default(100).describe('Maximum pages per domain (1-1000)'),
+  maxConcurrent: z.number().int().min(1).max(50).optional().default(10).describe('Maximum concurrent requests (1-50)'),
+  delayBetweenRequests: z.number().min(0.1).max(10.0).optional().default(1.0).describe('Delay between requests in seconds (0.1-10.0)'),
+  maxMemoryMb: z.number().int().min(100).max(2000).optional().default(500).describe('Maximum memory usage in MB (100-2000)'),
+  preferSitemap: z.boolean().optional().default(true).describe('Prefer sitemap over manual crawling'),
+  includeContent: z.boolean().optional().default(true).describe('Include full content in response'),
+  includeLinks: z.boolean().optional().default(true).describe('Include extracted links in response'),
+  includeMetadata: z.boolean().optional().default(true).describe('Include metadata in response'),
 });
 
 export type ScrapeUrlInput = z.infer<typeof ScrapeUrlInputSchema>;
 
 const SubdomainResultSchema = z.object({
   subdomain: z.string(),
-  content: z.string(),
+  pages_crawled: z.number(),
+  content_preview: z.string(),
   summary: z.string().optional(),
   error: z.string().optional(),
 });
 
+const CrawlResultSchema = z.object({
+  url: z.string(),
+  title: z.string(),
+  content: z.string().optional(),
+  summary: z.string().optional(),
+  metadata: z.record(z.any()).optional(),
+  crawl_time: z.string(),
+  content_hash: z.string(),
+  word_count: z.number(),
+  links: z.array(z.string()).optional(),
+  error: z.string().optional(),
+});
+
+const CrawlMetadataSchema = z.object({
+  crawl_time: z.string(),
+  base_url: z.string(),
+  total_pages: z.number(),
+  discovered_subdomains: z.array(z.string()),
+  sitemap_urls_found: z.number(),
+  crawl_method: z.string(),
+  resource_stats: z.record(z.any()),
+  processing_time_seconds: z.number(),
+});
+
 const ScrapeUrlOutputSchema = z.object({
-  content: z.string().describe('The extracted text content from the URL.'),
-  summary: z.string().optional().describe('An AI-generated summary of the main content.'),
-  subdomains: z.array(SubdomainResultSchema).optional().describe('Content from discovered subdomains if includeSubdomains is true'),
+  success: z.boolean(),
+  message: z.string(),
+  metadata: CrawlMetadataSchema,
+  results: z.array(CrawlResultSchema),
+  subdomains_results: z.array(SubdomainResultSchema).optional(),
+  sitemap_urls: z.array(z.string()).optional(),
+  // Legacy fields for backward compatibility
+  content: z.string().optional().describe('Combined content from all results'),
+  summary: z.string().optional().describe('Combined summary from all results'),
+  subdomains: z.array(SubdomainResultSchema).optional().describe('Alias for subdomains_results'),
 });
 
 export type ScrapeUrlOutput = z.infer<typeof ScrapeUrlOutputSchema>;
@@ -44,29 +84,49 @@ const scrapeUrlFlow = ai.defineFlow(
     inputSchema: ScrapeUrlInputSchema,
     outputSchema: ScrapeUrlOutputSchema,
   },
-  async ({ url, includeSubdomains, maxSubdomains, sitemapUrl }) => {
+  async ({ 
+    url, 
+    includeSubdomains = false, 
+    maxSubdomains = 10, 
+    sitemapUrl,
+    maxPages = 100,
+    maxConcurrent = 10,
+    delayBetweenRequests = 1.0,
+    maxMemoryMb = 500,
+    preferSitemap = true,
+    includeContent = true,
+    includeLinks = true,
+    includeMetadata = true,
+  }) => {
     const crawlerApiUrl = process.env.CRAWLER_API_URL;
     if (!crawlerApiUrl) {
         throw new Error('Crawler API URL is not configured. Please set CRAWLER_API_URL in your environment variables.');
     }
     
     try {
+        // Map client parameters to API parameters
         const payload = {
             base_url: url,
             max_subdomains: includeSubdomains ? maxSubdomains : 0,
-            max_pages: 1, // The external API is page-oriented, we want the content for the main URL.
-            prefer_sitemap: !!sitemapUrl,
+            max_pages: maxPages,
+            max_concurrent: maxConcurrent,
+            delay_between_requests: delayBetweenRequests,
+            max_memory_mb: maxMemoryMb,
+            prefer_sitemap: preferSitemap,
             sitemap_override: sitemapUrl,
+            include_content: includeContent,
+            include_links: includeLinks,
+            include_metadata: includeMetadata,
         };
 
-        const response = await fetch(crawlerApiUrl, {
+        const response = await fetch(crawlerApiUrl+'/scrape', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
             },
             body: JSON.stringify(payload),
-            signal: AbortSignal.timeout(60000), // 60-second timeout for the crawl
+            signal: AbortSignal.timeout(120000), // 2-minute timeout for the crawl
         });
 
         if (!response.ok) {
@@ -76,37 +136,52 @@ const scrapeUrlFlow = ai.defineFlow(
 
         const result = await response.json();
         
-        const mainResult = result.results?.[0];
-        
-        if (!mainResult) {
-            throw new Error('Crawler API returned no results for the main URL.');
+        // Validate that we have the expected structure
+        if (!result.success) {
+            throw new Error(`Crawler API returned error: ${result.message || 'Unknown error'}`);
         }
 
-        let combinedSubdomainContent = '';
-        if (includeSubdomains && result.subdomains_results) {
-            combinedSubdomainContent = result.subdomains_results
-                .map((sub: any) => `--- Subdomain: ${sub.subdomain} ---\nContent: ${sub.content}\nSummary: ${sub.summary || 'N/A'}`)
-                .join('\n\n');
+        if (!result.results || !Array.isArray(result.results)) {
+            throw new Error('Crawler API returned invalid results structure');
         }
 
-        const mainContent = mainResult.content || '';
-        const fullContent = [mainContent, combinedSubdomainContent].filter(Boolean).join('\n\n');
+        // Create legacy content field for backward compatibility
+        const combinedContent = result.results
+            .filter((r: any) => r.content)
+            .map((r: any) => `URL: ${r.url}\nTitle: ${r.title}\n\n${r.content}`)
+            .join('\n\n---\n\n');
 
-        // The external API returns a more complex structure, so we adapt it to our expected output.
-        // We'll combine all subdomain content into the main `content` field.
+        // Create legacy summary field for backward compatibility  
+        const combinedSummary = result.results
+            .filter((r: any) => r.summary)
+            .map((r: any) => r.summary)
+            .join('\n\n');
+
+        // Return the full API response with legacy fields added
         return {
-            content: fullContent,
-            summary: mainResult.summary,
-            // The `subdomains` field in our output can be structured if needed,
-            // but for now, we combine it for simplicity.
-            subdomains: result.subdomains_results || [],
+            success: result.success,
+            message: result.message,
+            metadata: result.metadata,
+            results: result.results,
+            subdomains_results: result.subdomains_results,
+            sitemap_urls: result.sitemap_urls,
+            // Legacy fields for backward compatibility
+            content: combinedContent,
+            summary: combinedSummary,
+            subdomains: result.subdomains_results, // Alias for backward compatibility
         };
 
     } catch (error: any) {
         console.error(`Error calling crawler API for ${url}:`, error);
+        
         if (error.name === 'TimeoutError') {
-             throw new Error('The request to the crawler service timed out after 60 seconds.');
+            throw new Error('The request to the crawler service timed out after 2 minutes.');
         }
+        
+        if (error.name === 'AbortError') {
+            throw new Error('The request to the crawler service was aborted.');
+        }
+        
         throw new Error(`Failed to process URL via crawler service. Reason: ${error.message}`);
     }
   }

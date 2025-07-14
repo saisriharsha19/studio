@@ -151,17 +151,16 @@ export function PromptForgeClient() {
           maxSubdomains,
           sitemapUrl: sitemapUrl || undefined,
         });
+        
+        // Use the new, structured content field
+        const scrapedContent = result.content || '';
 
-        let scrapedContent = result.content;
-        if (result.subdomains && result.subdomains.length > 0) {
-            const subdomainContent = result.subdomains
-                .map(sub => `--- Subdomain: ${sub.subdomain} ---\n${sub.content}`)
-                .join('\n\n');
-            scrapedContent += `\n\n${subdomainContent}`;
+        if (scrapedContent) {
+          setKnowledgeBase(prev => `${prev}\n\n${scrapedContent}`.trim());
+          toast({ title: 'Success', description: `${result.message}. Added content to knowledge base.` });
+        } else {
+          toast({ title: 'Scraping Complete', description: result.message || 'No new content was added.' });
         }
-
-        setKnowledgeBase(prev => `${prev}\n\n${scrapedContent}`.trim());
-        toast({ title: 'Success', description: 'Content fetched and added to knowledge base.' });
       } catch (error: any) {
         toast({
           variant: 'destructive',
