@@ -56,6 +56,7 @@ const CrawlMetadataSchema = z.object({
   sitemap_urls_found: z.number(),
   crawl_method: z.string(),
   resource_stats: z.record(z.any()),
+  processing_time_seconds: z.number().optional(),
 });
 
 const ScrapeUrlOutputSchema = z.object({
@@ -118,7 +119,7 @@ const scrapeUrlFlow = ai.defineFlow(
             include_metadata: includeMetadata,
         };
 
-        const response = await fetch(crawlerApiUrl, {
+        const response = await fetch(crawlerApiUrl+'/scrape', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -153,6 +154,8 @@ const scrapeUrlFlow = ai.defineFlow(
             .filter((r: any) => r.summary)
             .map((r: any) => r.summary)
             .join('\n\n');
+        
+        const subdomainsResults = result.subdomains_results || [];
 
         // Return the full API response with legacy fields added
         return {
@@ -160,12 +163,12 @@ const scrapeUrlFlow = ai.defineFlow(
             message: result.message,
             metadata: result.metadata,
             results: resultsArray,
-            subdomains_results: result.subdomains_results,
-            sitemap_urls: result.sitemap_urls,
+            subdomains_results: subdomainsResults,
+            sitemap_urls: result.sitemap_urls || [],
             // Legacy fields for backward compatibility
             content: combinedContent,
             summary: combinedSummary,
-            subdomains: result.subdomains_results, // Alias for backward compatibility
+            subdomains: subdomainsResults, // Alias for backward compatibility
         };
 
     } catch (error: any) {
