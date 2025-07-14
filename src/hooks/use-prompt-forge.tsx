@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { EvaluateAndIteratePromptOutput } from '@/ai/flows/evaluate-and-iterate-prompt';
@@ -24,6 +25,10 @@ type PromptForgeContextType = {
   setIncludeSubdomains: Dispatch<SetStateAction<boolean>>;
   maxSubdomains: number;
   setMaxSubdomains: Dispatch<SetStateAction<number>>;
+  maxPages: number;
+  setMaxPages: Dispatch<SetStateAction<number>>;
+  preferSitemap: boolean;
+  setPreferSitemap: Dispatch<SetStateAction<boolean>>;
   uploadedFileName: string;
   setUploadedFileName: Dispatch<SetStateAction<string>>;
   iterationComments: string;
@@ -49,6 +54,8 @@ export function PromptForgeProvider({ children }: { children: ReactNode }) {
   const [sitemapUrl, setSitemapUrl] = useState('');
   const [includeSubdomains, setIncludeSubdomains] = useState(false);
   const [maxSubdomains, setMaxSubdomains] = useState(10);
+  const [maxPages, setMaxPages] = useState(100);
+  const [preferSitemap, setPreferSitemap] = useState(true);
   const [uploadedFileName, setUploadedFileName] = useState('');
   const [iterationComments, setIterationComments] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -66,6 +73,8 @@ export function PromptForgeProvider({ children }: { children: ReactNode }) {
     sitemapUrl, setSitemapUrl,
     includeSubdomains, setIncludeSubdomains,
     maxSubdomains, setMaxSubdomains,
+    maxPages, setMaxPages,
+    preferSitemap, setPreferSitemap,
     uploadedFileName, setUploadedFileName,
     iterationComments, setIterationComments,
     suggestions, setSuggestions,
