@@ -56,14 +56,13 @@ const CrawlMetadataSchema = z.object({
   sitemap_urls_found: z.number(),
   crawl_method: z.string(),
   resource_stats: z.record(z.any()),
-  processing_time_seconds: z.number(),
 });
 
 const ScrapeUrlOutputSchema = z.object({
   success: z.boolean(),
   message: z.string(),
-  metadata: CrawlMetadataSchema,
-  results: z.array(CrawlResultSchema),
+  metadata: CrawlMetadataSchema.optional(),
+  results: z.array(CrawlResultSchema).optional(),
   subdomains_results: z.array(SubdomainResultSchema).optional(),
   sitemap_urls: z.array(z.string()).optional(),
   // Legacy fields for backward compatibility
@@ -119,14 +118,14 @@ const scrapeUrlFlow = ai.defineFlow(
             include_metadata: includeMetadata,
         };
 
-        const response = await fetch(crawlerApiUrl+'/scrape', {
+        const response = await fetch(crawlerApiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
             },
             body: JSON.stringify(payload),
-            signal: AbortSignal.timeout(120000), // 2-minute timeout for the crawl
+            signal: AbortSignal.timeout(180000), // 3-minute timeout for the crawl
         });
 
         if (!response.ok) {
@@ -141,18 +140,16 @@ const scrapeUrlFlow = ai.defineFlow(
             throw new Error(`Crawler API returned error: ${result.message || 'Unknown error'}`);
         }
 
-        if (!result.results || !Array.isArray(result.results)) {
-            throw new Error('Crawler API returned invalid results structure');
-        }
-
+        const resultsArray = result.results || [];
+        
         // Create legacy content field for backward compatibility
-        const combinedContent = result.results
+        const combinedContent = resultsArray
             .filter((r: any) => r.content)
             .map((r: any) => `URL: ${r.url}\nTitle: ${r.title}\n\n${r.content}`)
             .join('\n\n---\n\n');
 
         // Create legacy summary field for backward compatibility  
-        const combinedSummary = result.results
+        const combinedSummary = resultsArray
             .filter((r: any) => r.summary)
             .map((r: any) => r.summary)
             .join('\n\n');
@@ -162,7 +159,7 @@ const scrapeUrlFlow = ai.defineFlow(
             success: result.success,
             message: result.message,
             metadata: result.metadata,
-            results: result.results,
+            results: resultsArray,
             subdomains_results: result.subdomains_results,
             sitemap_urls: result.sitemap_urls,
             // Legacy fields for backward compatibility
@@ -175,7 +172,7 @@ const scrapeUrlFlow = ai.defineFlow(
         console.error(`Error calling crawler API for ${url}:`, error);
         
         if (error.name === 'TimeoutError') {
-            throw new Error('The request to the crawler service timed out after 2 minutes.');
+            throw new Error('The request to the crawler service timed out after 3 minutes.');
         }
         
         if (error.name === 'AbortError') {
