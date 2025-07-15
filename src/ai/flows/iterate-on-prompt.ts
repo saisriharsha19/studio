@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -46,9 +47,9 @@ const iterateOnPromptFlow = ai.defineFlow(
     // The large system prompt is now stored on the Python backend.
     // We only send the dynamic data.
     const payload = {
-        current_prompt: input.currentPrompt,
-        user_comments: input.userComments,
-        selected_suggestions: input.selectedSuggestions,
+        currentPrompt: input.currentPrompt,
+        userComments: input.userComments,
+        selectedSuggestions: input.selectedSuggestions,
     };
 
     const response = await fetch(`${pythonBackendUrl}/iterate-on-prompt`, {

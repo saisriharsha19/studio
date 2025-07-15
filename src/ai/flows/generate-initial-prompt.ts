@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -44,7 +45,7 @@ const generateInitialPromptFlow = ai.defineFlow(
     // The large system prompt is now stored on the Python backend.
     // We only send the dynamic data (userNeeds).
     const payload = {
-        user_needs: input.userNeeds
+        userNeeds: input.userNeeds
     };
 
     const response = await fetch(`${pythonBackendUrl}/generate-initial-prompt`, {

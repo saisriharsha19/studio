@@ -1,3 +1,4 @@
+
 // src/ai/flows/optimize-prompt-with-context.ts
 'use server';
 /**
@@ -55,9 +56,9 @@ const optimizePromptWithContextFlow = ai.defineFlow(
     // The large system prompt is now stored on the Python backend.
     // We only send the dynamic data.
     const payload = {
-        original_prompt: input.prompt,
-        retrieved_content: input.retrievedContent,
-        ground_truths: input.groundTruths,
+        prompt: input.prompt,
+        retrievedContent: input.retrievedContent,
+        groundTruths: input.groundTruths,
     };
 
     const response = await fetch(`${pythonBackendUrl}/optimize-prompt-with-context`, {

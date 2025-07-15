@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -44,7 +45,7 @@ const generatePromptMetadataFlow = ai.defineFlow(
     // The large system prompt is now stored on the Python backend.
     // We only send the dynamic data.
     const payload = {
-        prompt_text: input.promptText,
+        promptText: input.promptText,
     };
 
     const response = await fetch(`${pythonBackendUrl}/generate-prompt-tags`, {

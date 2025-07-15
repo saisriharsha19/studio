@@ -71,10 +71,10 @@ const evaluateAndIteratePromptFlow = ai.defineFlow(
     // The large system prompt is now stored on the Python backend.
     // We only send the dynamic data.
     const payload = {
-      existing_prompt: input.prompt,
-      user_needs: input.userNeeds,
-      knowledge_base_content: input.retrievedContent,
-      ground_truths: input.groundTruths,
+      prompt: input.prompt,
+      userNeeds: input.userNeeds,
+      retrievedContent: input.retrievedContent,
+      groundTruths: input.groundTruths,
     };
 
     const response = await fetch(`${pythonBackendUrl}/evaluate-and-iterate-prompt`, {
