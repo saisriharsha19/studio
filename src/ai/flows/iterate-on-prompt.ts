@@ -158,39 +158,31 @@ Start with a **System** layer that answers *who* and *what*.
 Add a **Task** layer that dictates *how* and *when*—including filters, style guides, and self‑checks.
 Respond with a single, valid JSON object containing one key: "newPrompt". The value should be the newly generated, refined system prompt as a string. Do not include any extra commentary or markdown formatting.`;
 
-    const response = await fetch(`${process.env.UFL_AI_BASE_URL}/chat/completions`, {
+    const pythonBackendUrl = process.env.PYTHON_BACKEND_URL;
+    if (!pythonBackendUrl) {
+      throw new Error('PYTHON_BACKEND_URL is not configured.');
+    }
+
+    const response = await fetch(`${pythonBackendUrl}/iterate-on-prompt`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.UFL_AI_API_KEY}`,
         },
-        body: JSON.stringify({
-            model: 'llama-3.3-70b-instruct',
-            messages: [{ role: 'user', content: fullPrompt }],
-            response_format: { type: "json_object" }, 
-        }),
+        body: JSON.stringify({ prompt: fullPrompt }),
     });
 
     if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`API request failed: ${response.statusText} - ${errorText}`);
+        throw new Error(`API request to Python backend failed: ${response.statusText} - ${errorText}`);
     }
 
-    const result = await response.json();
-    const content = result.choices[0].message.content;
+    const content = await response.json();
 
     try {
-        // The model can sometimes wrap the JSON in markdown. Find the first '{' and last '}' to extract the JSON.
-        const jsonMatch = content.match(/{[\s\S]*}/);
-        if (!jsonMatch) {
-          throw new Error('No JSON object found in the response.');
-        }
-        const jsonString = jsonMatch[0];
-        const parsedContent = JSON.parse(jsonString);
-        return IterateOnPromptOutputSchema.parse(parsedContent);
+        return IterateOnPromptOutputSchema.parse(content);
     } catch (e: any) {
-        console.error("Failed to parse LLM response:", e, "Raw content:", content);
-        throw new Error(`Failed to parse LLM response as JSON: ${e.message}`);
+        console.error("Failed to parse response from Python backend:", e, "Raw content:", content);
+        throw new Error(`Failed to parse response from Python backend as JSON: ${e.message}`);
     }
   }
 );
