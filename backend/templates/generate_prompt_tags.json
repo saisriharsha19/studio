@@ -1,0 +1,5 @@
+{
+  "description": "Template for generating summary and tags for a prompt",
+  "version": "1.0",
+  "template": "Analyze the following system prompt.\n\nYour task is to generate two things:\n1.  A very short, concise summary (around 5-10 words) that explains what the prompt is used for. This will be used as a title.\n2.  A list of 2-4 relevant keywords (tags) for searching and filtering. Tags should be lowercase and one or two words at most.\n\nPrompt to analyze: \"{promptText}\"\n\nReturn the response as a single, valid JSON object with two keys: \"summary\" (a short string) and \"tags\" (an array of 2-4 strings). Do not include any extra commentary or markdown formatting."
+}

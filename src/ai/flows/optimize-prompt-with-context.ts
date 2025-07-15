@@ -1,3 +1,4 @@
+
 // src/ai/flows/optimize-prompt-with-context.ts
 'use server';
 /**
@@ -47,51 +48,39 @@ const optimizePromptWithContextFlow = ai.defineFlow(
     outputSchema: OptimizePromptWithContextOutputSchema,
   },
   async (input) => {
-    const fullPrompt = `You are an AI prompt optimizer. Analyze the retrieved content and ground truths to refine the given prompt, ensuring it aligns with the contextual information and improves the accuracy and relevance of the assistant's responses.
-
-Original Prompt: ${input.prompt}
-
-Retrieved Content: ${input.retrievedContent}
-
-Ground Truths: ${input.groundTruths}
-
-Based on the retrieved content and ground truths, provide an optimized prompt and explain your reasoning for the changes.
-
-Respond with a single, valid JSON object with two keys: "optimizedPrompt" (the new prompt) and "reasoning" (your explanation). Do not include any extra commentary or markdown formatting.`;
+    const pythonBackendUrl = process.env.PYTHON_BACKEND_URL;
+    if (!pythonBackendUrl) {
+      throw new Error('PYTHON_BACKEND_URL is not configured.');
+    }
     
-    const response = await fetch(`${process.env.UFL_AI_BASE_URL}/chat/completions`, {
+    // The large system prompt is now stored on the Python backend.
+    // We only send the dynamic data.
+    const payload = {
+        prompt: input.prompt,
+        retrievedContent: input.retrievedContent,
+        groundTruths: input.groundTruths,
+    };
+
+    const response = await fetch(`${pythonBackendUrl}optimize-prompt-with-context`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.UFL_AI_API_KEY}`,
         },
-        body: JSON.stringify({
-            model: 'llama-3-70b-instruct',
-            messages: [{ role: 'user', content: fullPrompt }],
-            response_format: { type: "json_object" }, 
-        }),
+        body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`API request failed: ${response.statusText} - ${errorText}`);
+        throw new Error(`API request to Python backend failed: ${response.statusText} - ${errorText}`);
     }
 
-    const result = await response.json();
-    const content = result.choices[0].message.content;
+    const content = await response.json();
 
     try {
-        // The model can sometimes wrap the JSON in markdown. Find the first '{' and last '}' to extract the JSON.
-        const jsonMatch = content.match(/{[\s\S]*}/);
-        if (!jsonMatch) {
-          throw new Error('No JSON object found in the response.');
-        }
-        const jsonString = jsonMatch[0];
-        const parsedContent = JSON.parse(jsonString);
-        return OptimizePromptWithContextOutputSchema.parse(parsedContent);
+        return OptimizePromptWithContextOutputSchema.parse(content);
     } catch (e: any) {
-        console.error("Failed to parse LLM response:", e, "Raw content:", content);
-        throw new Error(`Failed to parse LLM response as JSON: ${e.message}`);
+        console.error("Failed to parse response from Python backend:", e, "Raw content:", content);
+        throw new Error(`Failed to parse response from Python backend as JSON: ${e.message}`);
     }
   }
 );

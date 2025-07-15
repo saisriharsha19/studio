@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -35,61 +36,38 @@ const generatePromptSuggestionsFlow = ai.defineFlow(
     outputSchema: GeneratePromptSuggestionsOutputSchema,
   },
   async (input) => {
-    let fullPrompt = `You are an AI assistant that helps users refine system prompts. The user will provide their current prompt and optionally some comments on how they want to improve it.
-
-Your task is to analyze the current prompt and provide a list of up to 5 concrete, actionable suggestions for how the prompt could be improved.
-- Each suggestion must be concise and under 15 words.
-- If user comments are provided, use them to guide your suggestions. If not, provide general improvement suggestions based on prompt engineering best practices.
-- Do not generate a new prompt, only provide suggestions.
-
-Current Prompt:
-${input.currentPrompt}
-`;
-    if (input.userComments) {
-        fullPrompt += `
-User Comments:
-"${input.userComments}"
-`;
+    const pythonBackendUrl = process.env.PYTHON_BACKEND_URL;
+    if (!pythonBackendUrl) {
+      throw new Error('PYTHON_BACKEND_URL is not configured.');
     }
 
-    fullPrompt += `
-Now, provide your suggestions based on the above.
+    // The large system prompt is now stored on the Python backend.
+    // We only send the dynamic data.
+    const payload = {
+      currentPrompt: input.currentPrompt,
+      userComments: input.userComments
+    };
 
-Respond with a single, valid JSON object containing one key: "suggestions". The value should be an array of strings. Do not include any extra commentary or markdown formatting.`;
-
-    const response = await fetch(`${process.env.UFL_AI_BASE_URL}/chat/completions`, {
+    const response = await fetch(`${pythonBackendUrl}get-prompt-suggestions`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.UFL_AI_API_KEY}`,
         },
-        body: JSON.stringify({
-            model: 'llama-3.3-70b-instruct',
-            messages: [{ role: 'user', content: fullPrompt }],
-            response_format: { type: "json_object" }, 
-        }),
+        body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`API request failed: ${response.statusText} - ${errorText}`);
+        throw new Error(`API request to Python backend failed: ${response.statusText} - ${errorText}`);
     }
 
-    const result = await response.json();
-    const content = result.choices[0].message.content;
+    const content = await response.json();
 
     try {
-        // The model can sometimes wrap the JSON in markdown. Find the first '{' and last '}' to extract the JSON.
-        const jsonMatch = content.match(/{[\s\S]*}/);
-        if (!jsonMatch) {
-          throw new Error('No JSON object found in the response.');
-        }
-        const jsonString = jsonMatch[0];
-        const parsedContent = JSON.parse(jsonString);
-        return GeneratePromptSuggestionsOutputSchema.parse(parsedContent);
+        return GeneratePromptSuggestionsOutputSchema.parse(content);
     } catch (e: any) {
-        console.error("Failed to parse LLM response:", e, "Raw content:", content);
-        throw new Error(`Failed to parse LLM response as JSON: ${e.message}`);
+        console.error("Failed to parse response from Python backend:", e, "Raw content:", content);
+        throw new Error(`Failed to parse response from Python backend as JSON: ${e.message}`);
     }
   }
 );

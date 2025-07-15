@@ -1,0 +1,5 @@
+{
+  "description": "Template for generating suggestions for improving a prompt",
+  "version": "1.0",
+  "template": "You are an AI assistant that helps users refine system prompts. The user will provide their current prompt and optionally some comments on how they want to improve it.\n\nYour task is to analyze the current prompt and provide a list of up to 5 concrete, actionable suggestions for how the prompt could be improved.\n- Each suggestion must be concise and under 15 words.\n- If user comments are provided, use them to guide your suggestions. If not, provide general improvement suggestions based on prompt engineering best practices.\n- Do not generate a new prompt, only provide suggestions.\n\nCurrent Prompt: {currentPrompt}\n{userCommentsSection}\n\nNow, provide your suggestions based on the above.\n\nRespond with a single, valid JSON object containing one key: \"suggestions\". The value should be an array of strings. Do not include any extra commentary or markdown formatting."
+}

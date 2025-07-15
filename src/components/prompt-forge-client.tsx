@@ -86,6 +86,8 @@ export function PromptForgeClient() {
     sitemapUrl, setSitemapUrl,
     includeSubdomains, setIncludeSubdomains,
     maxSubdomains, setMaxSubdomains,
+    maxPages, setMaxPages,
+    preferSitemap, setPreferSitemap,
     uploadedFileName, setUploadedFileName,
     iterationComments, setIterationComments,
     suggestions, setSuggestions,
@@ -150,18 +152,18 @@ export function PromptForgeClient() {
           includeSubdomains,
           maxSubdomains,
           sitemapUrl: sitemapUrl || undefined,
+          maxPages,
+          preferSitemap,
         });
+        
+        const scrapedContent = result.content || '';
 
-        let scrapedContent = result.content;
-        if (result.subdomains && result.subdomains.length > 0) {
-            const subdomainContent = result.subdomains
-                .map(sub => `--- Subdomain: ${sub.subdomain} ---\n${sub.content}`)
-                .join('\n\n');
-            scrapedContent += `\n\n${subdomainContent}`;
+        if (scrapedContent) {
+          setKnowledgeBase(prev => `${prev}\n\n${scrapedContent}`.trim());
+          toast({ title: 'Success', description: `${result.message}. Added content to knowledge base.` });
+        } else {
+          toast({ title: 'Scraping Complete', description: result.message || 'No new content was added.' });
         }
-
-        setKnowledgeBase(prev => `${prev}\n\n${scrapedContent}`.trim());
-        toast({ title: 'Success', description: 'Content fetched and added to knowledge base.' });
       } catch (error: any) {
         toast({
           variant: 'destructive',
@@ -588,32 +590,68 @@ export function PromptForgeClient() {
                         </TooltipContent>
                       </Tooltip>
                     </div>
-                    <div className="space-y-4 pt-2">
-                        <div className="flex items-center space-x-2">
-                            <Switch
-                                id="include-subdomains"
-                                checked={includeSubdomains}
-                                onCheckedChange={setIncludeSubdomains}
-                                disabled={loading.scraping}
-                            />
-                            <Label htmlFor="include-subdomains" className="font-normal text-muted-foreground">
-                                Automatically discover and scrape subdomains
-                            </Label>
-                        </div>
-                        {includeSubdomains && (
-                            <div className="space-y-4 pl-2 pt-2 animate-in fade-in-0 duration-300">
-                                <div>
-                                    <Label htmlFor="max-subdomains" className="font-normal text-sm">Max subdomains to scrape: {maxSubdomains}</Label>
+                     <Accordion type="single" collapsible className="w-full">
+                        <AccordionItem value="item-1">
+                            <AccordionTrigger className="text-sm font-normal text-muted-foreground hover:no-underline">
+                                Crawler Settings
+                            </AccordionTrigger>
+                            <AccordionContent className="space-y-6 pt-4">
+                                <div className="space-y-4">
+                                    <div className="flex items-center space-x-2">
+                                        <Switch
+                                            id="prefer-sitemap"
+                                            checked={preferSitemap}
+                                            onCheckedChange={setPreferSitemap}
+                                            disabled={loading.scraping}
+                                        />
+                                        <Label htmlFor="prefer-sitemap" className="font-normal text-muted-foreground">
+                                            Prefer sitemap over manual crawling
+                                        </Label>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">If disabled, the crawler will ignore sitemaps and perform a manual crawl, which can be slower but more thorough.</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="max-pages" className="font-normal text-sm">Max pages to crawl: {maxPages}</Label>
                                     <Slider
-                                        id="max-subdomains"
-                                        min={1}
-                                        max={50}
-                                        step={1}
-                                        value={[maxSubdomains]}
-                                        onValueChange={(value) => setMaxSubdomains(value[0])}
+                                        id="max-pages"
+                                        min={10}
+                                        max={500}
+                                        step={10}
+                                        value={[maxPages]}
+                                        onValueChange={(value) => setMaxPages(value[0])}
                                         disabled={loading.scraping}
                                         className="w-[95%] pt-2"
                                     />
+                                </div>
+                                <div className="space-y-4 pt-2">
+                                    <div className="flex items-center space-x-2">
+                                        <Switch
+                                            id="include-subdomains"
+                                            checked={includeSubdomains}
+                                            onCheckedChange={setIncludeSubdomains}
+                                            disabled={loading.scraping}
+                                        />
+                                        <Label htmlFor="include-subdomains" className="font-normal text-muted-foreground">
+                                            Discover and scrape subdomains
+                                        </Label>
+                                    </div>
+                                    {includeSubdomains && (
+                                        <div className="space-y-4 pl-2 pt-2 animate-in fade-in-0 duration-300">
+                                            <div>
+                                                <Label htmlFor="max-subdomains" className="font-normal text-sm">Max subdomains: {maxSubdomains}</Label>
+                                                <Slider
+                                                    id="max-subdomains"
+                                                    min={1}
+                                                    max={50}
+                                                    step={1}
+                                                    value={[maxSubdomains]}
+                                                    onValueChange={(value) => setMaxSubdomains(value[0])}
+                                                    disabled={loading.scraping}
+                                                    className="w-[95%] pt-2"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="pt-2">
                                     <Label htmlFor="sitemap-url" className="text-sm font-normal text-muted-foreground">Or provide direct sitemap URL (optional)</Label>
@@ -626,9 +664,9 @@ export function PromptForgeClient() {
                                         className="h-9 mt-1"
                                     />
                                 </div>
-                            </div>
-                        )}
-                    </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                    </Accordion>
                   </div>
 
                   <div className="space-y-4">

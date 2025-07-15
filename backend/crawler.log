@@ -1,0 +1,98 @@
+2025-07-15 13:10:00,077 - INFO - {"event": "Starting Enhanced Web Crawler API", "logger": "__main__", "level": "info", "timestamp": "2025-07-15T13:10:00.077575Z"}
+2025-07-15 13:14:27,358 - INFO - {"request_id": "2563d0f1", "base_url": "https://hr.ufl.edu/", "max_pages": 10, "event": "Starting scrape request", "logger": "__main__", "level": "info", "timestamp": "2025-07-15T13:14:27.358019Z"}
+2025-07-15 13:14:47,929 - INFO - Initialized summarization model: facebook/bart-large-cnn
+2025-07-15 13:14:47,929 - INFO - Starting enhanced crawl of https://hr.ufl.edu
+2025-07-15 13:14:47,929 - INFO - Max subdomains: 1, Max pages: 10
+2025-07-15 13:14:47,930 - INFO - Prefer sitemap: True
+2025-07-15 13:14:47,931 - INFO - Starting sitemap discovery...
+2025-07-15 13:14:48,390 - INFO - Found 10 URLs in sitemap: https://hr.ufl.edu/sitemap.xml
+2025-07-15 13:14:48,390 - INFO - Sitemap discovery complete. Found 10 URLs
+2025-07-15 13:14:48,390 - INFO - Using sitemap-based crawling with 10 URLs
+2025-07-15 13:17:02,279 - INFO - Crawled: https://welcome.hr.ufl.edu/employee-handbook/#new_tab (933 chars)
+2025-07-15 13:17:02,322 - ERROR - Error crawling https://hr.ufl.edu/professional-development/training-programs/: 
+2025-07-15 13:17:24,586 - INFO - Crawled: https://hr.ufl.edu/contacts/staff-directory/strategic-talent-group/dean-libraries/ (3351 chars)
+2025-07-15 13:17:44,442 - INFO - Crawled: https://hr.ufl.edu/professional-development/employee-awards/superior-accomplishment-awards/ (4087 chars)
+2025-07-15 13:18:05,359 - INFO - Crawled: https://hr.ufl.edu/professional-development/leadership-development/uf-academy/ (1653 chars)
+2025-07-15 13:18:05,387 - ERROR - Error crawling https://hr.ufl.edu/contacts/staff-directory/strategic-talent-group/endowed_chair_and_azceecs_director/: 
+2025-07-15 13:18:05,387 - ERROR - Error crawling https://hr.ufl.edu/professional-development/leadership-development/alap/: 
+2025-07-15 13:18:05,388 - ERROR - Error crawling https://hr.ufl.edu/contacts/staff-directory/strategic-talent-group/director-and-full-professor-center-for-latin-american-studies/: 
+2025-07-15 13:18:05,388 - ERROR - Error crawling https://hr.ufl.edu/: 
+2025-07-15 13:18:05,388 - ERROR - Error crawling https://hr.ufl.edu/professional-development/leadership-development/managers-cohort/: 
+2025-07-15 13:18:06,444 - INFO - Results saved to crawl_2563d0f1_1752585267.json
+2025-07-15 13:18:06,444 - INFO - Crawl completed using sitemap method
+2025-07-15 13:18:06,445 - INFO - Processed 4 pages
+2025-07-15 13:18:06,445 - INFO - Resource stats: {'memory_mb': 1437.56640625, 'cpu_percent': 0.0, 'runtime_seconds': 219.08633494377136, 'urls_processed': 4, 'urls_per_second': 0.018257642591111865}
+2025-07-15 13:18:06,460 - INFO - {"request_id": "2563d0f1", "pages_crawled": 4, "processing_time": 219.08763670921326, "memory_peak_mb": 1437.56640625, "event": "Scrape completed successfully", "logger": "__main__", "level": "info", "timestamp": "2025-07-15T13:18:06.460234Z"}
+2025-07-15 13:18:06,516 - WARNING - {"path": "/scrape", "duration": 219.26352167129517, "event": "Slow request detected", "logger": "__main__", "level": "warning", "timestamp": "2025-07-15T13:18:06.516167Z"}
+2025-07-15 13:18:06,535 - INFO - {"cache_key": "request:53d8e273c2401bf9fb510bba58806a40", "event": "Result cached successfully", "logger": "__main__", "level": "info", "timestamp": "2025-07-15T13:18:06.535165Z"}
+2025-07-15 13:20:52,842 - INFO - {"request_id": "4439f44a", "base_url": "https://hr.ufl.edu/", "max_pages": 10, "event": "Starting scrape request", "logger": "__main__", "level": "info", "timestamp": "2025-07-15T13:20:52.842711Z"}
+2025-07-15 13:20:52,843 - INFO - {"request_id": "4439f44a", "event": "Cache hit", "logger": "__main__", "level": "info", "timestamp": "2025-07-15T13:20:52.843573Z"}
+2025-07-15 13:23:06,550 - INFO - {"filepath": "crawl_2563d0f1_1752585267.json", "event": "Cleaned up temporary file", "logger": "__main__", "level": "info", "timestamp": "2025-07-15T13:23:06.550571Z"}
+2025-07-15 13:25:32,582 - INFO - {"request_id": "b168196c", "base_url": "https://hr.ufl.edu/", "max_pages": 10, "event": "Starting scrape request", "logger": "__main__", "level": "info", "timestamp": "2025-07-15T13:25:32.582906Z"}
+2025-07-15 13:25:32,583 - INFO - {"request_id": "b168196c", "event": "Cache hit", "logger": "__main__", "level": "info", "timestamp": "2025-07-15T13:25:32.583397Z"}
+2025-07-15 13:25:44,885 - INFO - {"request_id": "c0f93dfa", "base_url": "https://hr.ufl.edu/", "max_pages": 20, "event": "Starting scrape request", "logger": "__main__", "level": "info", "timestamp": "2025-07-15T13:25:44.885294Z"}
+2025-07-15 13:25:46,581 - INFO - Initialized summarization model: facebook/bart-large-cnn
+2025-07-15 13:25:46,581 - INFO - Starting enhanced crawl of https://hr.ufl.edu
+2025-07-15 13:25:46,581 - INFO - Max subdomains: 1, Max pages: 20
+2025-07-15 13:25:46,581 - INFO - Prefer sitemap: True
+2025-07-15 13:25:46,581 - INFO - Starting sitemap discovery...
+2025-07-15 13:25:47,099 - INFO - Found 20 URLs in sitemap: https://hr.ufl.edu/sitemap.xml
+2025-07-15 13:25:47,099 - INFO - Sitemap discovery complete. Found 20 URLs
+2025-07-15 13:25:47,099 - INFO - Using sitemap-based crawling with 20 URLs
+2025-07-15 13:26:07,732 - INFO - Crawled: https://news.hr.ufl.edu/awards/2024-superior-accomplishment-awards-recognize-outstanding-and-meritorious-service/#new_tab (3119 chars)
+2025-07-15 13:26:07,800 - ERROR - Error crawling https://welcome.hr.ufl.edu/employee-handbook/#new_tab: 
+2025-07-15 13:26:07,801 - ERROR - Error crawling https://hr.ufl.edu/professional-development/employee-awards/service-recognition-program/service-recognition-award-recipients-2025/: 
+2025-07-15 13:26:32,663 - INFO - Crawled: https://hr.ufl.edu/contacts/staff-directory/strategic-talent-group/title-ix-coordinator/ (2113 chars)
+2025-07-15 13:26:53,701 - INFO - Crawled: https://hr.ufl.edu/professional-development/employee-awards/superior-accomplishment-awards/ (4087 chars)
+2025-07-15 13:26:53,727 - ERROR - Error crawling https://hr.ufl.edu/professional-development/training-programs/: 
+2025-07-15 13:26:53,727 - ERROR - Error crawling https://hr.ufl.edu/: 
+2025-07-15 13:26:53,728 - ERROR - Error crawling https://hr.ufl.edu/professional-development/leadership-development/uf-academy/: 
+2025-07-15 13:26:53,728 - ERROR - Error crawling https://hr.ufl.edu/contacts/staff-directory/strategic-talent-group/director-strategic-enrollment-marketing-and-communications/: 
+2025-07-15 13:26:53,728 - ERROR - Error crawling https://hr.ufl.edu/thank-you-i9/: 
+2025-07-15 13:26:54,739 - WARNING - Memory limit reached, stopping crawl
+2025-07-15 13:26:54,748 - INFO - Results saved to crawl_c0f93dfa_1752585944.json
+2025-07-15 13:26:54,748 - INFO - Crawl completed using sitemap method
+2025-07-15 13:26:54,748 - INFO - Processed 3 pages
+2025-07-15 13:26:54,749 - INFO - Resource stats: {'memory_mb': 1563.33203125, 'cpu_percent': 0.0, 'runtime_seconds': 69.86332726478577, 'urls_processed': 3, 'urls_per_second': 0.0429409837385763}
+2025-07-15 13:26:54,776 - INFO - {"request_id": "c0f93dfa", "pages_crawled": 3, "processing_time": 69.86435174942017, "memory_peak_mb": 1563.33203125, "event": "Scrape completed successfully", "logger": "__main__", "level": "info", "timestamp": "2025-07-15T13:26:54.776654Z"}
+2025-07-15 13:26:54,846 - WARNING - {"path": "/scrape", "duration": 69.96184754371643, "event": "Slow request detected", "logger": "__main__", "level": "warning", "timestamp": "2025-07-15T13:26:54.846266Z"}
+2025-07-15 13:26:54,858 - INFO - {"cache_key": "request:45dd2249f30cec54f34cb84eb0a1aebf", "event": "Result cached successfully", "logger": "__main__", "level": "info", "timestamp": "2025-07-15T13:26:54.858125Z"}
+2025-07-15 13:27:10,955 - INFO - {"request_id": "7f9dae3f", "base_url": "https://hr.ufl.edu/", "max_pages": 20, "event": "Starting scrape request", "logger": "__main__", "level": "info", "timestamp": "2025-07-15T13:27:10.955829Z"}
+2025-07-15 13:27:10,956 - INFO - {"request_id": "7f9dae3f", "event": "Cache hit", "logger": "__main__", "level": "info", "timestamp": "2025-07-15T13:27:10.956361Z"}
+2025-07-15 13:31:54,859 - INFO - {"filepath": "crawl_c0f93dfa_1752585944.json", "event": "Cleaned up temporary file", "logger": "__main__", "level": "info", "timestamp": "2025-07-15T13:31:54.859825Z"}
+2025-07-15 17:27:02,506 - INFO - {"event": "Starting Enhanced Web Crawler API", "logger": "__main__", "level": "info", "timestamp": "2025-07-15T17:27:02.506065Z"}
+2025-07-15 17:41:50,386 - INFO - {"request_id": "bab0d7f7", "base_url": "https://hr.ufl.edu/", "max_pages": 10, "event": "Starting scrape request", "logger": "__main__", "level": "info", "timestamp": "2025-07-15T17:41:50.386054Z"}
+2025-07-15 17:42:12,487 - INFO - Initialized summarization model: facebook/bart-large-cnn
+2025-07-15 17:42:12,487 - INFO - Starting enhanced crawl of https://hr.ufl.edu
+2025-07-15 17:42:12,487 - INFO - Max subdomains: 1, Max pages: 10
+2025-07-15 17:42:12,487 - INFO - Prefer sitemap: True
+2025-07-15 17:42:12,487 - INFO - Starting sitemap discovery...
+2025-07-15 17:42:13,042 - INFO - Found 10 URLs in sitemap: https://hr.ufl.edu/sitemap.xml
+2025-07-15 17:42:13,042 - INFO - Sitemap discovery complete. Found 10 URLs
+2025-07-15 17:42:13,042 - INFO - Using sitemap-based crawling with 10 URLs
+2025-07-15 17:44:31,581 - INFO - Crawled: https://welcome.hr.ufl.edu/employee-handbook/#new_tab (933 chars)
+2025-07-15 17:44:31,625 - ERROR - Error crawling https://hr.ufl.edu/contacts/staff-directory/strategic-talent-group/dean-libraries/: 
+2025-07-15 17:44:43,187 - INFO - Crawled: https://hr.ufl.edu/ (1216 chars)
+2025-07-15 17:44:52,639 - INFO - Crawled: https://hr.ufl.edu/professional-development/leadership-development/managers-cohort/ (665 chars)
+2025-07-15 17:45:03,848 - INFO - Crawled: https://hr.ufl.edu/professional-development/leadership-development/uf-academy/ (1653 chars)
+2025-07-15 17:45:15,740 - INFO - Crawled: https://hr.ufl.edu/professional-development/leadership-development/alap/ (3932 chars)
+2025-07-15 17:45:26,114 - INFO - Crawled: https://hr.ufl.edu/contacts/staff-directory/strategic-talent-group/endowed_chair_and_azceecs_director/ (1496 chars)
+2025-07-15 17:45:36,812 - INFO - Crawled: https://hr.ufl.edu/professional-development/training-programs/ (753 chars)
+2025-07-15 17:45:46,943 - INFO - Crawled: https://hr.ufl.edu/contacts/staff-directory/strategic-talent-group/director-and-full-professor-center-for-latin-american-studies/ (3936 chars)
+2025-07-15 17:45:56,730 - INFO - Crawled: https://hr.ufl.edu/professional-development/employee-awards/superior-accomplishment-awards/ (4087 chars)
+2025-07-15 17:45:57,737 - INFO - Results saved to crawl_bab0d7f7_1752601310.json
+2025-07-15 17:45:57,738 - INFO - Crawl completed using sitemap method
+2025-07-15 17:45:57,738 - INFO - Processed 9 pages
+2025-07-15 17:45:57,738 - INFO - Resource stats: {'memory_mb': 2022.453125, 'cpu_percent': 0.0, 'runtime_seconds': 247.3510284423828, 'urls_processed': 9, 'urls_per_second': 0.036385537010598816}
+2025-07-15 17:45:57,750 - INFO - {"request_id": "bab0d7f7", "pages_crawled": 9, "processing_time": 247.35292649269104, "memory_peak_mb": 2022.453125, "event": "Scrape completed successfully", "logger": "__main__", "level": "info", "timestamp": "2025-07-15T17:45:57.750073Z"}
+2025-07-15 17:45:57,861 - WARNING - {"path": "/scrape", "duration": 247.48480033874512, "event": "Slow request detected", "logger": "__main__", "level": "warning", "timestamp": "2025-07-15T17:45:57.861057Z"}
+2025-07-15 17:45:57,866 - INFO - {"cache_key": "request:53d8e273c2401bf9fb510bba58806a40", "event": "Result cached successfully", "logger": "__main__", "level": "info", "timestamp": "2025-07-15T17:45:57.866807Z"}
+2025-07-15 17:46:56,241 - INFO - {"request_id": "a5444c8c", "base_url": "https://hr.ufl.edu/", "max_pages": 10, "event": "Starting scrape request", "logger": "__main__", "level": "info", "timestamp": "2025-07-15T17:46:56.241860Z"}
+2025-07-15 17:46:56,242 - INFO - {"request_id": "a5444c8c", "event": "Cache hit", "logger": "__main__", "level": "info", "timestamp": "2025-07-15T17:46:56.242531Z"}
+2025-07-15 17:50:57,868 - INFO - {"filepath": "crawl_bab0d7f7_1752601310.json", "event": "Cleaned up temporary file", "logger": "__main__", "level": "info", "timestamp": "2025-07-15T17:50:57.868136Z"}
+2025-07-15 17:53:07,761 - INFO - {"request_id": "d6daa90d", "base_url": "https://hr.ufl.edu/", "max_pages": 10, "event": "Starting scrape request", "logger": "__main__", "level": "info", "timestamp": "2025-07-15T17:53:07.761407Z"}
+2025-07-15 17:53:07,762 - INFO - {"request_id": "d6daa90d", "event": "Cache hit", "logger": "__main__", "level": "info", "timestamp": "2025-07-15T17:53:07.761985Z"}
+2025-07-15 17:53:25,485 - INFO - {"request_id": "b69c7a9a", "base_url": "https://hr.ufl.edu/", "max_pages": 10, "event": "Starting scrape request", "logger": "__main__", "level": "info", "timestamp": "2025-07-15T17:53:25.485334Z"}
+2025-07-15 17:53:25,485 - INFO - {"request_id": "b69c7a9a", "event": "Cache hit", "logger": "__main__", "level": "info", "timestamp": "2025-07-15T17:53:25.485931Z"}
+2025-07-15 18:14:24,158 - INFO - {"request_id": "6859ee8e", "base_url": "https://hr.ufl.edu/", "max_pages": 10, "event": "Starting scrape request", "logger": "__main__", "level": "info", "timestamp": "2025-07-15T18:14:24.158696Z"}
+2025-07-15 18:14:24,159 - INFO - {"request_id": "6859ee8e", "event": "Cache hit", "logger": "__main__", "level": "info", "timestamp": "2025-07-15T18:14:24.159280Z"}
