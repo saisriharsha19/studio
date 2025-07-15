@@ -47,29 +47,25 @@ const optimizePromptWithContextFlow = ai.defineFlow(
     outputSchema: OptimizePromptWithContextOutputSchema,
   },
   async (input) => {
-    const fullPrompt = `You are an AI prompt optimizer. Analyze the retrieved content and ground truths to refine the given prompt, ensuring it aligns with the contextual information and improves the accuracy and relevance of the assistant's responses.
-
-Original Prompt: ${input.prompt}
-
-Retrieved Content: ${input.retrievedContent}
-
-Ground Truths: ${input.groundTruths}
-
-Based on the retrieved content and ground truths, provide an optimized prompt and explain your reasoning for the changes.
-
-Respond with a single, valid JSON object with two keys: "optimizedPrompt" (the new prompt) and "reasoning" (your explanation). Do not include any extra commentary or markdown formatting.`;
-    
     const pythonBackendUrl = process.env.PYTHON_BACKEND_URL;
     if (!pythonBackendUrl) {
       throw new Error('PYTHON_BACKEND_URL is not configured.');
     }
+    
+    // The large system prompt is now stored on the Python backend.
+    // We only send the dynamic data.
+    const payload = {
+        original_prompt: input.prompt,
+        retrieved_content: input.retrievedContent,
+        ground_truths: input.groundTruths,
+    };
 
     const response = await fetch(`${pythonBackendUrl}/optimize-prompt-with-context`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ prompt: fullPrompt }),
+        body: JSON.stringify(payload),
     });
 
     if (!response.ok) {

@@ -35,39 +35,24 @@ const generatePromptSuggestionsFlow = ai.defineFlow(
     outputSchema: GeneratePromptSuggestionsOutputSchema,
   },
   async (input) => {
-    let fullPrompt = `You are an AI assistant that helps users refine system prompts. The user will provide their current prompt and optionally some comments on how they want to improve it.
-
-Your task is to analyze the current prompt and provide a list of up to 5 concrete, actionable suggestions for how the prompt could be improved.
-- Each suggestion must be concise and under 15 words.
-- If user comments are provided, use them to guide your suggestions. If not, provide general improvement suggestions based on prompt engineering best practices.
-- Do not generate a new prompt, only provide suggestions.
-
-Current Prompt:
-${input.currentPrompt}
-`;
-    if (input.userComments) {
-        fullPrompt += `
-User Comments:
-"${input.userComments}"
-`;
-    }
-
-    fullPrompt += `
-Now, provide your suggestions based on the above.
-
-Respond with a single, valid JSON object containing one key: "suggestions". The value should be an array of strings. Do not include any extra commentary or markdown formatting.`;
-
     const pythonBackendUrl = process.env.PYTHON_BACKEND_URL;
     if (!pythonBackendUrl) {
       throw new Error('PYTHON_BACKEND_URL is not configured.');
     }
+
+    // The large system prompt is now stored on the Python backend.
+    // We only send the dynamic data.
+    const payload = {
+      current_prompt: input.currentPrompt,
+      user_comments: input.userComments
+    };
 
     const response = await fetch(`${pythonBackendUrl}/get-prompt-suggestions`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ prompt: fullPrompt }),
+        body: JSON.stringify(payload),
     });
 
     if (!response.ok) {

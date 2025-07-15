@@ -36,29 +36,23 @@ const generatePromptMetadataFlow = ai.defineFlow(
     outputSchema: GeneratePromptMetadataOutputSchema,
   },
   async (input) => {
-    const fullPrompt = `Analyze the following system prompt.
-  
-Your task is to generate two things:
-1.  A very short, concise summary (around 5-10 words) that explains what the prompt is used for. This will be used as a title.
-2.  A list of 2-4 relevant keywords (tags) for searching and filtering. Tags should be lowercase and one or two words at most.
-
-Prompt to analyze:
-"${input.promptText}"
-
-Return the response as a single, valid JSON object with two keys: "summary" (a short string) and "tags" (an array of 2-4 strings). Do not include any extra commentary or markdown formatting.
-`;
-
     const pythonBackendUrl = process.env.PYTHON_BACKEND_URL;
     if (!pythonBackendUrl) {
       throw new Error('PYTHON_BACKEND_URL is not configured.');
     }
+
+    // The large system prompt is now stored on the Python backend.
+    // We only send the dynamic data.
+    const payload = {
+        prompt_text: input.promptText,
+    };
 
     const response = await fetch(`${pythonBackendUrl}/generate-prompt-tags`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ prompt: fullPrompt }),
+        body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
