@@ -21,6 +21,7 @@ export type GenerateInitialPromptInput = z.infer<typeof GenerateInitialPromptInp
 
 const GenerateInitialPromptOutputSchema = z.object({
   initialPrompt: z.string().describe('The generated initial system prompt.'),
+  deepeval_assessment: z.any().optional(),
 });
 export type GenerateInitialPromptOutput = z.infer<typeof GenerateInitialPromptOutputSchema>;
 

@@ -20,6 +20,7 @@ export type GeneratePromptSuggestionsInput = z.infer<typeof GeneratePromptSugges
 
 const GeneratePromptSuggestionsOutputSchema = z.object({
   suggestions: z.array(z.string()).describe('A list of concrete suggestions on how the prompt could be improved.'),
+  deepeval_assessment: z.any().optional(),
 });
 export type GeneratePromptSuggestionsOutput = z.infer<typeof GeneratePromptSuggestionsOutputSchema>;
 

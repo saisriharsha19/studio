@@ -29,6 +29,7 @@ const OptimizePromptWithContextOutputSchema = z.object({
   reasoning: z
     .string()
     .describe('The reasoning behind the prompt optimization.'),
+  deepeval_optimization_analysis: z.any().optional(),
 });
 
 export type OptimizePromptWithContextOutput = z.infer<
