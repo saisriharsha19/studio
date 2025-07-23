@@ -38,7 +38,7 @@ import {
   handleGetPromptSuggestions,
   handleScrapeUrl,
 } from '@/app/actions';
-import { Badge } from './ui/badge';
+import { Badge, badgeVariants } from './ui/badge';
 import { Skeleton } from './ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
 import { Input } from './ui/input';
