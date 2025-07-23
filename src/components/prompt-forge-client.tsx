@@ -38,7 +38,7 @@ import {
   handleGetPromptSuggestions,
   handleScrapeUrl,
 } from '@/app/actions';
-import { Badge, badgeVariants } from './ui/badge';
+import { Badge } from './ui/badge';
 import { Skeleton } from './ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
 import { Input } from './ui/input';
@@ -67,6 +67,11 @@ type LoadingStates = {
   evaluating: boolean;
   iterating: boolean;
   scraping: boolean;
+};
+
+// Helper to format metric names for display
+const formatMetricName = (name: string) => {
+  return name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 };
 
 export function PromptForgeClient() {
@@ -391,10 +396,21 @@ export function PromptForgeClient() {
           groundTruths: fewShotExamples,
         });
         setEvaluationResult(result);
-        setCurrentPrompt(result.improvedPrompt);
-        if (isAuthenticated) {
-          addPrompt(result.improvedPrompt);
+        
+        let promptToSave = '';
+        if (typeof result.improvedPrompt === 'string') {
+          promptToSave = result.improvedPrompt;
+        } else if (typeof result.improvedPrompt === 'object' && result.improvedPrompt !== null) {
+          promptToSave = (result.improvedPrompt as any)['SYSTEM PROMPT'] || JSON.stringify(result.improvedPrompt);
         }
+        
+        if (promptToSave) {
+          setCurrentPrompt(promptToSave);
+          if (isAuthenticated) {
+            addPrompt(promptToSave);
+          }
+        }
+        
         toast({ title: 'Success', description: 'Prompt evaluated and improved.', duration: 5000 });
       } catch (error: any) {
         toast({
@@ -875,142 +891,71 @@ Assistant: The add/drop deadline for the Fall 2024 semester is September 1st, 20
                   <div aria-live="polite" aria-atomic="true">
                     {loading.evaluating ? (
                       <Skeleton className="h-40 w-full" />
-                    ) : evaluationResult ? (
-                      <Accordion type="single" collapsible className="w-full">
-                        <AccordionItem value="bias">
-                          <AccordionTrigger>
-                            <div className="flex w-full items-center justify-between pr-4">
-                              <span>Bias</span>
-                              <Badge
-                                variant={
-                                  evaluationResult.bias.score > 0.7
-                                    ? 'default'
-                                    : 'destructive'
+                    ) : evaluationResult && evaluationResult.deepeval_assessment ? (
+                      <Accordion type="single" collapsible className="w-full" defaultValue='overall_score'>
+                         {Object.entries(evaluationResult.deepeval_assessment).map(([key, value]) => {
+                            if (typeof value !== 'object' || value === null) {
+                                // Render overall score separately
+                                if (key === 'overall_score' && typeof value === 'number') {
+                                    return (
+                                        <AccordionItem value="overall_score" key={key}>
+                                            <AccordionTrigger>
+                                                <div className="flex w-full items-center justify-between pr-4">
+                                                    <span>Overall Score</span>
+                                                    <Badge variant={value > 0.7 ? 'default' : 'destructive'}>
+                                                        {Math.round(value * 100)}%
+                                                    </Badge>
+                                                </div>
+                                            </AccordionTrigger>
+                                            <AccordionContent className="space-y-4 px-1">
+                                                <p className="text-sm text-muted-foreground">
+                                                  This is the overall quality score of the prompt based on all evaluated metrics.
+                                                </p>
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                    );
                                 }
-                              >
-                                Score: {Math.round(evaluationResult.bias.score * 100)}%
-                              </Badge>
-                            </div>
-                          </AccordionTrigger>
-                          <AccordionContent className="space-y-4 px-1">
-                            <div>
-                              <p className="text-sm font-medium">Summary:</p>
-                              <p className="text-sm text-muted-foreground">
-                                {evaluationResult.bias.summary}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium">Test Cases:</p>
-                              <ul className="list-disc pl-5 text-sm text-muted-foreground">
-                                {evaluationResult.bias.testCases.map((tc, i) => (
-                                  <li key={i}>{tc}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          </AccordionContent>
-                        </AccordionItem>
-                        <AccordionItem value="toxicity">
-                          <AccordionTrigger>
-                            <div className="flex w-full items-center justify-between pr-4">
-                              <span>Toxicity</span>
-                              <Badge
-                                variant={
-                                  evaluationResult.toxicity.score > 0.7
-                                    ? 'default'
-                                    : 'destructive'
-                                }
-                              >
-                                Score: {Math.round(evaluationResult.toxicity.score * 100)}%
-                              </Badge>
-                            </div>
-                          </AccordionTrigger>
-                          <AccordionContent className="space-y-4 px-1">
-                            <div>
-                              <p className="text-sm font-medium">Summary:</p>
-                              <p className="text-sm text-muted-foreground">
-                                {evaluationResult.toxicity.summary}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium">Test Cases:</p>
-                              <ul className="list-disc pl-5 text-sm text-muted-foreground">
-                                {evaluationResult.toxicity.testCases.map((tc, i) => (
-                                  <li key={i}>{tc}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          </AccordionContent>
-                        </AccordionItem>
-                        <AccordionItem value="alignment">
-                          <AccordionTrigger>
-                            <div className="flex w-full items-center justify-between pr-4">
-                              <span>Prompt Alignment</span>
-                              <Badge
-                                variant={
-                                  evaluationResult.promptAlignment.score > 0.7
-                                    ? 'default'
-                                    : 'destructive'
-                                }
-                              >
-                                Score: {Math.round(evaluationResult.promptAlignment.score * 100)}%
-                              </Badge>
-                            </div>
-                          </AccordionTrigger>
-                          <AccordionContent className="space-y-4 px-1">
-                            <div>
-                              <p className="text-sm font-medium">Summary:</p>
-                              <p className="text-sm text-muted-foreground">
-                                {evaluationResult.promptAlignment.summary}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium">Test Cases:</p>
-                              <ul className="list-disc pl-5 text-sm text-muted-foreground">
-                                {evaluationResult.promptAlignment.testCases.map(
-                                  (tc, i) => (
-                                    <li key={i}>{tc}</li>
-                                  )
-                                )}
-                              </ul>
-                            </div>
-                          </AccordionContent>
-                        </AccordionItem>
-                        {evaluationResult.faithfulness && (
-                          <AccordionItem value="faithfulness">
-                            <AccordionTrigger>
-                              <div className="flex w-full items-center justify-between pr-4">
-                                <span>Faithfulness</span>
-                                <Badge
-                                  variant={
-                                    evaluationResult.faithfulness.score > 0.7
-                                      ? 'default'
-                                      : 'destructive'
-                                  }
-                                >
-                                  Score: {Math.round(evaluationResult.faithfulness.score * 100)}%
-                                </Badge>
-                              </div>
-                            </AccordionTrigger>
-                            <AccordionContent className="space-y-4 px-1">
-                              <div>
-                                <p className="text-sm font-medium">Summary:</p>
-                                <p className="text-sm text-muted-foreground">
-                                  {evaluationResult.faithfulness.summary}
-                                </p>
-                              </div>
-                              <div>
-                                <p className="text-sm font-medium">Test Cases:</p>
-                                <ul className="list-disc pl-5 text-sm text-muted-foreground">
-                                  {evaluationResult.faithfulness.testCases.map(
-                                    (tc, i) => (
-                                      <li key={i}>{tc}</li>
-                                    )
-                                  )}
-                                </ul>
-                              </div>
-                            </AccordionContent>
-                          </AccordionItem>
-                        )}
+                                return null;
+                            }
+                            const scoreKey = `${key}_score`;
+                            const score = value[scoreKey];
+                            const explanation = value.explanation;
+
+                            return (
+                                <AccordionItem value={key} key={key}>
+                                    <AccordionTrigger>
+                                        <div className="flex w-full items-center justify-between pr-4">
+                                            <span>{formatMetricName(key)}</span>
+                                            {typeof score === 'number' && (
+                                                <Badge variant={score < 0.3 ? 'default' : 'destructive'}>
+                                                   Score: {Math.round(score * 100)}%
+                                                </Badge>
+                                            )}
+                                        </div>
+                                    </AccordionTrigger>
+                                    <AccordionContent className="space-y-4 px-1">
+                                        {explanation && (
+                                            <div>
+                                                <p className="text-sm font-medium">Explanation:</p>
+                                                <p className="text-sm text-muted-foreground">
+                                                    {explanation}
+                                                </p>
+                                            </div>
+                                        )}
+                                         {Array.isArray(value.recommendations) && value.recommendations.length > 0 && (
+                                            <div>
+                                                <p className="text-sm font-medium">Recommendations:</p>
+                                                <ul className="list-disc pl-5 text-sm text-muted-foreground">
+                                                    {value.recommendations.map((rec: string, i: number) => (
+                                                        <li key={i}>{rec}</li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+                                    </AccordionContent>
+                                </AccordionItem>
+                            );
+                        })}
                       </Accordion>
                     ) : (
                       <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 text-center">
