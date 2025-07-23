@@ -1,13 +1,18 @@
 # app.py
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List
 import os
-import requests
+import asyncio
+import aiohttp
 import json
 import time
 import logging
+import hashlib
+from contextlib import asynccontextmanager
+from collections import defaultdict
+import gc
 from dotenv import load_dotenv
 from utils import retry_on_failure, extract_json_from_text, validate_response_against_schema
 from prompt_templates import template_manager
@@ -22,21 +27,19 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-app = FastAPI()
-
-# Enable CORS for all routes
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Global variables for connection pooling and caching
+aiohttp_session = None
+cache = {}
+cache_ttl = {}
+rate_limiter = defaultdict(list)
 
 # Configure API settings from environment variables
 UFL_AI_API_KEY = os.getenv("UFL_AI_API_KEY")
 UFL_AI_BASE_URL = os.getenv("UFL_AI_BASE_URL")
 UFL_AI_MODEL = os.getenv("UFL_AI_MODEL", "llama-3.3-70b-instruct")
+CACHE_TTL = int(os.getenv("CACHE_TTL", "3600"))  # 1 hour default
+RATE_LIMIT_REQUESTS = int(os.getenv("RATE_LIMIT_REQUESTS", "100"))
+RATE_LIMIT_WINDOW = int(os.getenv("RATE_LIMIT_WINDOW", "3600"))  # 1 hour
 
 if not UFL_AI_API_KEY:
     logger.warning("UFL_AI_API_KEY not set in environment variables!")
@@ -91,10 +94,111 @@ class TemplateUpdateRequest(BaseModel):
     description: Optional[str] = "No description"
     version: Optional[str] = "1.0"
 
+# Cache utilities
+def get_cache_key(endpoint: str, **kwargs) -> str:
+    """Generate cache key from endpoint and parameters"""
+    key_data = f"{endpoint}:{json.dumps(kwargs, sort_keys=True)}"
+    return hashlib.md5(key_data.encode()).hexdigest()
+
+def get_cached_response(key: str):
+    """Get cached response if valid"""
+    if key in cache and key in cache_ttl:
+        if time.time() < cache_ttl[key]:
+            return cache[key]
+        else:
+            # Expired, remove from cache
+            cache.pop(key, None)
+            cache_ttl.pop(key, None)
+    return None
+
+def set_cache(key: str, value, ttl: int = CACHE_TTL):
+    """Set cache with TTL"""
+    cache[key] = value
+    cache_ttl[key] = time.time() + ttl
+
+# Rate limiting
+def check_rate_limit(client_ip: str) -> bool:
+    """Check if client has exceeded rate limit"""
+    now = time.time()
+    window_start = now - RATE_LIMIT_WINDOW
+    
+    # Clean old entries
+    rate_limiter[client_ip] = [req_time for req_time in rate_limiter[client_ip] if req_time > window_start]
+    
+    # Check current count
+    if len(rate_limiter[client_ip]) >= RATE_LIMIT_REQUESTS:
+        return False
+    
+    # Add current request
+    rate_limiter[client_ip].append(now)
+    return True
+
+# Background task for cache cleanup
+async def cache_cleanup_task():
+    """Background task to clean expired cache entries"""
+    while True:
+        try:
+            await asyncio.sleep(300)  # Run every 5 minutes
+            current_time = time.time()
+            expired_keys = [key for key, ttl in cache_ttl.items() if current_time > ttl]
+            
+            for key in expired_keys:
+                cache.pop(key, None)
+                cache_ttl.pop(key, None)
+            
+            # Force garbage collection periodically
+            if len(expired_keys) > 0:
+                gc.collect()
+                
+        except asyncio.CancelledError:
+            break
+        except Exception as e:
+            logger.error(f"Cache cleanup error: {e}")
+
+# Async context manager for application lifecycle
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    global aiohttp_session
+    connector = aiohttp.TCPConnector(
+        limit=300,
+        limit_per_host=100,
+        ttl_dns_cache=300,
+        keepalive_timeout=30,
+        enable_cleanup_closed=True
+    )
+    timeout = aiohttp.ClientTimeout(total=30, connect=10)
+    aiohttp_session = aiohttp.ClientSession(
+        connector=connector,
+        timeout=timeout,
+        headers={"Authorization": f"Bearer {UFL_AI_API_KEY}", "Content-Type": "application/json"}
+    )
+    
+    # Background task for cache cleanup
+    cleanup_task = asyncio.create_task(cache_cleanup_task())
+    
+    yield
+    
+    # Shutdown
+    cleanup_task.cancel()
+    if aiohttp_session:
+        await aiohttp_session.close()
+
+app = FastAPI(lifespan=lifespan)
+
+# Enable CORS for all routes
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 @retry_on_failure(max_retries=3, initial_delay=1, backoff_factor=2)
-def call_ufl_api(prompt, endpoint_name=None):
+async def call_ufl_api(prompt, endpoint_name=None):
     """
-    Helper function to call the UFL AI API with retry logic
+    Helper function to call the UFL AI API with retry logic (now async with connection pooling)
     
     Args:
         prompt (str): The prompt to send to the model
@@ -113,10 +217,10 @@ def call_ufl_api(prompt, endpoint_name=None):
             "response_format": {"type": "json_object"}
         }
         
-        response = requests.post(f"{UFL_AI_BASE_URL}/chat/completions", headers=headers, json=data)
-        response.raise_for_status()  # Raise exception for HTTP errors
+        async with aiohttp_session.post(f"{UFL_AI_BASE_URL}/chat/completions", json=data) as response:
+            response.raise_for_status()
+            result = await response.json()
         
-        result = response.json()
         content = result["choices"][0]["message"]["content"]
         
         # Try to parse the content as JSON
@@ -141,15 +245,12 @@ def call_ufl_api(prompt, endpoint_name=None):
         
         return parsed_content
             
-    except requests.exceptions.RequestException as e:
+    except Exception as e:
         logger.error(f"API request failed: {str(e)}")
         raise Exception(f"API request failed: {str(e)}")
-    except Exception as e:
-        logger.error(f"Unexpected error: {str(e)}")
-        raise
 
 @app.get("/health")
-def health_check():
+async def health_check():
     """Health check endpoint"""
     return {
         "status": "healthy", 
@@ -159,8 +260,14 @@ def health_check():
     }
 
 @app.post("/generate-initial-prompt")
-def generate_initial_prompt(request: UserNeedsRequest):
+async def generate_initial_prompt(request: UserNeedsRequest):
     """Generate an initial system prompt based on user needs"""
+    # Check cache first
+    cache_key = get_cache_key("generate-initial-prompt", userNeeds=request.userNeeds)
+    cached_result = get_cached_response(cache_key)
+    if cached_result:
+        return cached_result
+    
     try:
         # Get the template and render it with the user needs
         template = template_manager.render_template(
@@ -172,14 +279,28 @@ def generate_initial_prompt(request: UserNeedsRequest):
             raise HTTPException(status_code=500, detail="Template not found or rendering failed")
         
         # Call the AI API with the rendered template
-        result = call_ufl_api(template, "generate-initial-prompt")
+        result = await call_ufl_api(template, "generate-initial-prompt")
+        
+        # Cache the result
+        set_cache(cache_key, result)
+        
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/evaluate-and-iterate-prompt")
-def evaluate_and_iterate_prompt(request: EvaluatePromptRequest):
+async def evaluate_and_iterate_prompt(request: EvaluatePromptRequest):
     """Evaluate and iterate on a prompt based on user needs and optional content"""
+    # Check cache first
+    cache_key = get_cache_key("evaluate-and-iterate-prompt", 
+                             prompt=request.prompt, 
+                             userNeeds=request.userNeeds,
+                             retrievedContent=request.retrievedContent,
+                             groundTruths=request.groundTruths)
+    cached_result = get_cached_response(cache_key)
+    if cached_result:
+        return cached_result
+    
     try:
         # Prepare optional sections
         retrievedContentSection = ""
@@ -214,14 +335,27 @@ def evaluate_and_iterate_prompt(request: EvaluatePromptRequest):
             raise HTTPException(status_code=500, detail="Template not found or rendering failed")
         
         # Call the AI API with the rendered template
-        result = call_ufl_api(template, "evaluate-and-iterate-prompt")
+        result = await call_ufl_api(template, "evaluate-and-iterate-prompt")
+        
+        # Cache the result
+        set_cache(cache_key, result)
+        
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/iterate-on-prompt")
-def iterate_on_prompt(request: IteratePromptRequest):
+async def iterate_on_prompt(request: IteratePromptRequest):
     """Iterate and refine a prompt based on user feedback and selected suggestions"""
+    # Check cache first
+    cache_key = get_cache_key("iterate-on-prompt", 
+                             currentPrompt=request.currentPrompt,
+                             userComments=request.userComments,
+                             selectedSuggestions=str(request.selectedSuggestions))
+    cached_result = get_cached_response(cache_key)
+    if cached_result:
+        return cached_result
+    
     try:
         # Format selected suggestions as a bulleted list
         selectedSuggestions = "\n".join([f"- {s}" for s in request.selectedSuggestions])
@@ -238,14 +372,24 @@ def iterate_on_prompt(request: IteratePromptRequest):
             raise HTTPException(status_code=500, detail="Template not found or rendering failed")
         
         # Call the AI API with the rendered template
-        result = call_ufl_api(template, "iterate-on-prompt")
+        result = await call_ufl_api(template, "iterate-on-prompt")
+        
+        # Cache the result
+        set_cache(cache_key, result)
+        
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/generate-prompt-tags")
-def generate_prompt_tags(request: PromptTagsRequest):
+async def generate_prompt_tags(request: PromptTagsRequest):
     """Generate a summary and tags for a given prompt"""
+    # Check cache first
+    cache_key = get_cache_key("generate-prompt-tags", promptText=request.promptText)
+    cached_result = get_cached_response(cache_key)
+    if cached_result:
+        return cached_result
+    
     try:
         # Get the template and render it with the data
         template = template_manager.render_template(
@@ -257,14 +401,26 @@ def generate_prompt_tags(request: PromptTagsRequest):
             raise HTTPException(status_code=500, detail="Template not found or rendering failed")
         
         # Call the AI API with the rendered template
-        result = call_ufl_api(template, "generate-prompt-tags")
+        result = await call_ufl_api(template, "generate-prompt-tags")
+        
+        # Cache the result
+        set_cache(cache_key, result)
+        
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/get-prompt-suggestions")
-def get_prompt_suggestions(request: PromptSuggestionsRequest):
+async def get_prompt_suggestions(request: PromptSuggestionsRequest):
     """Generate suggestions for improving a prompt"""
+    # Check cache first
+    cache_key = get_cache_key("get-prompt-suggestions", 
+                             currentPrompt=request.currentPrompt,
+                             userComments=request.userComments)
+    cached_result = get_cached_response(cache_key)
+    if cached_result:
+        return cached_result
+    
     try:
         # Prepare optional user comments section
         userCommentsSection = ""
@@ -282,14 +438,27 @@ def get_prompt_suggestions(request: PromptSuggestionsRequest):
             raise HTTPException(status_code=500, detail="Template not found or rendering failed")
         
         # Call the AI API with the rendered template
-        result = call_ufl_api(template, "get-prompt-suggestions")
+        result = await call_ufl_api(template, "get-prompt-suggestions")
+        
+        # Cache the result
+        set_cache(cache_key, result)
+        
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/optimize-prompt-with-context")
-def optimize_prompt_with_context(request: OptimizePromptRequest):
+async def optimize_prompt_with_context(request: OptimizePromptRequest):
     """Optimize a prompt using retrieved content and ground truths"""
+    # Check cache first
+    cache_key = get_cache_key("optimize-prompt-with-context", 
+                             prompt=request.prompt,
+                             retrievedContent=request.retrievedContent,
+                             groundTruths=request.groundTruths)
+    cached_result = get_cached_response(cache_key)
+    if cached_result:
+        return cached_result
+    
     try:
         # Get the template and render it with the data
         template = template_manager.render_template(
@@ -303,14 +472,18 @@ def optimize_prompt_with_context(request: OptimizePromptRequest):
             raise HTTPException(status_code=500, detail="Template not found or rendering failed")
         
         # Call the AI API with the rendered template
-        result = call_ufl_api(template, "optimize-prompt-with-context")
+        result = await call_ufl_api(template, "optimize-prompt-with-context")
+        
+        # Cache the result
+        set_cache(cache_key, result)
+        
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 # Template management endpoints
 @app.get("/templates")
-def list_templates():
+async def list_templates():
     """List all available templates"""
     try:
         templates = {}
@@ -325,7 +498,7 @@ def list_templates():
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/templates/{template_name}")
-def get_template(template_name: str):
+async def get_template(template_name: str):
     """Get a specific template by name"""
     try:
         template_data = template_manager.get_template(template_name)
@@ -336,7 +509,7 @@ def get_template(template_name: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.put("/templates/{template_name}")
-def update_template(template_name: str, request: TemplateUpdateRequest):
+async def update_template(template_name: str, request: TemplateUpdateRequest):
     """Update a specific template"""
     try:
         # Ensure the template data has at least the required fields
@@ -356,7 +529,7 @@ def update_template(template_name: str, request: TemplateUpdateRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/templates/reload")
-def reload_templates():
+async def reload_templates():
     """Reload all templates from disk"""
     try:
         template_manager.reload_templates()
@@ -365,7 +538,7 @@ def reload_templates():
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/render-template/{template_name}")
-def render_template_endpoint(template_name: str, request: dict):
+async def render_template_endpoint(template_name: str, request: dict):
     """Render a template with the provided variables (for testing)"""
     try:
         rendered = template_manager.render_template(template_name, **request)

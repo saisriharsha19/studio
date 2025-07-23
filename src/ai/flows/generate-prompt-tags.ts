@@ -19,7 +19,8 @@ export type GeneratePromptMetadataInput = z.infer<typeof GeneratePromptMetadataI
 
 const GeneratePromptMetadataOutputSchema = z.object({
   summary: z.string().describe("A very short, concise summary (around 5-10 words) of the prompt's purpose, to be used as a title."),
-  tags: z.array(z.string()).describe("A list of 2-4 relevant keywords (tags) for searching and filtering. Tags should be lowercase and one or two words max.")
+  tags: z.array(z.string()).describe("A list of 2-4 relevant keywords (tags) for searching and filtering. Tags should be lowercase and one or two words max."),
+  quality_assessment: z.any().optional(),
 });
 export type GeneratePromptMetadataOutput = z.infer<typeof GeneratePromptMetadataOutputSchema>;
 
@@ -48,7 +49,7 @@ const generatePromptMetadataFlow = ai.defineFlow(
         promptText: input.promptText,
     };
 
-    const response = await fetch(`${pythonBackendUrl}generate-prompt-tags`, {
+    const response = await fetch(`${pythonBackendUrl}/generate-prompt-tags`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

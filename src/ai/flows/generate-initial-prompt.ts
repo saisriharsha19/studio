@@ -21,6 +21,7 @@ export type GenerateInitialPromptInput = z.infer<typeof GenerateInitialPromptInp
 
 const GenerateInitialPromptOutputSchema = z.object({
   initialPrompt: z.string().describe('The generated initial system prompt.'),
+  deepeval_assessment: z.any().optional(),
 });
 export type GenerateInitialPromptOutput = z.infer<typeof GenerateInitialPromptOutputSchema>;
 
@@ -48,7 +49,7 @@ const generateInitialPromptFlow = ai.defineFlow(
         userNeeds: input.userNeeds
     };
 
-    const response = await fetch(`${pythonBackendUrl}generate-initial-prompt`, {
+    const response = await fetch(`${pythonBackendUrl}/generate-initial-prompt`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

@@ -8,7 +8,7 @@ import { PromptForgeProvider } from '@/hooks/use-prompt-forge';
 import { LibraryProvider } from '@/hooks/use-library';
 
 export const metadata: Metadata = {
-  title: 'NaviGator Sailor',
+  title: 'NaviGator Prompt',
   description: 'Create and iterate on prompts.',
 };
 

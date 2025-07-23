@@ -31,10 +31,12 @@ const MetricSchema = z.object({
   score: z.number().min(0).max(1).describe('The score for the metric, from 0 to 1.'),
   summary: z.string().describe('A summary of the evaluation for this metric.'),
   testCases: z.array(z.string()).describe('Example test cases used for evaluation.'),
+  deepeval_score: z.number().optional(),
+  deepeval_explanation: z.string().optional(),
 });
 
 const EvaluateAndIteratePromptOutputSchema = z.object({
-  improvedPrompt: z.string().describe('The improved prompt after evaluation and iteration.'),
+  improvedPrompt: z.union([z.string(), z.record(z.any())]).describe('The improved prompt after evaluation and iteration.'),
   bias: MetricSchema.describe(
     'Evaluation of the prompt for potential biases. Consider stereotypes, fairness, and representation.'
   ),
@@ -47,6 +49,7 @@ const EvaluateAndIteratePromptOutputSchema = z.object({
   faithfulness: MetricSchema.optional().describe(
     "Evaluation of how faithful the prompt's output is to the provided knowledge base (retrieved content). Only evaluate this if retrieved content is provided."
   ),
+  deepeval_assessment: z.any().optional(),
 });
 export type EvaluateAndIteratePromptOutput = z.infer<typeof EvaluateAndIteratePromptOutputSchema>;
 
@@ -77,7 +80,7 @@ const evaluateAndIteratePromptFlow = ai.defineFlow(
       groundTruths: input.groundTruths,
     };
 
-    const response = await fetch(`${pythonBackendUrl}evaluate-and-iterate-prompt`, {
+    const response = await fetch(`${pythonBackendUrl}/evaluate-and-iterate-prompt`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -93,7 +96,23 @@ const evaluateAndIteratePromptFlow = ai.defineFlow(
     const content = await response.json();
 
     try {
-        return EvaluateAndIteratePromptOutputSchema.parse(content);
+        const parsedContent = EvaluateAndIteratePromptOutputSchema.parse(content);
+        
+        // If improvedPrompt is an object, extract the main prompt string.
+        let promptText = '';
+        if (typeof parsedContent.improvedPrompt === 'object' && parsedContent.improvedPrompt !== null) {
+            // Assuming the main prompt text is under a specific key, e.g., 'SYSTEM PROMPT'
+            promptText = (parsedContent.improvedPrompt as any)['SYSTEM PROMPT'] || JSON.stringify(parsedContent.improvedPrompt);
+        } else if (typeof parsedContent.improvedPrompt === 'string') {
+            promptText = parsedContent.improvedPrompt;
+        }
+
+        return {
+          ...parsedContent,
+          improvedPrompt: promptText, // Ensure it's always a string for the client, even if the raw response was an object
+          rawImprovedPrompt: typeof parsedContent.improvedPrompt === 'object' ? parsedContent.improvedPrompt : undefined, // Keep the object for potential future use
+        };
+
     } catch (e: any) {
         console.error("Failed to parse response from Python backend:", e, "Raw content:", content);
         throw new Error(`Failed to parse response from Python backend as JSON: ${e.message}`);

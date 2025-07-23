@@ -29,6 +29,7 @@ const OptimizePromptWithContextOutputSchema = z.object({
   reasoning: z
     .string()
     .describe('The reasoning behind the prompt optimization.'),
+  deepeval_optimization_analysis: z.any().optional(),
 });
 
 export type OptimizePromptWithContextOutput = z.infer<
@@ -61,7 +62,7 @@ const optimizePromptWithContextFlow = ai.defineFlow(
         groundTruths: input.groundTruths,
     };
 
-    const response = await fetch(`${pythonBackendUrl}optimize-prompt-with-context`, {
+    const response = await fetch(`${pythonBackendUrl}/optimize-prompt-with-context`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

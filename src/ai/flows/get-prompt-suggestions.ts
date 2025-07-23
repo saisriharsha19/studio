@@ -20,6 +20,7 @@ export type GeneratePromptSuggestionsInput = z.infer<typeof GeneratePromptSugges
 
 const GeneratePromptSuggestionsOutputSchema = z.object({
   suggestions: z.array(z.string()).describe('A list of concrete suggestions on how the prompt could be improved.'),
+  deepeval_assessment: z.any().optional(),
 });
 export type GeneratePromptSuggestionsOutput = z.infer<typeof GeneratePromptSuggestionsOutputSchema>;
 
@@ -48,7 +49,7 @@ const generatePromptSuggestionsFlow = ai.defineFlow(
       userComments: input.userComments
     };
 
-    const response = await fetch(`${pythonBackendUrl}get-prompt-suggestions`, {
+    const response = await fetch(`${pythonBackendUrl}/get-prompt-suggestions`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

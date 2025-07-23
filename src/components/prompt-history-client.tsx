@@ -156,7 +156,7 @@ export function PromptHistoryClient() {
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="h-6 w-6 shrink-0 text-accent dark:text-primary sm:h-8 sm:w-8"
+                className="h-6 w-6 shrink-0 sm:h-8 sm:w-8 [&]:stroke-[#FA4616] dark:[&]:stroke-[#0021A5]"
                 aria-hidden="true"
               >
                 <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
