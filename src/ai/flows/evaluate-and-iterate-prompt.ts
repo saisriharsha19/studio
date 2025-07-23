@@ -36,7 +36,7 @@ const MetricSchema = z.object({
 });
 
 const EvaluateAndIteratePromptOutputSchema = z.object({
-  improvedPrompt: z.string().describe('The improved prompt after evaluation and iteration.'),
+  improvedPrompt: z.union([z.string(), z.record(z.any())]).describe('The improved prompt after evaluation and iteration.'),
   bias: MetricSchema.describe(
     'Evaluation of the prompt for potential biases. Consider stereotypes, fairness, and representation.'
   ),
@@ -96,7 +96,20 @@ const evaluateAndIteratePromptFlow = ai.defineFlow(
     const content = await response.json();
 
     try {
-        return EvaluateAndIteratePromptOutputSchema.parse(content);
+        const parsedContent = EvaluateAndIteratePromptOutputSchema.parse(content);
+        
+        // If improvedPrompt is an object, extract the main prompt string.
+        if (typeof parsedContent.improvedPrompt === 'object' && parsedContent.improvedPrompt !== null) {
+            // Assuming the main prompt text is under a specific key, e.g., 'SYSTEM PROMPT'
+            const promptText = (parsedContent.improvedPrompt as any)['SYSTEM PROMPT'] || JSON.stringify(parsedContent.improvedPrompt);
+            return {
+                ...parsedContent,
+                improvedPrompt: promptText,
+            };
+        }
+        
+        return parsedContent;
+
     } catch (e: any) {
         console.error("Failed to parse response from Python backend:", e, "Raw content:", content);
         throw new Error(`Failed to parse response from Python backend as JSON: ${e.message}`);
