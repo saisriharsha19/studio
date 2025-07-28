@@ -398,7 +398,7 @@ export function PromptForgeClient() {
         setEvaluationResult(result);
         
         const improvedPromptText = result.improvedPrompt;
-        if (improvedPromptText) {
+        if (improvedPromptText && typeof improvedPromptText === 'string') {
           setCurrentPrompt(improvedPromptText);
           if (isAuthenticated) {
             addPrompt(improvedPromptText);
@@ -1001,5 +1001,3 @@ Assistant: The add/drop deadline for the Fall 2024 semester is September 1st, 20
     </TooltipProvider>
   );
 }
-
-    
