@@ -11,6 +11,10 @@ import logging
 from dotenv import load_dotenv
 from utils import retry_on_failure, extract_json_from_text, validate_response_against_schema
 from prompt_templates import template_manager
+from deepeval import evaluate
+from deepeval.metrics import BiasMetric, ToxicityMetric, AnswerRelevancyMetric, FaithfulnessMetric
+from deepeval.test_case import LLMTestCase
+from deepeval.models import DeepEvalBaseLLM
 
 # Load environment variables
 load_dotenv()
@@ -177,46 +181,98 @@ def generate_initial_prompt(request: UserNeedsRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# Custom LLM for DeepEval
+class UFL_AI_LLM(DeepEvalBaseLLM):
+    def __init__(self, model, api_key, base_url):
+        self.model = model
+        self.api_key = api_key
+        self.base_url = base_url
+        self.headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+
+    def load_model(self):
+        return self
+
+    def generate(self, prompt: str) -> str:
+        data = {
+            "model": self.model,
+            "messages": [{"role": "user", "content": prompt}],
+        }
+        response = requests.post(f"{self.base_url}/chat/completions", headers=self.headers, json=data)
+        response.raise_for_status()
+        result = response.json()
+        return result["choices"][0]["message"]["content"]
+
+    async def a_generate(self, prompt: str) -> str:
+        return self.generate(prompt)
+
+    def get_model_name(self):
+        return self.model
+
 @app.post("/evaluate-and-iterate-prompt")
 def evaluate_and_iterate_prompt(request: EvaluatePromptRequest):
     """Evaluate and iterate on a prompt based on user needs and optional content"""
     try:
-        # Prepare optional sections
-        retrievedContentSection = ""
-        groundTruthsSection = ""
-        faithfulnessSection = ""
-        
-        if request.retrievedContent:
-            retrievedContentSection = f"\n**Knowledge Base Content:**\n{request.retrievedContent}\n"
-        
-        if request.groundTruths:
-            groundTruthsSection = f"\n**Ground Truths / Few-shot Examples:**\n{request.groundTruths}\n"
-            
-        if request.retrievedContent:
-            faithfulnessSection = """
-4.  **FaithfulnessMetric**:
-    *   **Score**: (0-1) How likely is the prompt to generate responses that are faithful to the provided Knowledge Base Content?
-    *   **Summary**: Explain your reasoning.
-    *   **Test Cases**: List examples you would use to test faithfulness to the knowledge base.
-"""
-        
-        # Get the template and render it with the data
+        # Step 1: Generate the improved prompt
+        retrievedContentSection = f"\n**Knowledge Base Content:**\n{request.retrievedContent}\n" if request.retrievedContent else ""
+        groundTruthsSection = f"\n**Ground Truths / Few-shot Examples:**\n{request.groundTruths}\n" if request.groundTruths else ""
+
         template = template_manager.render_template(
             "evaluate_and_iterate_prompt",
             prompt=request.prompt,
             userNeeds=request.userNeeds,
             retrievedContentSection=retrievedContentSection,
-            groundTruthsSection=groundTruthsSection,
-            faithfulnessSection=faithfulnessSection
+            groundTruthsSection=groundTruthsSection
         )
         
         if not template:
             raise HTTPException(status_code=500, detail="Template not found or rendering failed")
+
+        improved_prompt_response = call_ufl_api(template, "generate-initial-prompt")
+        improved_prompt = improved_prompt_response.get("initialPrompt")
+
+        if not improved_prompt:
+            raise HTTPException(status_code=500, detail="Failed to generate improved prompt")
+
+        # Step 2: Evaluate the improved prompt using deepeval
+        custom_model = UFL_AI_LLM(model=UFL_AI_MODEL, api_key=UFL_AI_API_KEY, base_url=UFL_AI_BASE_URL)
+
+        test_case = LLMTestCase(
+            input=request.userNeeds,
+            actual_output=improved_prompt,
+            retrieval_context=[request.retrievedContent] if request.retrievedContent else None,
+            context=[request.groundTruths] if request.groundTruths else None
+        )
+
+        metrics = [
+            BiasMetric(threshold=0.5, model=custom_model),
+            ToxicityMetric(threshold=0.5, model=custom_model),
+            AnswerRelevancyMetric(threshold=0.5, model=custom_model)
+        ]
+        if request.retrievedContent:
+            metrics.append(FaithfulnessMetric(threshold=0.5, model=custom_model))
+
+        evaluation_results = evaluate(test_cases=[test_case], metrics=metrics)
+
+        # Format the results
+        results = {"improvedPrompt": improved_prompt}
+        for metric in evaluation_results[0].metrics:
+            metric_name = metric.__class__.__name__.replace("Metric", "").lower()
+            if metric_name == "answerrelevancy":
+                metric_name = "promptAlignment"
+
+            results[metric_name] = {
+                "score": metric.score,
+                "summary": metric.reason,
+                "testCases": [] # deepeval doesn't expose test cases in the same way
+            }
         
-        # Call the AI API with the rendered template
-        result = call_ufl_api(template, "evaluate-and-iterate-prompt")
-        return result
+        return results
+
     except Exception as e:
+        logger.error(f"Error in evaluate_and_iterate_prompt: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/iterate-on-prompt")
