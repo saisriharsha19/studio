@@ -270,7 +270,7 @@ export async function addLibraryPromptToDB(promptText: string, userId: string): 
         throw new Error('This prompt is already in the library.');
     }
 
-    const { summary, tags } = await handleGeneratePromptTags({ promptText });
+    const { summary, tags } = await handleGeneratePromptTags({ promptText, universityCode: 'ufl' });
 
     const newPromptData = {
       id: crypto.randomUUID(),

@@ -18,6 +18,8 @@ const IterateOnPromptInputSchema = z.object({
   selectedSuggestions: z
     .array(z.string())
     .describe('A list of AI-generated suggestions that the user has selected to apply.'),
+  universityCode: z.string().describe('The code for the university.'),
+  userId: z.string().describe('The ID of the user.'),
 });
 export type IterateOnPromptInput = z.infer<typeof IterateOnPromptInputSchema>;
 
@@ -51,6 +53,8 @@ const iterateOnPromptFlow = ai.defineFlow(
         currentPrompt: input.currentPrompt,
         userComments: input.userComments,
         selectedSuggestions: input.selectedSuggestions,
+        universityCode: input.universityCode,
+        userId: input.userId,
     };
 
     const response = await fetch(`${pythonBackendUrl}/iterate-on-prompt`, {

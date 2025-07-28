@@ -14,7 +14,8 @@ import {z} from 'genkit';
 
 const GeneratePromptSuggestionsInputSchema = z.object({
   currentPrompt: z.string().describe('The current system prompt to be improved.'),
-  userComments: z.string().describe('User feedback and comments on what to change.'),
+  userComments: z.string().optional().describe('User feedback and comments on what to change.'),
+  universityCode: z.string().describe('The code for the university.'),
 });
 export type GeneratePromptSuggestionsInput = z.infer<typeof GeneratePromptSuggestionsInputSchema>;
 
@@ -46,7 +47,8 @@ const generatePromptSuggestionsFlow = ai.defineFlow(
     // We only send the dynamic data.
     const payload = {
       currentPrompt: input.currentPrompt,
-      userComments: input.userComments
+      userComments: input.userComments,
+      universityCode: input.universityCode,
     };
 
     const response = await fetch(`${pythonBackendUrl}/get-prompt-suggestions`, {

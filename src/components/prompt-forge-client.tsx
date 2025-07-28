@@ -75,7 +75,7 @@ const formatMetricName = (name: string) => {
 };
 
 export function PromptForgeClient() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, userId } = useAuth();
   const { addPrompt } = usePromptHistory();
   const { addLibraryPrompt } = useLibrary();
   const { toast } = useToast();
@@ -258,10 +258,14 @@ export function PromptForgeClient() {
       });
       return;
     }
+    if (!userId) {
+        toast({ variant: 'destructive', title: 'Authentication Error', description: 'User ID is missing.' });
+        return;
+    }
     setLoading((prev) => ({ ...prev, generating: true }));
     startTransition(async () => {
       try {
-        const result = await handleGenerateInitialPrompt({ userNeeds });
+        const result = await handleGenerateInitialPrompt({ userNeeds, universityCode: 'ufl', userId });
         setCurrentPrompt(result.initialPrompt);
         setPromptsGenerated(prev => prev + 1);
         if (isAuthenticated) {
@@ -299,6 +303,7 @@ export function PromptForgeClient() {
         const result = await handleGetPromptSuggestions({
           currentPrompt,
           userComments: iterationComments,
+          universityCode: 'ufl',
         });
         setSuggestions(result.suggestions);
       } catch (error: any) {
@@ -347,6 +352,10 @@ export function PromptForgeClient() {
       });
       return;
     }
+     if (!userId) {
+        toast({ variant: 'destructive', title: 'Authentication Error', description: 'User ID is missing.' });
+        return;
+    }
     setLoading((prev) => ({ ...prev, iterating: true }));
     setEvaluationResult(null);
     setSuggestions([]); 
@@ -356,6 +365,8 @@ export function PromptForgeClient() {
           currentPrompt,
           userComments: iterationComments,
           selectedSuggestions,
+          universityCode: 'ufl',
+          userId,
         });
         setCurrentPrompt(result.newPrompt);
         if (isAuthenticated) {
@@ -385,6 +396,10 @@ export function PromptForgeClient() {
       });
       return;
     }
+     if (!userId) {
+        toast({ variant: 'destructive', title: 'Authentication Error', description: 'User ID is missing.' });
+        return;
+    }
     setLoading((prev) => ({ ...prev, evaluating: true }));
     startTransition(async () => {
       try {
@@ -394,6 +409,8 @@ export function PromptForgeClient() {
           userNeeds,
           retrievedContent: combinedKnowledge,
           groundTruths: fewShotExamples,
+          universityCode: 'ufl',
+          userId,
         });
         setEvaluationResult(result);
         
@@ -902,7 +919,7 @@ Assistant: The add/drop deadline for the Fall 2024 semester is September 1st, 20
                                         <div className="flex w-full items-center justify-between pr-4">
                                             <span>{formatMetricName(key)}</span>
                                             {typeof score === 'number' ? (
-                                              <Badge variant={score > 0.7 ? 'default' : 'destructive'}>
+                                              <Badge variant={score > 0.7 ? 'default' : score > 0.4 ? 'secondary' : 'destructive'}>
                                                   {Math.round(score * 100)}%
                                               </Badge>
                                             ) : (

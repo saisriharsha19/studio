@@ -14,6 +14,7 @@ import {z} from 'genkit';
 
 const GeneratePromptMetadataInputSchema = z.object({
   promptText: z.string().describe('The prompt text to analyze.'),
+  universityCode: z.string().describe('The code for the university.'),
 });
 export type GeneratePromptMetadataInput = z.infer<typeof GeneratePromptMetadataInputSchema>;
 
@@ -47,6 +48,7 @@ const generatePromptMetadataFlow = ai.defineFlow(
     // We only send the dynamic data.
     const payload = {
         promptText: input.promptText,
+        universityCode: input.universityCode,
     };
 
     const response = await fetch(`${pythonBackendUrl}/generate-prompt-tags`, {

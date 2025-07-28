@@ -1,4 +1,3 @@
-
 // src/ai/flows/evaluate-and-iterate-prompt.ts
 'use server';
 
@@ -24,11 +23,13 @@ const EvaluateAndIteratePromptInputSchema = z.object({
     .string()
     .optional()
     .describe('Ground truths or few-shot examples to validate the prompt against.'),
+  universityCode: z.string().describe('The code for the university.'),
+  userId: z.string().describe('The ID of the user.'),
 });
 export type EvaluateAndIteratePromptInput = z.infer<typeof EvaluateAndIteratePromptInputSchema>;
 
 const MetricSchema = z.object({
-  score: z.number().min(0).max(1).nullable().describe('The score for the metric, from 0 to 1.'),
+  score: z.number().nullable().describe('The score for the metric, from 0 to 1.'),
   summary: z.string().nullable().describe('A summary of the evaluation for this metric.'),
   testCases: z.array(z.string()).describe('Example test cases used for evaluation.'),
   deepeval_score: z.number().optional(),
@@ -78,6 +79,8 @@ const evaluateAndIteratePromptFlow = ai.defineFlow(
       userNeeds: input.userNeeds,
       retrievedContent: input.retrievedContent,
       groundTruths: input.groundTruths,
+      universityCode: input.universityCode,
+      userId: input.userId,
     };
 
     const response = await fetch(`${pythonBackendUrl}/evaluate-and-iterate-prompt`, {

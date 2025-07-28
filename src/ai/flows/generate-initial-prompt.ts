@@ -16,6 +16,8 @@ const GenerateInitialPromptInputSchema = z.object({
   userNeeds: z
     .string()
     .describe('A description of the user needs for the assistant.'),
+  universityCode: z.string().describe('The code for the university.'),
+  userId: z.string().describe('The ID of the user.'),
 });
 export type GenerateInitialPromptInput = z.infer<typeof GenerateInitialPromptInputSchema>;
 
@@ -46,7 +48,9 @@ const generateInitialPromptFlow = ai.defineFlow(
     // The large system prompt is now stored on the Python backend.
     // We only send the dynamic data (userNeeds).
     const payload = {
-        userNeeds: input.userNeeds
+        userNeeds: input.userNeeds,
+        universityCode: input.universityCode,
+        userId: input.userId,
     };
 
     const response = await fetch(`${pythonBackendUrl}/generate-initial-prompt`, {
