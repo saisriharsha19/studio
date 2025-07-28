@@ -397,12 +397,11 @@ export function PromptForgeClient() {
         });
         setEvaluationResult(result);
         
-        // The backend now separates evaluation from iteration, 
-        // but we can still update the prompt if the evaluation returns one
-        if (result.improvedPrompt) {
-          setCurrentPrompt(result.improvedPrompt);
+        const improvedPromptText = result.improvedPrompt;
+        if (improvedPromptText) {
+          setCurrentPrompt(improvedPromptText);
           if (isAuthenticated) {
-            addPrompt(result.improvedPrompt);
+            addPrompt(improvedPromptText);
           }
         }
         
@@ -891,19 +890,24 @@ Assistant: The add/drop deadline for the Fall 2024 semester is September 1st, 20
                          {Object.entries(evaluationResult).map(([key, value]) => {
                             if (key === 'improvedPrompt' || key === 'deepeval_assessment') return null;
 
-                            const metric = value as { score: number; summary: string };
-                            if (typeof metric !== 'object' || metric === null || typeof metric.score === 'undefined') {
+                            const metric = value as { score: number | null; summary: string | null };
+                            if (typeof metric !== 'object' || metric === null) {
                               return null;
                             }
+                            const score = metric.score;
                             
                             return (
                                 <AccordionItem value={key} key={key}>
                                     <AccordionTrigger>
                                         <div className="flex w-full items-center justify-between pr-4">
                                             <span>{formatMetricName(key)}</span>
-                                            <Badge variant={metric.score > 0.7 ? 'default' : 'destructive'}>
-                                                {Math.round(metric.score * 100)}%
-                                            </Badge>
+                                            {typeof score === 'number' ? (
+                                              <Badge variant={score > 0.7 ? 'default' : 'destructive'}>
+                                                  {Math.round(score * 100)}%
+                                              </Badge>
+                                            ) : (
+                                              <Badge variant="secondary">N/A</Badge>
+                                            )}
                                         </div>
                                     </AccordionTrigger>
                                     <AccordionContent className="space-y-4 px-1">
@@ -997,3 +1001,5 @@ Assistant: The add/drop deadline for the Fall 2024 semester is September 1st, 20
     </TooltipProvider>
   );
 }
+
+    
