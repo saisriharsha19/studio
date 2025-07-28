@@ -28,8 +28,8 @@ const EvaluateAndIteratePromptInputSchema = z.object({
 export type EvaluateAndIteratePromptInput = z.infer<typeof EvaluateAndIteratePromptInputSchema>;
 
 const MetricSchema = z.object({
-  score: z.number().min(0).max(1).describe('The score for the metric, from 0 to 1.'),
-  summary: z.string().describe('A summary of the evaluation for this metric.'),
+  score: z.number().min(0).max(1).nullable().describe('The score for the metric, from 0 to 1.'),
+  summary: z.string().nullable().describe('A summary of the evaluation for this metric.'),
   testCases: z.array(z.string()).describe('Example test cases used for evaluation.'),
   deepeval_score: z.number().optional(),
   deepeval_explanation: z.string().optional(),
