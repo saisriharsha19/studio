@@ -397,21 +397,16 @@ export function PromptForgeClient() {
         });
         setEvaluationResult(result);
         
-        let promptToSave = '';
-        if (typeof result.improvedPrompt === 'string') {
-          promptToSave = result.improvedPrompt;
-        } else if (typeof result.improvedPrompt === 'object' && result.improvedPrompt !== null) {
-          promptToSave = (result.improvedPrompt as any)['SYSTEM PROMPT'] || JSON.stringify(result.improvedPrompt);
-        }
-        
-        if (promptToSave) {
-          setCurrentPrompt(promptToSave);
+        // The backend now separates evaluation from iteration, 
+        // but we can still update the prompt if the evaluation returns one
+        if (result.improvedPrompt) {
+          setCurrentPrompt(result.improvedPrompt);
           if (isAuthenticated) {
-            addPrompt(promptToSave);
+            addPrompt(result.improvedPrompt);
           }
         }
         
-        toast({ title: 'Success', description: 'Prompt evaluated and improved.', duration: 5000 });
+        toast({ title: 'Success', description: 'Prompt evaluated.', duration: 5000 });
       } catch (error: any) {
         toast({
           variant: 'destructive',
@@ -759,11 +754,11 @@ Assistant: The add/drop deadline for the Fall 2024 semester is September 1st, 20
                           <TooltipTrigger asChild>
                             <Button onClick={onEvaluate} disabled={isLoading || loading.evaluating}>
                               {loading.evaluating ? <Loader2 className="animate-spin" /> : <Bot />}
-                              Iterate &amp; Evaluate
+                              Evaluate Prompt
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>Use AI to evaluate and improve the prompt with context.</p>
+                            <p>Use AI to evaluate the prompt with context.</p>
                           </TooltipContent>
                         </Tooltip>
                       </div>
@@ -891,65 +886,33 @@ Assistant: The add/drop deadline for the Fall 2024 semester is September 1st, 20
                   <div aria-live="polite" aria-atomic="true">
                     {loading.evaluating ? (
                       <Skeleton className="h-40 w-full" />
-                    ) : evaluationResult && evaluationResult.deepeval_assessment ? (
+                    ) : evaluationResult ? (
                       <Accordion type="single" collapsible className="w-full" defaultValue='overall_score'>
-                         {Object.entries(evaluationResult.deepeval_assessment).map(([key, value]) => {
-                            if (typeof value !== 'object' || value === null) {
-                                // Render overall score separately
-                                if (key === 'overall_score' && typeof value === 'number') {
-                                    return (
-                                        <AccordionItem value="overall_score" key={key}>
-                                            <AccordionTrigger>
-                                                <div className="flex w-full items-center justify-between pr-4">
-                                                    <span>Overall Score</span>
-                                                    <Badge variant={value > 0.7 ? 'default' : 'destructive'}>
-                                                        {Math.round(value * 100)}%
-                                                    </Badge>
-                                                </div>
-                                            </AccordionTrigger>
-                                            <AccordionContent className="space-y-4 px-1">
-                                                <p className="text-sm text-muted-foreground">
-                                                  This is the overall quality score of the prompt based on all evaluated metrics.
-                                                </p>
-                                            </AccordionContent>
-                                        </AccordionItem>
-                                    );
-                                }
-                                return null;
-                            }
-                            const scoreKey = `${key}_score`;
-                            const score = value[scoreKey];
-                            const explanation = value.explanation;
+                         {Object.entries(evaluationResult).map(([key, value]) => {
+                            if (key === 'improvedPrompt' || key === 'deepeval_assessment') return null;
 
+                            const metric = value as { score: number; summary: string };
+                            if (typeof metric !== 'object' || metric === null || typeof metric.score === 'undefined') {
+                              return null;
+                            }
+                            
                             return (
                                 <AccordionItem value={key} key={key}>
                                     <AccordionTrigger>
                                         <div className="flex w-full items-center justify-between pr-4">
                                             <span>{formatMetricName(key)}</span>
-                                            {typeof score === 'number' && (
-                                                <Badge variant={score < 0.3 ? 'default' : 'destructive'}>
-                                                   Score: {Math.round(score * 100)}%
-                                                </Badge>
-                                            )}
+                                            <Badge variant={metric.score > 0.7 ? 'default' : 'destructive'}>
+                                                {Math.round(metric.score * 100)}%
+                                            </Badge>
                                         </div>
                                     </AccordionTrigger>
                                     <AccordionContent className="space-y-4 px-1">
-                                        {explanation && (
+                                        {metric.summary && (
                                             <div>
-                                                <p className="text-sm font-medium">Explanation:</p>
+                                                <p className="text-sm font-medium">Summary:</p>
                                                 <p className="text-sm text-muted-foreground">
-                                                    {explanation}
+                                                    {metric.summary}
                                                 </p>
-                                            </div>
-                                        )}
-                                         {Array.isArray(value.recommendations) && value.recommendations.length > 0 && (
-                                            <div>
-                                                <p className="text-sm font-medium">Recommendations:</p>
-                                                <ul className="list-disc pl-5 text-sm text-muted-foreground">
-                                                    {value.recommendations.map((rec: string, i: number) => (
-                                                        <li key={i}>{rec}</li>
-                                                    ))}
-                                                </ul>
                                             </div>
                                         )}
                                     </AccordionContent>
