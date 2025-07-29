@@ -1,3 +1,4 @@
+
 // src/ai/flows/evaluate-and-iterate-prompt.ts
 'use server';
 
@@ -32,8 +33,6 @@ const MetricSchema = z.object({
   score: z.number().nullable().describe('The score for the metric, from 0 to 1.'),
   summary: z.string().nullable().describe('A summary of the evaluation for this metric.'),
   testCases: z.array(z.string()).describe('Example test cases used for evaluation.'),
-  deepeval_score: z.number().optional(),
-  deepeval_explanation: z.string().optional(),
 });
 
 const EvaluateAndIteratePromptOutputSchema = z.object({
@@ -50,7 +49,6 @@ const EvaluateAndIteratePromptOutputSchema = z.object({
   faithfulness: MetricSchema.optional().describe(
     "Evaluation of how faithful the prompt's output is to the provided knowledge base (retrieved content). Only evaluate this if retrieved content is provided."
   ),
-  deepeval_assessment: z.any().optional(),
 });
 export type EvaluateAndIteratePromptOutput = z.infer<typeof EvaluateAndIteratePromptOutputSchema>;
 
@@ -72,8 +70,6 @@ const evaluateAndIteratePromptFlow = ai.defineFlow(
       throw new Error('PYTHON_BACKEND_URL is not configured.');
     }
 
-    // The large system prompt is now stored on the Python backend.
-    // We only send the dynamic data.
     const payload = {
       prompt: input.prompt,
       userNeeds: input.userNeeds,

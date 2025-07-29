@@ -33,7 +33,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import {
   handleGenerateInitialPrompt,
-  handleEvaluateAndIterate,
   handleIterateOnPrompt,
   handleGetPromptSuggestions,
   handleScrapeUrl,
@@ -387,53 +386,99 @@ export function PromptForgeClient() {
     });
   };
 
-  const onEvaluate = () => {
+  const onEvaluate = async () => {
     if (!currentPrompt || !userNeeds) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'A prompt and user needs are required for evaluation.',
-      });
-      return;
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'A prompt and user needs are required for evaluation.',
+        });
+        return;
     }
-     if (!userId) {
+    if (!userId) {
         toast({ variant: 'destructive', title: 'Authentication Error', description: 'User ID is missing.' });
         return;
     }
-    setLoading((prev) => ({ ...prev, evaluating: true }));
-    startTransition(async () => {
-      try {
+    setLoading(prev => ({ ...prev, evaluating: true }));
+    setEvaluationResult(null);
+
+    try {
         const combinedKnowledge = [knowledgeBase, uploadedFileContent].filter(Boolean).join('\n\n');
-        const result = await handleEvaluateAndIterate({
-          prompt: currentPrompt,
-          userNeeds,
-          retrievedContent: combinedKnowledge,
-          groundTruths: fewShotExamples,
-          universityCode: 'ufl',
-          userId,
-        });
-        setEvaluationResult(result);
         
-        const improvedPromptText = result.improvedPrompt;
-        if (improvedPromptText && typeof improvedPromptText === 'string') {
-          setCurrentPrompt(improvedPromptText);
-          if (isAuthenticated) {
-            addPrompt(improvedPromptText);
-          }
+        const response = await fetch(`${process.env.NEXT_PUBLIC_PYTHON_BACKEND_URL}/evaluate-prompt-stream`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                prompt: currentPrompt,
+                userNeeds,
+                retrievedContent: combinedKnowledge,
+                groundTruths: fewShotExamples,
+                universityCode: 'ufl',
+                userId,
+            })
+        });
+
+        if (!response.body) {
+            throw new Error("No response body from stream.");
         }
-        
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let partialData = '';
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            partialData += decoder.decode(value, { stream: true });
+            const chunks = partialData.split('\n\n');
+            partialData = chunks.pop() || '';
+
+            for (const chunk of chunks) {
+                if (chunk.startsWith('data: ')) {
+                    const jsonData = JSON.parse(chunk.substring(6));
+                    
+                    if (jsonData.status === 'progress' && jsonData.step === 'prompt_generated') {
+                         setCurrentPrompt(jsonData.improved_prompt);
+                         setEvaluationResult(prev => ({
+                           ...(prev || { improvedPrompt: '', bias: { score: null, summary: null, testCases: []}, toxicity: { score: null, summary: null, testCases: []}, promptAlignment: { score: null, summary: null, testCases: []} }),
+                           improvedPrompt: jsonData.improved_prompt,
+                         }));
+                    } else if (jsonData.status === 'progress' && jsonData.step === 'metric_completed') {
+                        setEvaluationResult(prev => {
+                            const newResult = { ...(prev || { improvedPrompt: '', bias: { score: null, summary: null, testCases: []}, toxicity: { score: null, summary: null, testCases: []}, promptAlignment: { score: null, summary: null, testCases: []} }) };
+                            const metricName = jsonData.metric as keyof EvaluateAndIteratePromptOutput;
+                            if (metricName !== 'improvedPrompt' && metricName in newResult) {
+                                (newResult[metricName] as any) = {
+                                    score: jsonData.score,
+                                    summary: jsonData.summary,
+                                    testCases: [],
+                                };
+                            }
+                            return newResult;
+                        });
+                    } else if (jsonData.status === 'completed') {
+                        setEvaluationResult(jsonData.results);
+                        if (isAuthenticated) {
+                            addPrompt(jsonData.results.improvedPrompt);
+                        }
+                    } else if (jsonData.status === 'error') {
+                        throw new Error(jsonData.message);
+                    }
+                }
+            }
+        }
         toast({ title: 'Success', description: 'Prompt evaluated.', duration: 5000 });
-      } catch (error: any) {
+    } catch (error: any) {
         toast({
-          variant: 'destructive',
-          title: 'Evaluation Failed',
-          description: error.message,
+            variant: 'destructive',
+            title: 'Evaluation Failed',
+            description: error.message,
         });
-      } finally {
-        setLoading((prev) => ({ ...prev, evaluating: false }));
-      }
-    });
-  };
+    } finally {
+        setLoading(prev => ({ ...prev, evaluating: false }));
+    }
+};
 
   const onUploadToLibrary = () => {
     if (!currentPrompt) {
@@ -905,7 +950,7 @@ Assistant: The add/drop deadline for the Fall 2024 semester is September 1st, 20
                     ) : evaluationResult ? (
                       <Accordion type="single" collapsible className="w-full" defaultValue='overall_score'>
                          {Object.entries(evaluationResult).map(([key, value]) => {
-                            if (key === 'improvedPrompt' || key === 'deepeval_assessment') return null;
+                            if (key === 'improvedPrompt') return null;
 
                             const metric = value as { score: number | null; summary: string | null };
                             if (typeof metric !== 'object' || metric === null) {

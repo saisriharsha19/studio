@@ -25,7 +25,6 @@ export type IterateOnPromptInput = z.infer<typeof IterateOnPromptInputSchema>;
 
 const IterateOnPromptOutputSchema = z.object({
   newPrompt: z.string().describe('The newly generated, refined system prompt.'),
-  deepeval_comparison: z.any().optional(),
 });
 export type IterateOnPromptOutput = z.infer<typeof IterateOnPromptOutputSchema>;
 
@@ -47,8 +46,6 @@ const iterateOnPromptFlow = ai.defineFlow(
       throw new Error('PYTHON_BACKEND_URL is not configured.');
     }
 
-    // The large system prompt is now stored on the Python backend.
-    // We only send the dynamic data.
     const payload = {
         currentPrompt: input.currentPrompt,
         userComments: input.userComments,

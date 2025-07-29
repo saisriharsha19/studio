@@ -23,7 +23,6 @@ export type GenerateInitialPromptInput = z.infer<typeof GenerateInitialPromptInp
 
 const GenerateInitialPromptOutputSchema = z.object({
   initialPrompt: z.string().describe('The generated initial system prompt.'),
-  deepeval_assessment: z.any().optional(),
 });
 export type GenerateInitialPromptOutput = z.infer<typeof GenerateInitialPromptOutputSchema>;
 
@@ -45,8 +44,6 @@ const generateInitialPromptFlow = ai.defineFlow(
       throw new Error('PYTHON_BACKEND_URL is not configured.');
     }
 
-    // The large system prompt is now stored on the Python backend.
-    // We only send the dynamic data (userNeeds).
     const payload = {
         userNeeds: input.userNeeds,
         universityCode: input.universityCode,

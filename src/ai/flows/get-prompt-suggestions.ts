@@ -21,7 +21,6 @@ export type GeneratePromptSuggestionsInput = z.infer<typeof GeneratePromptSugges
 
 const GeneratePromptSuggestionsOutputSchema = z.object({
   suggestions: z.array(z.string()).describe('A list of concrete suggestions on how the prompt could be improved.'),
-  deepeval_assessment: z.any().optional(),
 });
 export type GeneratePromptSuggestionsOutput = z.infer<typeof GeneratePromptSuggestionsOutputSchema>;
 
@@ -43,8 +42,6 @@ const generatePromptSuggestionsFlow = ai.defineFlow(
       throw new Error('PYTHON_BACKEND_URL is not configured.');
     }
 
-    // The large system prompt is now stored on the Python backend.
-    // We only send the dynamic data.
     const payload = {
       currentPrompt: input.currentPrompt,
       userComments: input.userComments,

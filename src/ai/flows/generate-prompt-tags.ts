@@ -21,7 +21,6 @@ export type GeneratePromptMetadataInput = z.infer<typeof GeneratePromptMetadataI
 const GeneratePromptMetadataOutputSchema = z.object({
   summary: z.string().describe("A very short, concise summary (around 5-10 words) of the prompt's purpose, to be used as a title."),
   tags: z.array(z.string()).describe("A list of 2-4 relevant keywords (tags) for searching and filtering. Tags should be lowercase and one or two words max."),
-  quality_assessment: z.any().optional(),
 });
 export type GeneratePromptMetadataOutput = z.infer<typeof GeneratePromptMetadataOutputSchema>;
 
@@ -44,8 +43,6 @@ const generatePromptMetadataFlow = ai.defineFlow(
       throw new Error('PYTHON_BACKEND_URL is not configured.');
     }
 
-    // The large system prompt is now stored on the Python backend.
-    // We only send the dynamic data.
     const payload = {
         promptText: input.promptText,
         universityCode: input.universityCode,
