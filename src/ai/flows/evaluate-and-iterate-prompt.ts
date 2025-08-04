@@ -1,105 +1,36 @@
 
-// src/ai/flows/evaluate-and-iterate-prompt.ts
 'use server';
 
 /**
- * @fileOverview A prompt evaluation and iteration AI agent.
- *
- * - evaluateAndIteratePrompt - A function that handles the prompt evaluation and iteration process.
- * - EvaluateAndIteratePromptInput - The input type for the evaluateAndIteratePrompt function.
- * - EvaluateAndIteratePromptOutput - The return type for the evaluateAndIteratePrompt function.
+ * @fileOverview Defines the data structures for evaluating a prompt.
+ * This file contains the Zod schemas that validate the shape of the data
+ * returned by the backend's prompt evaluation task.
  */
 
-import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-const EvaluateAndIteratePromptInputSchema = z.object({
-  prompt: z.string().describe('The prompt to evaluate and iterate on.'),
-  userNeeds: z.string().describe('A list of user needs that the prompt should address.'),
-  retrievedContent: z
-    .string()
-    .optional()
-    .describe('Retrieved content from web scraped data to refine and optimize prompts.'),
-  groundTruths: z
-    .string()
-    .optional()
-    .describe('Ground truths or few-shot examples to validate the prompt against.'),
-  universityCode: z.string().describe('The code for the university.'),
-  userId: z.string().describe('The ID of the user.'),
-});
-export type EvaluateAndIteratePromptInput = z.infer<typeof EvaluateAndIteratePromptInputSchema>;
+// Note: The main logic is now handled by the Celery worker in the Python backend.
+// These schemas are used by the frontend to validate the final result from the /tasks/{task_id} endpoint.
 
-const MetricSchema = z.object({
-  score: z.number().nullable().describe('The score for the metric, from 0 to 1.'),
-  summary: z.string().nullable().describe('A summary of the evaluation for this metric.'),
-  testCases: z.array(z.string()).describe('Example test cases used for evaluation.'),
+const EvaluationResponseSchema = z.object({
+  original_prompt: z.string(),
+  improved_prompt: z.string(),
+  improvement_summary: z.string(),
+  bias_score: z.number(),
+  toxicity_score: z.number(),
+  alignment_score: z.number(),
 });
 
-const EvaluateAndIteratePromptOutputSchema = z.object({
-  improvedPrompt: z.string().describe('The improved prompt after evaluation and iteration.'),
-  bias: MetricSchema.describe(
-    'Evaluation of the prompt for potential biases. Consider stereotypes, fairness, and representation.'
-  ),
-  toxicity: MetricSchema.describe(
-    'Evaluation of the prompt for its potential to generate toxic, harmful, or inappropriate content.'
-  ),
-  promptAlignment: MetricSchema.describe(
-    'Evaluation of how well the prompt aligns with the stated user needs and goals.'
-  ),
-  faithfulness: MetricSchema.optional().describe(
-    "Evaluation of how faithful the prompt's output is to the provided knowledge base (retrieved content). Only evaluate this if retrieved content is provided."
-  ),
-});
-export type EvaluateAndIteratePromptOutput = z.infer<typeof EvaluateAndIteratePromptOutputSchema>;
+export type EvaluationResponse = z.infer<typeof EvaluationResponseSchema>;
 
-export async function evaluateAndIteratePrompt(
-  input: EvaluateAndIteratePromptInput
-): Promise<EvaluateAndIteratePromptOutput> {
-  return evaluateAndIteratePromptFlow(input);
-}
+// This remains for compatibility with the action's expected naming, but the core type is EvaluationResponse.
+export const EvaluateAndIteratePromptOutputSchema = EvaluationResponseSchema;
+export type EvaluateAndIteratePromptOutput = EvaluationResponse;
 
-const evaluateAndIteratePromptFlow = ai.defineFlow(
-  {
-    name: 'evaluateAndIteratePromptFlow',
-    inputSchema: EvaluateAndIteratePromptInputSchema,
-    outputSchema: EvaluateAndIteratePromptOutputSchema,
-  },
-  async (input) => {
-    const pythonBackendUrl = process.env.PYTHON_BACKEND_URL;
-    if (!pythonBackendUrl) {
-      throw new Error('PYTHON_BACKEND_URL is not configured.');
-    }
-
-    const payload = {
-      prompt: input.prompt,
-      userNeeds: input.userNeeds,
-      retrievedContent: input.retrievedContent,
-      groundTruths: input.groundTruths,
-      universityCode: input.universityCode,
-      userId: input.userId,
-    };
-
-    const response = await fetch(`${pythonBackendUrl}/evaluate-and-iterate-prompt`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`API request to Python backend failed: ${response.statusText} - ${errorText}`);
-    }
-
-    const content = await response.json();
-
-    try {
-        const parsedContent = EvaluateAndIteratePromptOutputSchema.parse(content);
-        return parsedContent;
-    } catch (e: any) {
-        console.error("Failed to parse response from Python backend:", e, "Raw content:", content);
-        throw new Error(`Failed to parse response from Python backend as JSON: ${e.message}`);
-    }
-  }
-);
+// Input types are now defined directly in the action/component that calls the API
+export type EvaluateAndIteratePromptInput = {
+    prompt: string;
+    userNeeds: string;
+    retrievedContent?: string;
+    groundTruths?: string;
+};

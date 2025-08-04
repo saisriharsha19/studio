@@ -2,72 +2,30 @@
 'use server';
 
 /**
- * @fileOverview A flow to generate a summary and tags for a given prompt.
- *
- * - generatePromptTags - A function that generates metadata.
- * - GeneratePromptMetadataInput - The input type for the function.
- * - GeneratePromptMetadataOutput - The return type for the function.
+ * @fileOverview Defines the data structure for the prompt analysis and tagging task.
+ * This file contains the Zod schema for validating the result of the task.
  */
 
-import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-const GeneratePromptMetadataInputSchema = z.object({
-  promptText: z.string().describe('The prompt text to analyze.'),
-  universityCode: z.string().describe('The code for the university.'),
+// Note: The main logic is now handled by the Celery worker in the Python backend.
+// These schemas are used by the frontend to validate the final result from the /tasks/{task_id} endpoint.
+
+const AnalysisResponseSchema = z.object({
+    summary: z.string(),
+    tags: z.array(z.string()),
+    quality_indicators: z.record(z.any()), // Simplified for client-side use
+    category_analysis: z.record(z.any()), // Simplified for client-side use
 });
-export type GeneratePromptMetadataInput = z.infer<typeof GeneratePromptMetadataInputSchema>;
 
-const GeneratePromptMetadataOutputSchema = z.object({
-  summary: z.string().describe("A very short, concise summary (around 5-10 words) of the prompt's purpose, to be used as a title."),
-  tags: z.array(z.string()).describe("A list of 2-4 relevant keywords (tags) for searching and filtering. Tags should be lowercase and one or two words max."),
-});
-export type GeneratePromptMetadataOutput = z.infer<typeof GeneratePromptMetadataOutputSchema>;
+export type AnalysisResponse = z.infer<typeof AnalysisResponseSchema>;
 
-// Function name kept for compatibility with actions.ts
-export async function generatePromptTags(
-  input: GeneratePromptMetadataInput
-): Promise<GeneratePromptMetadataOutput> {
-  return generatePromptMetadataFlow(input);
-}
+// This remains for compatibility with the action's expected naming, but the core type is AnalysisResponse.
+export const GeneratePromptMetadataOutputSchema = AnalysisResponseSchema;
+export type GeneratePromptMetadataOutput = AnalysisResponse;
 
-const generatePromptMetadataFlow = ai.defineFlow(
-  {
-    name: 'generatePromptMetadataFlow',
-    inputSchema: GeneratePromptMetadataInputSchema,
-    outputSchema: GeneratePromptMetadataOutputSchema,
-  },
-  async (input) => {
-    const pythonBackendUrl = process.env.PYTHON_BACKEND_URL;
-    if (!pythonBackendUrl) {
-      throw new Error('PYTHON_BACKEND_URL is not configured.');
-    }
-
-    const payload = {
-        promptText: input.promptText,
-        universityCode: input.universityCode,
-    };
-
-    const response = await fetch(`${pythonBackendUrl}/generate-prompt-tags`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`API request to Python backend failed: ${response.statusText} - ${errorText}`);
-    }
-
-    const content = await response.json();
-    
-    try {
-        return GeneratePromptMetadataOutputSchema.parse(content);
-    } catch (e: any) {
-        console.error("Failed to parse response from Python backend:", e, "Raw content:", content);
-        throw new Error(`Failed to parse response from Python backend as JSON: ${e.message}`);
-    }
-  }
-);
+// Input types are now defined directly in the action/component that calls the API
+export type GeneratePromptMetadataInput = {
+    promptText: string;
+    targetedContext?: string;
+};

@@ -2,78 +2,28 @@
 'use server';
 
 /**
- * @fileOverview A flow to iterate and refine a prompt based on user feedback and selected AI suggestions.
- *
- * - iterateOnPrompt - A function that generates a new, improved prompt.
- * - IterateOnPromptInput - The input type for the iterateOnPrompt function.
- * - IterateOnPromptOutput - The return type for the iterateOnPrompt function.
+ * @fileOverview Defines the data structure for the prompt iteration task.
+ * This file contains the Zod schema for validating the result of the task.
+ * NOTE: The new backend doesn't have a dedicated "iterate" task. This flow is now deprecated
+ * and will be handled by combining suggestion generation and manual editing on the client.
+ * For now, we will create a schema that matches the old structure to avoid breaking the UI completely,
+ * but this should be refactored.
  */
 
-import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-const IterateOnPromptInputSchema = z.object({
-  currentPrompt: z.string().describe('The current system prompt to be improved.'),
-  userComments: z.string().describe('User feedback and comments on what to change.'),
-  selectedSuggestions: z
-    .array(z.string())
-    .describe('A list of AI-generated suggestions that the user has selected to apply.'),
-  universityCode: z.string().describe('The code for the university.'),
-  userId: z.string().describe('The ID of the user.'),
-});
-export type IterateOnPromptInput = z.infer<typeof IterateOnPromptInputSchema>;
-
+// This is a placeholder schema to avoid breaking imports.
+// The new backend logic doesn't map directly to this flow anymore.
+// Iteration is now a combination of getting suggestions and the user applying them.
 const IterateOnPromptOutputSchema = z.object({
   newPrompt: z.string().describe('The newly generated, refined system prompt.'),
 });
+
 export type IterateOnPromptOutput = z.infer<typeof IterateOnPromptOutputSchema>;
 
-export async function iterateOnPrompt(
-  input: IterateOnPromptInput
-): Promise<IterateOnPromptOutput> {
-  return iterateOnPromptFlow(input);
-}
-
-const iterateOnPromptFlow = ai.defineFlow(
-  {
-    name: 'iterateOnPromptFlow',
-    inputSchema: IterateOnPromptInputSchema,
-    outputSchema: IterateOnPromptOutputSchema,
-  },
-  async (input) => {
-    const pythonBackendUrl = process.env.PYTHON_BACKEND_URL;
-    if (!pythonBackendUrl) {
-      throw new Error('PYTHON_BACKEND_URL is not configured.');
-    }
-
-    const payload = {
-        currentPrompt: input.currentPrompt,
-        userComments: input.userComments,
-        selectedSuggestions: input.selectedSuggestions,
-        universityCode: input.universityCode,
-        userId: input.userId,
-    };
-
-    const response = await fetch(`${pythonBackendUrl}/iterate-on-prompt`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`API request to Python backend failed: ${response.statusText} - ${errorText}`);
-    }
-
-    const content = await response.json();
-
-    try {
-        return IterateOnPromptOutputSchema.parse(content);
-    } catch (e: any) {
-        console.error("Failed to parse response from Python backend:", e, "Raw content:", content);
-        throw new Error(`Failed to parse response from Python backend as JSON: ${e.message}`);
-    }
-  }
-);
+// Input types are now defined directly in the action/component that calls the API
+export type IterateOnPromptInput = {
+  currentPrompt: string;
+  userComments: string;
+  selectedSuggestions: string[];
+};

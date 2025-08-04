@@ -19,6 +19,7 @@ import {
   Import,
   Lightbulb,
   RotateCw,
+  Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -33,16 +34,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import {
   handleGenerateInitialPrompt,
-  handleIterateOnPrompt,
+  handleEvaluatePrompt,
   handleGetPromptSuggestions,
-  handleScrapeUrl,
+  getTaskResult,
+  type TaskStatusResponse,
 } from '@/app/actions';
 import { Badge, badgeVariants } from './ui/badge';
 import { Skeleton } from './ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
 import { Input } from './ui/input';
 import { cn } from '@/lib/utils';
-import { type EvaluateAndIteratePromptOutput } from '@/ai/flows/evaluate-and-iterate-prompt';
+import type { EvaluateAndIteratePromptOutput } from '@/ai/flows/evaluate-and-iterate-prompt';
+import type { GeneratePromptSuggestionsOutput } from '@/ai/flows/get-prompt-suggestions';
 import {
   Accordion,
   AccordionContent,
@@ -61,16 +64,17 @@ import { useLibrary } from '@/hooks/use-library';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 
-type LoadingStates = {
-  generating: boolean;
-  evaluating: boolean;
-  iterating: boolean;
-  scraping: boolean;
+type ActionType = 'generate' | 'evaluate' | 'suggest' | 'iterate' | 'scrape' | null;
+
+type LoadingState = {
+  inProgress: boolean;
+  action: ActionType;
+  statusText: string;
 };
 
 // Helper to format metric names for display
 const formatMetricName = (name: string) => {
-  return name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  return name.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
 };
 
 export function PromptForgeClient() {
@@ -82,16 +86,9 @@ export function PromptForgeClient() {
   const {
     userNeeds, setUserNeeds,
     currentPrompt, setCurrentPrompt,
-    promptsGenerated, setPromptsGenerated,
     knowledgeBase, setKnowledgeBase,
     uploadedFileContent, setUploadedFileContent,
     fewShotExamples, setFewShotExamples,
-    scrapeUrl, setScrapeUrl,
-    sitemapUrl, setSitemapUrl,
-    includeSubdomains, setIncludeSubdomains,
-    maxSubdomains, setMaxSubdomains,
-    maxPages, setMaxPages,
-    preferSitemap, setPreferSitemap,
     uploadedFileName, setUploadedFileName,
     iterationComments, setIterationComments,
     suggestions, setSuggestions,
@@ -99,19 +96,13 @@ export function PromptForgeClient() {
     evaluationResult, setEvaluationResult
   } = usePromptForge();
 
-  const [isDragging, setIsDragging] = useState(false);
-  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
-  const suggestionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const isInitialMount = useRef(true);
-
-  const [isPending, startTransition] = useTransition();
-  const [loading, setLoading] = useState<LoadingStates>({
-    generating: false,
-    evaluating: false,
-    iterating: false,
-    scraping: false,
+  const [loadingState, setLoadingState] = useState<LoadingState>({
+    inProgress: false,
+    action: null,
+    statusText: '',
   });
+
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const [copied, setCopied] = useState(false);
 
@@ -139,148 +130,133 @@ export function PromptForgeClient() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const onFetchContent = () => {
-    if (!scrapeUrl) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Please enter a URL to fetch content from.',
-      });
-      return;
+  const stopPolling = () => {
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
     }
-    setLoading(prev => ({ ...prev, scraping: true }));
-    startTransition(async () => {
+  };
+
+  const pollTaskStatus = (status_url: string, actionType: ActionType) => {
+    stopPolling(); // Stop any existing polling
+
+    pollingIntervalRef.current = setInterval(async () => {
       try {
-        const result = await handleScrapeUrl({
-          url: scrapeUrl,
-          includeSubdomains,
-          maxSubdomains,
-          sitemapUrl: sitemapUrl || undefined,
-          maxPages,
-          preferSitemap,
-        });
-        
-        const scrapedContent = result.content || '';
+        const task: TaskStatusResponse = await getTaskResult(status_url);
 
-        if (scrapedContent) {
-          setKnowledgeBase(prev => `${prev}\n\n${scrapedContent}`.trim());
-          toast({ title: 'Success', description: `${result.message}. Added content to knowledge base.` });
-        } else {
-          toast({ title: 'Scraping Complete', description: result.message || 'No new content was added.' });
+        if (task.status === 'SUCCESS') {
+          stopPolling();
+          setLoadingState({ inProgress: false, action: null, statusText: 'Completed!' });
+          toast({ title: 'Success', description: `${actionType} task completed.` });
+
+          // Handle the result based on the action type
+          if (actionType === 'generate' && task.result) {
+            const result = task.result as any;
+            setCurrentPrompt(result.initial_prompt);
+            if (isAuthenticated) addPrompt(result.initial_prompt);
+          } else if (actionType === 'evaluate' && task.result) {
+            const result = task.result as EvaluateAndIteratePromptOutput;
+            setEvaluationResult(result);
+            setCurrentPrompt(result.improved_prompt); // The backend now returns an improved prompt
+            if (isAuthenticated) addPrompt(result.improved_prompt);
+          } else if (actionType === 'suggest' && task.result) {
+            const result = task.result as GeneratePromptSuggestionsOutput;
+            setSuggestions(result.map(s => s.description));
+          }
+
+        } else if (task.status === 'FAILURE') {
+          stopPolling();
+          setLoadingState({ inProgress: false, action: null, statusText: 'Failed!' });
+          toast({ variant: 'destructive', title: 'Task Failed', description: task.error_message || 'An unknown error occurred.' });
+        } else if (task.status === 'PENDING' || task.status === 'STARTED') {
+          setLoadingState(prev => ({ ...prev, statusText: `Processing... (${task.status.toLowerCase()})` }));
         }
-      } catch (error: any) {
-        toast({
-          variant: 'destructive',
-          title: 'Scraping Failed',
-          description: error.message,
-        });
-      } finally {
-        setLoading(prev => ({ ...prev, scraping: false }));
+      } catch (error) {
+        stopPolling();
+        setLoadingState({ inProgress: false, action: null, statusText: 'Error!' });
+        toast({ variant: 'destructive', title: 'Polling Error', description: getErrorMessage(error) });
       }
-    });
+    }, 3000); // Poll every 3 seconds
   };
 
-  const processFile = (file: File) => {
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-        const content = event.target?.result as string;
-        setUploadedFileContent(content);
-        setUploadedFileName(file.name);
-        toast({
-            title: "File Loaded",
-            description: `${file.name} is ready to be used for evaluation.`,
-            duration: 5000,
-        });
-    };
-    reader.onerror = () => {
-        toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'Failed to read the file.',
-        });
-        setUploadedFileName('');
-        setUploadedFileContent('');
-    };
-    reader.readAsText(file);
-  }
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      processFile(e.target.files[0]);
-    }
-  };
-
-  const handleRemoveFile = () => {
-    setUploadedFileName('');
-    setUploadedFileContent('');
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  const handleDragEnter = (e: React.DragEvent<HTMLLabelElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent<HTMLLabelElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-  };
-
-  const handleDragOver = (e: React.DragEvent<HTMLLabelElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      processFile(e.dataTransfer.files[0]);
-      e.dataTransfer.clearData();
-    }
-  };
-
-  const onGenerate = () => {
+  useEffect(() => {
+    // Cleanup polling on component unmount
+    return () => stopPolling();
+  }, []);
+  
+  const onGenerate = async () => {
     if (!userNeeds) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Please describe your assistant needs first.',
-      });
+      toast({ variant: 'destructive', title: 'Error', description: 'Please describe your assistant needs first.' });
       return;
     }
-    if (!userId) {
-        toast({ variant: 'destructive', title: 'Authentication Error', description: 'User ID is missing.' });
-        return;
+    setLoadingState({ inProgress: true, action: 'generate', statusText: 'Starting generation task...' });
+    try {
+      const task = await handleGenerateInitialPrompt({ user_needs: userNeeds });
+      setLoadingState(prev => ({ ...prev, statusText: 'Task initiated, awaiting result...' }));
+      pollTaskStatus(task.status_url, 'generate');
+    } catch (error) {
+      setLoadingState({ inProgress: false, action: null, statusText: 'Failed to start task.' });
+      toast({ variant: 'destructive', title: 'Generation Failed', description: getErrorMessage(error) });
     }
-    setLoading((prev) => ({ ...prev, generating: true }));
-    startTransition(async () => {
-      try {
-        const result = await handleGenerateInitialPrompt({ userNeeds, universityCode: 'ufl', userId });
-        setCurrentPrompt(result.initialPrompt);
-        setPromptsGenerated(prev => prev + 1);
-        if (isAuthenticated) {
-          addPrompt(result.initialPrompt);
-        }
-        toast({ title: 'Success', description: 'Initial prompt generated.', duration: 5000 });
-      } catch (error: any) {
-        toast({
-          variant: 'destructive',
-          title: 'Generation Failed',
-          description: error.message,
-        });
-      } finally {
-        setLoading((prev) => ({ ...prev, generating: false }));
-      }
-    });
+  };
+
+  const onEvaluate = async () => {
+    if (!currentPrompt || !userNeeds) {
+      toast({ variant: 'destructive', title: 'Error', description: 'A prompt and user needs are required for evaluation.' });
+      return;
+    }
+    setLoadingState({ inProgress: true, action: 'evaluate', statusText: 'Starting evaluation task...' });
+    setEvaluationResult(null); // Clear previous results
+    try {
+      const task = await handleEvaluatePrompt({ prompt: currentPrompt, user_needs: userNeeds });
+      setLoadingState(prev => ({ ...prev, statusText: 'Task initiated, awaiting evaluation...' }));
+      pollTaskStatus(task.status_url, 'evaluate');
+    } catch (error) {
+      setLoadingState({ inProgress: false, action: null, statusText: 'Failed to start task.' });
+      toast({ variant: 'destructive', title: 'Evaluation Failed', description: getErrorMessage(error) });
+    }
+  };
+
+  const getSuggestions = useCallback(async () => {
+    if (!currentPrompt) return;
+
+    setLoadingState({ inProgress: true, action: 'suggest', statusText: 'Getting suggestions...' });
+    try {
+      const task = await handleGetPromptSuggestions({
+        current_prompt: currentPrompt,
+        user_comments: iterationComments,
+      });
+      setLoadingState(prev => ({ ...prev, statusText: 'Task initiated, awaiting suggestions...' }));
+      pollTaskStatus(task.status_url, 'suggest');
+    } catch (error) {
+      setLoadingState({ inProgress: false, action: null, statusText: 'Failed to get suggestions.' });
+      toast({ variant: 'destructive', title: 'Suggestion Failed', description: getErrorMessage(error) });
+    }
+  }, [currentPrompt, iterationComments]);
+
+  // The new backend has no dedicated "iterate" endpoint.
+  // Iteration is now a client-side concept: apply suggestions to the current prompt text.
+  const onIterate = () => {
+    if (!currentPrompt || (!iterationComments && selectedSuggestions.length === 0)) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Please provide feedback or select suggestions before refining.' });
+      return;
+    }
+    
+    // Simulate an iteration by just appending comments/suggestions to the prompt for re-evaluation.
+    // A more sophisticated implementation might try to intelligently merge them.
+    const feedbackText = `
+---
+USER FEEDBACK FOR REFINEMENT:
+Comments: ${iterationComments}
+Selected Suggestions:
+- ${selectedSuggestions.join('\n- ')}
+---
+    `;
+    setCurrentPrompt(prev => `${prev}\n${feedbackText}`);
+    setIterationComments('');
+    setSelectedSuggestions([]);
+    setSuggestions([]);
+    toast({ title: 'Feedback Applied', description: 'Your feedback has been added to the prompt. You can now re-evaluate it.' });
   };
   
   const handleSuggestionToggle = (suggestion: string) => {
@@ -290,196 +266,7 @@ export function PromptForgeClient() {
         : [...prev, suggestion]
     );
   };
-
-  const getSuggestions = useCallback(() => {
-    if (!currentPrompt) {
-      return;
-    }
-
-    setLoadingSuggestions(true);
-    startTransition(async () => {
-      try {
-        const result = await handleGetPromptSuggestions({
-          currentPrompt,
-          userComments: iterationComments,
-          universityCode: 'ufl',
-        });
-        setSuggestions(result.suggestions);
-      } catch (error: any) {
-        toast({
-          variant: 'destructive',
-          title: 'Suggestion Generation Failed',
-          description: error.message,
-        });
-      } finally {
-        setLoadingSuggestions(false);
-      }
-    });
-  }, [currentPrompt, iterationComments, toast, setSuggestions]);
-
-  useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
-
-    if (suggestionTimeoutRef.current) {
-      clearTimeout(suggestionTimeoutRef.current);
-    }
-    
-    if (promptsGenerated > 0 || currentPrompt) {
-      suggestionTimeoutRef.current = setTimeout(() => {
-        getSuggestions();
-      }, 1000); 
-    } else {
-        setSuggestions([]);
-    }
-
-    return () => {
-      if (suggestionTimeoutRef.current) {
-        clearTimeout(suggestionTimeoutRef.current);
-      }
-    };
-  }, [currentPrompt, iterationComments, getSuggestions, promptsGenerated, setSuggestions]);
-
-  const onIterate = () => {
-    if (!currentPrompt || (!iterationComments && selectedSuggestions.length === 0)) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Please provide feedback or select suggestions before refining.',
-      });
-      return;
-    }
-     if (!userId) {
-        toast({ variant: 'destructive', title: 'Authentication Error', description: 'User ID is missing.' });
-        return;
-    }
-    setLoading((prev) => ({ ...prev, iterating: true }));
-    setEvaluationResult(null);
-    setSuggestions([]); 
-    startTransition(async () => {
-      try {
-        const result = await handleIterateOnPrompt({
-          currentPrompt,
-          userComments: iterationComments,
-          selectedSuggestions,
-          universityCode: 'ufl',
-          userId,
-        });
-        setCurrentPrompt(result.newPrompt);
-        if (isAuthenticated) {
-          addPrompt(result.newPrompt);
-        }
-        setIterationComments(''); 
-        setSelectedSuggestions([]);
-        toast({ title: 'Success', description: 'Prompt refined with your feedback.', duration: 5000 });
-      } catch (error: any) {
-        toast({
-          variant: 'destructive',
-          title: 'Refinement Failed',
-          description: error.message,
-        });
-      } finally {
-        setLoading((prev) => ({ ...prev, iterating: false }));
-      }
-    });
-  };
-
-  const onEvaluate = async () => {
-    if (!currentPrompt || !userNeeds) {
-        toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'A prompt and user needs are required for evaluation.',
-        });
-        return;
-    }
-    if (!userId) {
-        toast({ variant: 'destructive', title: 'Authentication Error', description: 'User ID is missing.' });
-        return;
-    }
-    setLoading(prev => ({ ...prev, evaluating: true }));
-    setEvaluationResult(null);
-
-    try {
-        const combinedKnowledge = [knowledgeBase, uploadedFileContent].filter(Boolean).join('\n\n');
-        
-        const response = await fetch(`${process.env.NEXT_PUBLIC_PYTHON_BACKEND_URL}/evaluate-prompt-stream`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                prompt: currentPrompt,
-                userNeeds,
-                retrievedContent: combinedKnowledge,
-                groundTruths: fewShotExamples,
-                universityCode: 'ufl',
-                userId,
-            })
-        });
-
-        if (!response.body) {
-            throw new Error("No response body from stream.");
-        }
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let partialData = '';
-
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            partialData += decoder.decode(value, { stream: true });
-            const chunks = partialData.split('\n\n');
-            partialData = chunks.pop() || '';
-
-            for (const chunk of chunks) {
-                if (chunk.startsWith('data: ')) {
-                    const jsonData = JSON.parse(chunk.substring(6));
-                    
-                    if (jsonData.status === 'progress' && jsonData.step === 'prompt_generated') {
-                         setCurrentPrompt(jsonData.improved_prompt);
-                         setEvaluationResult(prev => ({
-                           ...(prev || { improvedPrompt: '', bias: { score: null, summary: null, testCases: []}, toxicity: { score: null, summary: null, testCases: []}, promptAlignment: { score: null, summary: null, testCases: []} }),
-                           improvedPrompt: jsonData.improved_prompt,
-                         }));
-                    } else if (jsonData.status === 'progress' && jsonData.step === 'metric_completed') {
-                        setEvaluationResult(prev => {
-                            const newResult = { ...(prev || { improvedPrompt: '', bias: { score: null, summary: null, testCases: []}, toxicity: { score: null, summary: null, testCases: []}, promptAlignment: { score: null, summary: null, testCases: []} }) };
-                            const metricName = jsonData.metric as keyof EvaluateAndIteratePromptOutput;
-                            if (metricName !== 'improvedPrompt' && metricName in newResult) {
-                                (newResult[metricName] as any) = {
-                                    score: jsonData.score,
-                                    summary: jsonData.summary,
-                                    testCases: [],
-                                };
-                            }
-                            return newResult;
-                        });
-                    } else if (jsonData.status === 'completed') {
-                        setEvaluationResult(jsonData.results);
-                        if (isAuthenticated) {
-                            addPrompt(jsonData.results.improvedPrompt);
-                        }
-                    } else if (jsonData.status === 'error') {
-                        throw new Error(jsonData.message);
-                    }
-                }
-            }
-        }
-        toast({ title: 'Success', description: 'Prompt evaluated.', duration: 5000 });
-    } catch (error: any) {
-        toast({
-            variant: 'destructive',
-            title: 'Evaluation Failed',
-            description: error.message,
-        });
-    } finally {
-        setLoading(prev => ({ ...prev, evaluating: false }));
-    }
-};
-
+  
   const onUploadToLibrary = () => {
     if (!currentPrompt) {
         toast({
@@ -489,16 +276,16 @@ export function PromptForgeClient() {
         });
         return;
     }
+    if (!userId) {
+        toast({ variant: 'destructive', title: 'Authentication Error', description: 'You must be logged in to upload to the library.'});
+        return;
+    }
     addLibraryPrompt(currentPrompt);
   };
 
   const handleCreateAssistant = () => {
     if (!currentPrompt) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Please generate a prompt first.',
-      });
+      toast({ variant: 'destructive', title: 'Error', description: 'Please generate a prompt first.' });
       return;
     }
 
@@ -511,9 +298,7 @@ export function PromptForgeClient() {
       duration: 5000,
     });
   };
-
-  const isLoading = isPending || Object.values(loading).some(Boolean);
-
+  
   return (
     <TooltipProvider>
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-5 lg:gap-12">
@@ -522,7 +307,7 @@ export function PromptForgeClient() {
             <CardHeader>
               <h2 className="text-lg font-medium leading-snug">Describe Your Assistant</h2>
               <CardDescription>
-                What are the primary goals and functionalities of your AI assistant? You can also provide a knowledge base to ground the assistant.
+                What are the primary goals and functionalities of your AI assistant?
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-10">
@@ -534,32 +319,16 @@ export function PromptForgeClient() {
                   value={userNeeds}
                   onChange={(e) => setUserNeeds(e.target.value)}
                   className="min-h-[120px]"
-                />
-              </div>
-               <div className="space-y-4">
-                <Label htmlFor="knowledge-base" className="text-base">Knowledge Base (Optional)</Label>
-                 <p className="text-sm text-muted-foreground">
-                  Provide factual content (like FAQs, documentation, or policies) that the AI should use as its source of truth. This helps prevent hallucination and ensures the assistant gives accurate, context-specific answers.
-                </p>
-                <Textarea
-                  id="knowledge-base"
-                  placeholder="Paste relevant documentation, policies, or other factual text here."
-                  value={knowledgeBase}
-                  onChange={(e) => setKnowledgeBase(e.target.value)}
-                  className="min-h-[150px]"
+                  disabled={loadingState.inProgress}
                 />
               </div>
             </CardContent>
             <CardFooter>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button onClick={onGenerate} disabled={isLoading || loading.generating}>
-                    {loading.generating ? (
-                      <Loader2 className="animate-spin" />
-                    ) : (
-                      <Sparkles />
-                    )}
-                    {promptsGenerated === 0 ? 'Generate Initial Prompt' : 'Regenerate Initial Prompt'}
+                  <Button onClick={onGenerate} disabled={loadingState.inProgress || !userNeeds}>
+                    {loadingState.inProgress && loadingState.action === 'generate' ? <Loader2 className="animate-spin" /> : <Sparkles />}
+                    Generate Initial Prompt
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -573,7 +342,7 @@ export function PromptForgeClient() {
             <CardHeader>
               <h2 className="text-lg font-medium leading-snug">System Prompt</h2>
               <CardDescription>
-                This is the generated system prompt. You can manually edit it before evaluation or optimization.
+                This is the generated system prompt. You can manually edit it before evaluation or refinement.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -585,6 +354,7 @@ export function PromptForgeClient() {
                   value={currentPrompt}
                   onChange={(e) => setCurrentPrompt(e.target.value)}
                   className="min-h-[200px] pr-12"
+                  disabled={loadingState.inProgress}
                 />
                 {currentPrompt && (
                   <Tooltip>
@@ -606,232 +376,29 @@ export function PromptForgeClient() {
                 )}
               </div>
             </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <h2 className="text-lg font-medium leading-snug">Advanced Tools</h2>
-              {!isAuthenticated && (
-                <CardDescription>
-                 Log in to access advanced features.
-                </CardDescription>
-              )}
-            </CardHeader>
-            <CardContent>
-              {!isAuthenticated ? (
-                 <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 text-center">
-                    <Lock className="h-10 w-10 text-muted-foreground" />
-                    <p className="mt-4 text-muted-foreground">Please log in to use advanced tools.</p>
-                </div>
-              ) : (
-                <div className="space-y-10">
-                  <div className="space-y-4">
-                    <Label className="text-base">Knowledge Base from URL (Optional)</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Automatically scrape a webpage to add its content to the knowledge base.
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        id="knowledge-base-url"
-                        aria-label="Knowledge base URL"
-                        placeholder="https://example.com/knowledge"
-                        value={scrapeUrl}
-                        onChange={(e) => setScrapeUrl(e.target.value)}
-                        disabled={loading.scraping}
-                      />
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={onFetchContent}
-                            disabled={isLoading || loading.scraping}
-                          >
-                            {loading.scraping ? (
-                              <Loader2 className="animate-spin" />
-                            ) : (
-                              <Globe />
-                            )}
-                            Fetch Content
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>
-                            Scrape content from the URL for the knowledge base.
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </div>
-                     <Accordion type="single" collapsible className="w-full">
-                        <AccordionItem value="item-1">
-                            <AccordionTrigger className="text-sm font-normal text-muted-foreground hover:no-underline">
-                                Crawler Settings
-                            </AccordionTrigger>
-                            <AccordionContent className="space-y-6 pt-4">
-                                <div className="space-y-4">
-                                    <div className="flex items-center space-x-2">
-                                        <Switch
-                                            id="prefer-sitemap"
-                                            checked={preferSitemap}
-                                            onCheckedChange={setPreferSitemap}
-                                            disabled={loading.scraping}
-                                        />
-                                        <Label htmlFor="prefer-sitemap" className="font-normal text-muted-foreground">
-                                            Prefer sitemap over manual crawling
-                                        </Label>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">If disabled, the crawler will ignore sitemaps and perform a manual crawl, which can be slower but more thorough.</p>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="max-pages" className="font-normal text-sm">Max pages to crawl: {maxPages}</Label>
-                                    <Slider
-                                        id="max-pages"
-                                        min={10}
-                                        max={500}
-                                        step={10}
-                                        value={[maxPages]}
-                                        onValueChange={(value) => setMaxPages(value[0])}
-                                        disabled={loading.scraping}
-                                        className="w-[95%] pt-2"
-                                    />
-                                </div>
-                                <div className="space-y-4 pt-2">
-                                    <div className="flex items-center space-x-2">
-                                        <Switch
-                                            id="include-subdomains"
-                                            checked={includeSubdomains}
-                                            onCheckedChange={setIncludeSubdomains}
-                                            disabled={loading.scraping}
-                                        />
-                                        <Label htmlFor="include-subdomains" className="font-normal text-muted-foreground">
-                                            Discover and scrape subdomains
-                                        </Label>
-                                    </div>
-                                    {includeSubdomains && (
-                                        <div className="space-y-4 pl-2 pt-2 animate-in fade-in-0 duration-300">
-                                            <div>
-                                                <Label htmlFor="max-subdomains" className="font-normal text-sm">Max subdomains: {maxSubdomains}</Label>
-                                                <Slider
-                                                    id="max-subdomains"
-                                                    min={1}
-                                                    max={50}
-                                                    step={1}
-                                                    value={[maxSubdomains]}
-                                                    onValueChange={(value) => setMaxSubdomains(value[0])}
-                                                    disabled={loading.scraping}
-                                                    className="w-[95%] pt-2"
-                                                />
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="pt-2">
-                                    <Label htmlFor="sitemap-url" className="text-sm font-normal text-muted-foreground">Or provide direct sitemap URL (optional)</Label>
-                                    <Input
-                                        id="sitemap-url"
-                                        placeholder="https://example.com/sitemap.xml"
-                                        value={sitemapUrl}
-                                        onChange={(e) => setSitemapUrl(e.target.value)}
-                                        disabled={loading.scraping}
-                                        className="h-9 mt-1"
-                                    />
-                                </div>
-                            </AccordionContent>
-                        </AccordionItem>
-                    </Accordion>
-                  </div>
-
-                  <div className="space-y-4">
-                    <Label htmlFor="file-upload" className="text-base">Upload Knowledge File (Optional)</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Upload a file (TXT, MD, CSV, JSON) to be added to the knowledge base.
-                    </p>
-                      <Label 
-                        htmlFor="file-upload" 
-                        className={cn(
-                            "flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted",
-                            isDragging ? "border-primary bg-muted" : "border-border"
-                        )}
-                        onDragEnter={handleDragEnter}
-                        onDragLeave={handleDragLeave}
-                        onDragOver={handleDragOver}
-                        onDrop={handleDrop}
-                      >
-                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                            <Upload className="w-8 h-8 mb-4 text-muted-foreground" aria-hidden="true" />
-                            <p className="mb-2 text-sm text-muted-foreground">
-                                <span className="font-semibold">Click to upload</span> or drag and drop
-                            </p>
-                            <p className="text-xs text-muted-foreground">TXT, MD, JSON, or CSV</p>
-                        </div>
-                        <Input 
-                            ref={fileInputRef}
-                            id="file-upload" 
-                            type="file" 
-                            className="hidden" 
-                            onChange={handleFileChange} 
-                            accept=".txt,.md,.json,.csv"
-                        />
-                    </Label>
-                    {uploadedFileName && (
-                      <div className="mt-2 flex items-center justify-between rounded-lg border bg-muted/50 px-3 py-2">
-                        <p className="truncate pr-4 text-sm text-muted-foreground">
-                          {uploadedFileName}
-                        </p>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={handleRemoveFile}
-                          className="h-6 w-6 shrink-0"
-                        >
-                          <X className="h-4 w-4" />
-                          <span className="sr-only">Remove file</span>
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="space-y-4">
-                    <Label htmlFor="few-shot-examples" className="text-base">Few-shot Examples (Optional)</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Provide examples in a "User/Assistant" format to teach the AI the desired tone, style, and structure for its replies. This is about *how* to answer, not *what* to answer.
-                    </p>
-                    <Textarea
-                      id="few-shot-examples"
-                      placeholder="User: When is the add/drop deadline?
-Assistant: The add/drop deadline for the Fall 2024 semester is September 1st, 2024."
-                      value={fewShotExamples}
-                      onChange={(e) => setFewShotExamples(e.target.value)}
-                      className="min-h-[100px]"
-                    />
-                  </div>
-                   <div className="flex flex-col items-start gap-4 pt-2">
-                      <p className="text-sm text-muted-foreground">
-                        This information will be used by the LLM Judge to evaluate and score the prompt's effectiveness.
-                      </p>
-                      <div className="flex gap-4">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button onClick={onEvaluate} disabled={isLoading || loading.evaluating}>
-                              {loading.evaluating ? <Loader2 className="animate-spin" /> : <Bot />}
-                              Evaluate Prompt
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Use AI to evaluate the prompt with context.</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
+            <CardFooter>
+                <Button onClick={onEvaluate} disabled={loadingState.inProgress || !currentPrompt || !userNeeds}>
+                    {loadingState.inProgress && loadingState.action === 'evaluate' ? <Loader2 className="animate-spin" /> : <Bot />}
+                    Evaluate Prompt
+                </Button>
+            </CardFooter>
           </Card>
         </div>
 
         <div className="lg:col-span-2">
           <div className="sticky top-24 space-y-10">
+            {loadingState.inProgress && (
+              <Card className="border-primary">
+                <CardHeader className="flex-row items-center gap-4 space-y-0">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  <div>
+                    <h2 className="text-lg font-medium capitalize leading-snug">{loadingState.action} in Progress</h2>
+                    <CardDescription className="mt-1.5">{loadingState.statusText}</CardDescription>
+                  </div>
+                </CardHeader>
+              </Card>
+            )}
+
             <Card>
               <CardHeader>
                 <h2 className="text-lg font-medium leading-snug">Prompt Refinement</h2>
@@ -840,67 +407,60 @@ Assistant: The add/drop deadline for the Fall 2024 semester is September 1st, 20
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-8">
-                {(loadingSuggestions || suggestions.length > 0) && (
-                  <div className="mb-6 rounded-md border bg-muted/50 p-4">
-                    <div className="mb-4 flex items-center justify-between">
-                      <p className="flex items-center text-sm font-medium">
-                        <Lightbulb className="mr-2 h-5 w-5" />
-                        AI Suggestions:
-                      </p>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={getSuggestions}
-                            disabled={loadingSuggestions}
-                            className="h-6 w-6"
-                            aria-label="Regenerate AI suggestions"
-                          >
-                            <RotateCw
-                              className={`h-4 w-4 ${
-                                loadingSuggestions ? 'animate-spin' : ''
-                              }`}
-                            />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Regenerate AI suggestions</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </div>
-                    {loadingSuggestions ? (
-                      <div className="flex flex-wrap gap-2">
-                        <Skeleton className="h-7 w-24 rounded-full" />
-                        <Skeleton className="h-7 w-32 rounded-full" />
-                        <Skeleton className="h-7 w-28 rounded-full" />
-                      </div>
-                    ) : (
-                      <motion.div
-                        className="flex flex-wrap gap-2"
-                        variants={containerVariants}
-                        initial="hidden"
-                        animate="visible"
-                      >
-                        {suggestions.map((suggestion, index) => (
-                          <motion.div key={index} variants={itemVariants}>
-                            <button
-                              type="button"
-                              onClick={() => handleSuggestionToggle(suggestion)}
-                              aria-pressed={selectedSuggestions.includes(suggestion)}
-                              className={cn(badgeVariants({ variant: selectedSuggestions.includes(suggestion) ? 'default' : 'secondary' }), "cursor-pointer items-center transition-all hover:opacity-80 text-xs px-3 py-1 font-normal")}
-                            >
-                              {selectedSuggestions.includes(suggestion) && (
-                                <Check className="mr-1.5 h-4 w-4" />
-                              )}
-                              {suggestion}
-                            </button>
-                          </motion.div>
-                        ))}
-                      </motion.div>
-                    )}
+                <div className="mb-6 rounded-md border bg-muted/50 p-4">
+                  <div className="mb-4 flex items-center justify-between">
+                    <p className="flex items-center text-sm font-medium">
+                      <Lightbulb className="mr-2 h-5 w-5" />
+                      AI Suggestions:
+                    </p>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={getSuggestions}
+                          disabled={loadingState.inProgress || !currentPrompt}
+                          className="h-6 w-6"
+                          aria-label="Regenerate AI suggestions"
+                        >
+                          <RotateCw
+                            className={cn('h-4 w-4', loadingState.inProgress && loadingState.action === 'suggest' && 'animate-spin')}
+                          />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Get AI suggestions</p>
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
-                )}
+                  {suggestions.length > 0 ? (
+                    <motion.div
+                      className="flex flex-wrap gap-2"
+                      variants={containerVariants}
+                      initial="hidden"
+                      animate="visible"
+                    >
+                      {suggestions.map((suggestion, index) => (
+                        <motion.div key={index} variants={itemVariants}>
+                          <button
+                            type="button"
+                            onClick={() => handleSuggestionToggle(suggestion)}
+                            aria-pressed={selectedSuggestions.includes(suggestion)}
+                            className={cn(badgeVariants({ variant: selectedSuggestions.includes(suggestion) ? 'default' : 'secondary' }), "cursor-pointer items-center transition-all hover:opacity-80 text-xs px-3 py-1 font-normal")}
+                          >
+                            {selectedSuggestions.includes(suggestion) && (
+                              <Check className="mr-1.5 h-4 w-4" />
+                            )}
+                            {suggestion}
+                          </button>
+                        </motion.div>
+                      ))}
+                    </motion.div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Click the refresh icon to get suggestions.</p>
+                  )}
+                </div>
+                
                 <div className="space-y-4">
                   <Label htmlFor="iteration-comments" className="text-base">Your Feedback &amp; Comments</Label>
                   <Textarea
@@ -909,6 +469,7 @@ Assistant: The add/drop deadline for the Fall 2024 semester is September 1st, 20
                     value={iterationComments}
                     onChange={(e) => setIterationComments(e.target.value)}
                     className="min-h-[100px]"
+                    disabled={loadingState.inProgress}
                   />
                 </div>
               </CardContent>
@@ -917,146 +478,104 @@ Assistant: The add/drop deadline for the Fall 2024 semester is September 1st, 20
                   <TooltipTrigger asChild>
                     <Button
                       onClick={onIterate}
-                      disabled={
-                        isLoading ||
-                        loading.iterating ||
-                        !currentPrompt ||
-                        (!iterationComments && selectedSuggestions.length === 0)
-                      }
+                      disabled={loadingState.inProgress || !currentPrompt || (!iterationComments && selectedSuggestions.length === 0)}
                     >
-                      {loading.iterating ? <Loader2 className="animate-spin" /> : <Wrench />}
-                      Refine with AI
+                      <Wrench />
+                      Apply Feedback to Prompt
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Refine the prompt using your feedback & suggestions.</p>
+                    <p>Applies your feedback to the prompt text for re-evaluation.</p>
                   </TooltipContent>
                 </Tooltip>
               </CardFooter>
             </Card>
 
-            {isAuthenticated ? (
-              <Card>
-                <CardHeader>
-                  <h2 className="text-lg font-medium leading-snug">Evaluation &amp; Deployment</h2>
-                  <CardDescription>
-                    Review the results from our AI evaluator and deploy your agent.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div aria-live="polite" aria-atomic="true">
-                    {loading.evaluating ? (
-                      <Skeleton className="h-40 w-full" />
-                    ) : evaluationResult ? (
-                      <Accordion type="single" collapsible className="w-full" defaultValue='overall_score'>
-                         {Object.entries(evaluationResult).map(([key, value]) => {
-                            if (key === 'improvedPrompt') return null;
+            <Card>
+              <CardHeader>
+                <h2 className="text-lg font-medium leading-snug">Evaluation &amp; Deployment</h2>
+                <CardDescription>
+                  Review the results from our AI evaluator and deploy your agent.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div aria-live="polite" aria-atomic="true">
+                  {evaluationResult ? (
+                    <Accordion type="single" collapsible className="w-full" defaultValue='promptAlignment'>
+                      {Object.entries(evaluationResult).map(([key, value]) => {
+                        if (typeof value !== 'object' || value === null || !('score' in value)) return null;
+                        
+                        const metric = value as { score: number | null; summary: string | null };
+                        const score = metric.score;
 
-                            const metric = value as { score: number | null; summary: string | null };
-                            if (typeof metric !== 'object' || metric === null) {
-                              return null;
-                            }
-                            const score = metric.score;
-                            
-                            return (
-                                <AccordionItem value={key} key={key}>
-                                    <AccordionTrigger>
-                                        <div className="flex w-full items-center justify-between pr-4">
-                                            <span>{formatMetricName(key)}</span>
-                                            {typeof score === 'number' ? (
-                                              <Badge variant={score > 0.7 ? 'default' : score > 0.4 ? 'secondary' : 'destructive'}>
-                                                  {Math.round(score * 100)}%
-                                              </Badge>
-                                            ) : (
-                                              <Badge variant="secondary">N/A</Badge>
-                                            )}
-                                        </div>
-                                    </AccordionTrigger>
-                                    <AccordionContent className="space-y-4 px-1">
-                                        {metric.summary && (
-                                            <div>
-                                                <p className="text-sm font-medium">Summary:</p>
-                                                <p className="text-sm text-muted-foreground">
-                                                    {metric.summary}
-                                                </p>
-                                            </div>
-                                        )}
-                                    </AccordionContent>
-                                </AccordionItem>
-                            );
-                        })}
-                      </Accordion>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 text-center">
-                          <p className="text-muted-foreground">Your evaluation results will appear here.</p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-                <CardFooter className="flex flex-col gap-2">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
-                        disabled={isLoading || !currentPrompt}
-                        onClick={handleCreateAssistant}
-                      >
-                        <Rocket />
-                        Create NaviGator Assistant
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Copies prompt and opens the NaviGator Assistant portal.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
-                        disabled={isLoading || !currentPrompt}
-                        onClick={onUploadToLibrary}
-                      >
-                        <Upload />
-                        Upload to Prompt Library 
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Share this prompt with the community by adding it to the public library.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
-                        disabled={isLoading || !currentPrompt}
-                        onClick={() => toast({ title: "Coming Soon!", description: "This would import the prompt into the NaviGator Builder." })}
-                      >
-                        <Import />
-                        Import to NaviGator Builder
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Open this prompt in the NaviGator Builder for further customization.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </CardFooter>
-              </Card>
-            ) : (
-              <Card>
-                <CardHeader>
-                    <h2 className="text-lg font-medium leading-snug">Evaluation &amp; Deployment</h2>
-                    <CardDescription>
-                        Log in to view evaluation results and deploy your agent.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
+                        return (
+                          <AccordionItem value={key} key={key}>
+                            <AccordionTrigger>
+                              <div className="flex w-full items-center justify-between pr-4">
+                                <span>{formatMetricName(key)}</span>
+                                {typeof score === 'number' ? (
+                                  <Badge variant={score > 0.7 ? 'default' : score > 0.4 ? 'secondary' : 'destructive'}>
+                                    {Math.round(score * 100)}%
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="secondary">N/A</Badge>
+                                )}
+                              </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="space-y-4 px-1">
+                              {metric.summary && (
+                                <div>
+                                  <p className="text-sm font-medium">Summary:</p>
+                                  <p className="text-sm text-muted-foreground">
+                                    {metric.summary}
+                                  </p>
+                                </div>
+                              )}
+                            </AccordionContent>
+                          </AccordionItem>
+                        );
+                      })}
+                    </Accordion>
+                  ) : (
                     <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 text-center">
-                        <Lock className="h-10 w-10 text-muted-foreground" />
-                        <p className="mt-4 text-muted-foreground">Please log in to use these tools.</p>
+                      <p className="text-muted-foreground">Your evaluation results will appear here.</p>
                     </div>
-                </CardContent>
-              </Card>
-            )}
+                  )}
+                </div>
+              </CardContent>
+              <CardFooter className="flex flex-col gap-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+                      disabled={loadingState.inProgress || !currentPrompt}
+                      onClick={handleCreateAssistant}
+                    >
+                      <Rocket />
+                      Create NaviGator Assistant
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Copies prompt and opens the NaviGator Assistant portal.</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+                      disabled={loadingState.inProgress || !currentPrompt}
+                      onClick={onUploadToLibrary}
+                    >
+                      <Upload />
+                      Upload to Prompt Library
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Share this prompt with the community by adding it to the public library.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </CardFooter>
+            </Card>
           </div>
         </div>
       </div>

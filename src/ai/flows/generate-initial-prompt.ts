@@ -2,74 +2,28 @@
 'use server';
 
 /**
- * @fileOverview A flow to generate an initial system prompt based on user needs.
- *
- * - generateInitialPrompt - A function that generates an initial system prompt.
- * - GenerateInitialPromptInput - The input type for the generateInitialPrompt function.
- * - GenerateInitialPromptOutput - The return type for the generateInitialPrompt function.
+ * @fileOverview Defines the data structure for the initial prompt generation task.
+ * This file contains the Zod schema for validating the result of the task.
  */
 
-import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-const GenerateInitialPromptInputSchema = z.object({
-  userNeeds: z
-    .string()
-    .describe('A description of the user needs for the assistant.'),
-  universityCode: z.string().describe('The code for the university.'),
-  userId: z.string().describe('The ID of the user.'),
+// Note: The main logic is now handled by the Celery worker in the Python backend.
+// These schemas are used by the frontend to validate the final result from the /tasks/{task_id} endpoint.
+
+const GeneratedPromptResponseSchema = z.object({
+  user_needs: z.string(),
+  initial_prompt: z.string(),
 });
-export type GenerateInitialPromptInput = z.infer<typeof GenerateInitialPromptInputSchema>;
 
-const GenerateInitialPromptOutputSchema = z.object({
-  initialPrompt: z.string().describe('The generated initial system prompt.'),
-});
-export type GenerateInitialPromptOutput = z.infer<typeof GenerateInitialPromptOutputSchema>;
+export type GeneratedPromptResponse = z.infer<typeof GeneratedPromptResponseSchema>;
 
-export async function generateInitialPrompt(
-  input: GenerateInitialPromptInput
-): Promise<GenerateInitialPromptOutput> {
-  return generateInitialPromptFlow(input);
-}
+// This remains for compatibility with the action's expected naming, but the core type is GeneratedPromptResponse.
+export const GenerateInitialPromptOutputSchema = GeneratedPromptResponseSchema;
+export type GenerateInitialPromptOutput = GeneratedPromptResponse;
 
-const generateInitialPromptFlow = ai.defineFlow(
-  {
-    name: 'generateInitialPromptFlow',
-    inputSchema: GenerateInitialPromptInputSchema,
-    outputSchema: GenerateInitialPromptOutputSchema,
-  },
-  async (input) => {
-    const pythonBackendUrl = process.env.PYTHON_BACKEND_URL;
-    if (!pythonBackendUrl) {
-      throw new Error('PYTHON_BACKEND_URL is not configured.');
-    }
-
-    const payload = {
-        userNeeds: input.userNeeds,
-        universityCode: input.universityCode,
-        userId: input.userId,
-    };
-
-    const response = await fetch(`${pythonBackendUrl}/generate-initial-prompt`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`API request to Python backend failed: ${response.statusText} - ${errorText}`);
-    }
-
-    const content = await response.json();
-    
-    try {
-        return GenerateInitialPromptOutputSchema.parse(content);
-    } catch (e: any) {
-        console.error("Failed to parse response from Python backend:", e, "Raw content:", content);
-        throw new Error(`Failed to parse response from Python backend as JSON: ${e.message}`);
-    }
-  }
-);
+// Input types are now defined directly in the action/component that calls the API
+export type GenerateInitialPromptInput = {
+    userNeeds: string;
+    deepevalContext?: string;
+};
