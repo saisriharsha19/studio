@@ -7,6 +7,7 @@ import type { GeneratePromptSuggestionsOutput } from '@/ai/flows/get-prompt-sugg
 import { db } from '@/lib/db';
 import type { Prompt } from '@/hooks/use-prompts';
 import { revalidatePath } from 'next/cache';
+import type { GeneratePromptMetadataOutput } from '@/ai/flows/generate-prompt-tags';
 
 const BACKEND_URL = process.env.PYTHON_BACKEND_URL || 'http://localhost:8000';
 
@@ -96,7 +97,7 @@ export type TaskStatusResponse = {
   created_at: string;
   completed_at?: string;
   error_message?: string;
-  result?: GenerateInitialPromptOutput | EvaluateAndIteratePromptOutput | GeneratePromptSuggestionsOutput;
+  result?: GenerateInitialPromptOutput | EvaluateAndIteratePromptOutput | GeneratePromptSuggestionsOutput | GeneratePromptMetadataOutput;
 };
 
 export async function getTaskResult(status_url: string): Promise<TaskStatusResponse> {

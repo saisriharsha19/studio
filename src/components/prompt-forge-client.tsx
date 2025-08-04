@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useState, useTransition, useCallback, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Bot,
   Loader2,
@@ -11,15 +11,9 @@ import {
   Clipboard,
   Check,
   Wrench,
-  Lock,
-  Globe,
-  Plus,
-  X,
   Upload,
-  Import,
   Lightbulb,
   RotateCw,
-  Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -40,9 +34,7 @@ import {
   type TaskStatusResponse,
 } from '@/app/actions';
 import { Badge, badgeVariants } from './ui/badge';
-import { Skeleton } from './ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
-import { Input } from './ui/input';
 import { cn } from '@/lib/utils';
 import type { EvaluateAndIteratePromptOutput } from '@/ai/flows/evaluate-and-iterate-prompt';
 import type { GeneratePromptSuggestionsOutput } from '@/ai/flows/get-prompt-suggestions';
@@ -61,21 +53,21 @@ import {
 import { usePromptHistory } from '@/hooks/use-prompts';
 import { usePromptForge } from '@/hooks/use-prompt-forge';
 import { useLibrary } from '@/hooks/use-library';
-import { Switch } from '@/components/ui/switch';
-import { Slider } from '@/components/ui/slider';
+import type { GenerateInitialPromptOutput } from '@/ai/flows/generate-initial-prompt';
 
-type ActionType = 'generate' | 'evaluate' | 'suggest' | 'iterate' | 'scrape' | null;
+type ActionType = 'generate' | 'evaluate' | 'suggest' | null;
 
-type LoadingState = {
-  inProgress: boolean;
-  action: ActionType;
+type ProcessingState = {
+  activeAction: ActionType;
   statusText: string;
 };
 
 // Helper to format metric names for display
 const formatMetricName = (name: string) => {
-  return name.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
+    const spaced = name.replace(/([A-Z])/g, ' $1');
+    return spaced.charAt(0).toUpperCase() + spaced.slice(1);
 };
+
 
 export function PromptForgeClient() {
   const { isAuthenticated, userId } = useAuth();
@@ -86,19 +78,14 @@ export function PromptForgeClient() {
   const {
     userNeeds, setUserNeeds,
     currentPrompt, setCurrentPrompt,
-    knowledgeBase, setKnowledgeBase,
-    uploadedFileContent, setUploadedFileContent,
-    fewShotExamples, setFewShotExamples,
-    uploadedFileName, setUploadedFileName,
     iterationComments, setIterationComments,
     suggestions, setSuggestions,
     selectedSuggestions, setSelectedSuggestions,
     evaluationResult, setEvaluationResult
   } = usePromptForge();
 
-  const [loadingState, setLoadingState] = useState<LoadingState>({
-    inProgress: false,
-    action: null,
+  const [processingState, setProcessingState] = useState<ProcessingState>({
+    activeAction: null,
     statusText: '',
   });
 
@@ -129,6 +116,13 @@ export function PromptForgeClient() {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+  
+  const getErrorMessage = (error: unknown): string => {
+    if (error instanceof Error) {
+      return error.message;
+    }
+    return String(error);
+  };
 
   const stopPolling = () => {
     if (pollingIntervalRef.current) {
@@ -138,47 +132,54 @@ export function PromptForgeClient() {
   };
 
   const pollTaskStatus = (status_url: string, actionType: ActionType) => {
-    stopPolling(); // Stop any existing polling
+    stopPolling(); 
 
     pollingIntervalRef.current = setInterval(async () => {
       try {
         const task: TaskStatusResponse = await getTaskResult(status_url);
 
+        const statusMap: { [key: string]: string } = {
+          PENDING: 'Task is pending...',
+          STARTED: 'Task has started...',
+          RETRY: 'Task is being retried...',
+        };
+
         if (task.status === 'SUCCESS') {
           stopPolling();
-          setLoadingState({ inProgress: false, action: null, statusText: 'Completed!' });
-          toast({ title: 'Success', description: `${actionType} task completed.` });
+          setProcessingState({ activeAction: null, statusText: 'Completed!' });
+          toast({ title: 'Success', description: `Task completed.` });
 
-          // Handle the result based on the action type
-          if (actionType === 'generate' && task.result) {
-            const result = task.result as any;
-            setCurrentPrompt(result.initial_prompt);
-            if (isAuthenticated) addPrompt(result.initial_prompt);
-          } else if (actionType === 'evaluate' && task.result) {
-            const result = task.result as EvaluateAndIteratePromptOutput;
-            setEvaluationResult(result);
-            setCurrentPrompt(result.improved_prompt); // The backend now returns an improved prompt
-            if (isAuthenticated) addPrompt(result.improved_prompt);
-          } else if (actionType === 'suggest' && task.result) {
-            const result = task.result as GeneratePromptSuggestionsOutput;
-            setSuggestions(result.map(s => s.description));
+          if (task.result) {
+            if (actionType === 'generate') {
+                const result = task.result as GenerateInitialPromptOutput;
+                setCurrentPrompt(result.initial_prompt);
+                if (isAuthenticated) addPrompt(result.initial_prompt);
+            } else if (actionType === 'evaluate') {
+                const result = task.result as EvaluateAndIteratePromptOutput;
+                setEvaluationResult(result);
+                setCurrentPrompt(result.improved_prompt);
+                if (isAuthenticated) addPrompt(result.improved_prompt);
+            } else if (actionType === 'suggest') {
+                const result = task.result as GeneratePromptSuggestionsOutput;
+                setSuggestions(result.map(s => s.description));
+            }
           }
 
         } else if (task.status === 'FAILURE') {
           stopPolling();
-          setLoadingState({ inProgress: false, action: null, statusText: 'Failed!' });
+          setProcessingState({ activeAction: null, statusText: 'Failed!' });
           toast({ variant: 'destructive', title: 'Task Failed', description: task.error_message || 'An unknown error occurred.' });
-        } else if (task.status === 'PENDING' || task.status === 'STARTED') {
-          setLoadingState(prev => ({ ...prev, statusText: `Processing... (${task.status.toLowerCase()})` }));
+        } else {
+            setProcessingState(prev => ({ ...prev, statusText: statusMap[task.status] || `Processing... (${task.status.toLowerCase()})` }));
         }
       } catch (error) {
         stopPolling();
-        setLoadingState({ inProgress: false, action: null, statusText: 'Error!' });
+        setProcessingState({ activeAction: null, statusText: 'Error!' });
         toast({ variant: 'destructive', title: 'Polling Error', description: getErrorMessage(error) });
       }
     }, 3000); // Poll every 3 seconds
   };
-
+  
   useEffect(() => {
     // Cleanup polling on component unmount
     return () => stopPolling();
@@ -189,13 +190,14 @@ export function PromptForgeClient() {
       toast({ variant: 'destructive', title: 'Error', description: 'Please describe your assistant needs first.' });
       return;
     }
-    setLoadingState({ inProgress: true, action: 'generate', statusText: 'Starting generation task...' });
+    setProcessingState({ activeAction: 'generate', statusText: 'Starting generation task...' });
+    setEvaluationResult(null); // Clear previous results
     try {
       const task = await handleGenerateInitialPrompt({ user_needs: userNeeds });
-      setLoadingState(prev => ({ ...prev, statusText: 'Task initiated, awaiting result...' }));
+      setProcessingState(prev => ({ ...prev, statusText: 'Task initiated, awaiting result...' }));
       pollTaskStatus(task.status_url, 'generate');
     } catch (error) {
-      setLoadingState({ inProgress: false, action: null, statusText: 'Failed to start task.' });
+      setProcessingState({ activeAction: null, statusText: '' });
       toast({ variant: 'destructive', title: 'Generation Failed', description: getErrorMessage(error) });
     }
   };
@@ -205,45 +207,40 @@ export function PromptForgeClient() {
       toast({ variant: 'destructive', title: 'Error', description: 'A prompt and user needs are required for evaluation.' });
       return;
     }
-    setLoadingState({ inProgress: true, action: 'evaluate', statusText: 'Starting evaluation task...' });
+    setProcessingState({ activeAction: 'evaluate', statusText: 'Starting evaluation task...' });
     setEvaluationResult(null); // Clear previous results
     try {
       const task = await handleEvaluatePrompt({ prompt: currentPrompt, user_needs: userNeeds });
-      setLoadingState(prev => ({ ...prev, statusText: 'Task initiated, awaiting evaluation...' }));
+      setProcessingState(prev => ({ ...prev, statusText: 'Task initiated, awaiting evaluation...' }));
       pollTaskStatus(task.status_url, 'evaluate');
     } catch (error) {
-      setLoadingState({ inProgress: false, action: null, statusText: 'Failed to start task.' });
+      setProcessingState({ activeAction: null, statusText: '' });
       toast({ variant: 'destructive', title: 'Evaluation Failed', description: getErrorMessage(error) });
     }
   };
 
-  const getSuggestions = useCallback(async () => {
+  const onGetSuggestions = async () => {
     if (!currentPrompt) return;
-
-    setLoadingState({ inProgress: true, action: 'suggest', statusText: 'Getting suggestions...' });
+    setProcessingState({ activeAction: 'suggest', statusText: 'Getting suggestions...' });
+    setSuggestions([]); // Clear previous suggestions
     try {
       const task = await handleGetPromptSuggestions({
         current_prompt: currentPrompt,
         user_comments: iterationComments,
       });
-      setLoadingState(prev => ({ ...prev, statusText: 'Task initiated, awaiting suggestions...' }));
+      setProcessingState(prev => ({ ...prev, statusText: 'Task initiated, awaiting suggestions...' }));
       pollTaskStatus(task.status_url, 'suggest');
     } catch (error) {
-      setLoadingState({ inProgress: false, action: null, statusText: 'Failed to get suggestions.' });
+      setProcessingState({ activeAction: null, statusText: '' });
       toast({ variant: 'destructive', title: 'Suggestion Failed', description: getErrorMessage(error) });
     }
-  }, [currentPrompt, iterationComments]);
-
-  // The new backend has no dedicated "iterate" endpoint.
-  // Iteration is now a client-side concept: apply suggestions to the current prompt text.
+  };
+  
   const onIterate = () => {
     if (!currentPrompt || (!iterationComments && selectedSuggestions.length === 0)) {
       toast({ variant: 'destructive', title: 'Error', description: 'Please provide feedback or select suggestions before refining.' });
       return;
     }
-    
-    // Simulate an iteration by just appending comments/suggestions to the prompt for re-evaluation.
-    // A more sophisticated implementation might try to intelligently merge them.
     const feedbackText = `
 ---
 USER FEEDBACK FOR REFINEMENT:
@@ -288,10 +285,8 @@ Selected Suggestions:
       toast({ variant: 'destructive', title: 'Error', description: 'Please generate a prompt first.' });
       return;
     }
-
     navigator.clipboard.writeText(currentPrompt);
     window.open('https://assistant.ai.it.ufl.edu/admin/assistants/new', '_blank', 'noopener,noreferrer');
-    
     toast({
       title: 'Prompt Copied!',
       description: 'The prompt has been copied. Please paste it into the portal.',
@@ -319,15 +314,15 @@ Selected Suggestions:
                   value={userNeeds}
                   onChange={(e) => setUserNeeds(e.target.value)}
                   className="min-h-[120px]"
-                  disabled={loadingState.inProgress}
+                  disabled={!!processingState.activeAction}
                 />
               </div>
             </CardContent>
             <CardFooter>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button onClick={onGenerate} disabled={loadingState.inProgress || !userNeeds}>
-                    {loadingState.inProgress && loadingState.action === 'generate' ? <Loader2 className="animate-spin" /> : <Sparkles />}
+                  <Button onClick={onGenerate} disabled={!!processingState.activeAction || !userNeeds}>
+                    {processingState.activeAction === 'generate' ? <Loader2 className="animate-spin" /> : <Sparkles />}
                     Generate Initial Prompt
                   </Button>
                 </TooltipTrigger>
@@ -354,7 +349,7 @@ Selected Suggestions:
                   value={currentPrompt}
                   onChange={(e) => setCurrentPrompt(e.target.value)}
                   className="min-h-[200px] pr-12"
-                  disabled={loadingState.inProgress}
+                  disabled={!!processingState.activeAction}
                 />
                 {currentPrompt && (
                   <Tooltip>
@@ -377,8 +372,8 @@ Selected Suggestions:
               </div>
             </CardContent>
             <CardFooter>
-                <Button onClick={onEvaluate} disabled={loadingState.inProgress || !currentPrompt || !userNeeds}>
-                    {loadingState.inProgress && loadingState.action === 'evaluate' ? <Loader2 className="animate-spin" /> : <Bot />}
+                <Button onClick={onEvaluate} disabled={!!processingState.activeAction || !currentPrompt || !userNeeds}>
+                    {processingState.activeAction === 'evaluate' ? <Loader2 className="animate-spin" /> : <Bot />}
                     Evaluate Prompt
                 </Button>
             </CardFooter>
@@ -387,17 +382,25 @@ Selected Suggestions:
 
         <div className="lg:col-span-2">
           <div className="sticky top-24 space-y-10">
-            {loadingState.inProgress && (
-              <Card className="border-primary">
-                <CardHeader className="flex-row items-center gap-4 space-y-0">
-                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                  <div>
-                    <h2 className="text-lg font-medium capitalize leading-snug">{loadingState.action} in Progress</h2>
-                    <CardDescription className="mt-1.5">{loadingState.statusText}</CardDescription>
-                  </div>
-                </CardHeader>
-              </Card>
-            )}
+            <AnimatePresence>
+              {processingState.activeAction && (
+                <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                >
+                  <Card className="border-primary/50 bg-primary/5">
+                    <CardHeader className="flex-row items-center gap-4 space-y-0 p-4">
+                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                      <div>
+                        <CardDescription className="text-primary/90">{processingState.statusText}</CardDescription>
+                      </div>
+                    </CardHeader>
+                  </Card>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <Card>
               <CardHeader>
@@ -418,13 +421,13 @@ Selected Suggestions:
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={getSuggestions}
-                          disabled={loadingState.inProgress || !currentPrompt}
+                          onClick={onGetSuggestions}
+                          disabled={!!processingState.activeAction || !currentPrompt}
                           className="h-6 w-6"
                           aria-label="Regenerate AI suggestions"
                         >
                           <RotateCw
-                            className={cn('h-4 w-4', loadingState.inProgress && loadingState.action === 'suggest' && 'animate-spin')}
+                            className={cn('h-4 w-4', processingState.activeAction === 'suggest' && 'animate-spin')}
                           />
                         </Button>
                       </TooltipTrigger>
@@ -469,7 +472,7 @@ Selected Suggestions:
                     value={iterationComments}
                     onChange={(e) => setIterationComments(e.target.value)}
                     className="min-h-[100px]"
-                    disabled={loadingState.inProgress}
+                    disabled={!!processingState.activeAction}
                   />
                 </div>
               </CardContent>
@@ -478,7 +481,7 @@ Selected Suggestions:
                   <TooltipTrigger asChild>
                     <Button
                       onClick={onIterate}
-                      disabled={loadingState.inProgress || !currentPrompt || (!iterationComments && selectedSuggestions.length === 0)}
+                      disabled={!!processingState.activeAction || !currentPrompt || (!iterationComments && selectedSuggestions.length === 0)}
                     >
                       <Wrench />
                       Apply Feedback to Prompt
@@ -514,23 +517,25 @@ Selected Suggestions:
                               <div className="flex w-full items-center justify-between pr-4">
                                 <span>{formatMetricName(key)}</span>
                                 {typeof score === 'number' ? (
-                                  <Badge variant={score > 0.7 ? 'default' : score > 0.4 ? 'secondary' : 'destructive'}>
-                                    {Math.round(score * 100)}%
-                                  </Badge>
+                                    <Badge variant={score > 0.7 ? 'default' : score > 0.4 ? 'secondary' : 'destructive'}>
+                                        {Math.round(score * 100)}%
+                                    </Badge>
                                 ) : (
-                                  <Badge variant="secondary">N/A</Badge>
+                                    <Badge variant="secondary">N/A</Badge>
                                 )}
                               </div>
                             </AccordionTrigger>
                             <AccordionContent className="space-y-4 px-1">
-                              {metric.summary && (
-                                <div>
-                                  <p className="text-sm font-medium">Summary:</p>
-                                  <p className="text-sm text-muted-foreground">
-                                    {metric.summary}
-                                  </p>
-                                </div>
-                              )}
+                                {metric.summary ? (
+                                    <div>
+                                    <p className="text-sm font-medium">Summary:</p>
+                                    <p className="text-sm text-muted-foreground">
+                                        {metric.summary}
+                                    </p>
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-muted-foreground">No summary provided.</p>
+                                )}
                             </AccordionContent>
                           </AccordionItem>
                         );
@@ -548,7 +553,7 @@ Selected Suggestions:
                   <TooltipTrigger asChild>
                     <Button
                       className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
-                      disabled={loadingState.inProgress || !currentPrompt}
+                      disabled={!!processingState.activeAction || !currentPrompt}
                       onClick={handleCreateAssistant}
                     >
                       <Rocket />
@@ -563,7 +568,7 @@ Selected Suggestions:
                   <TooltipTrigger asChild>
                     <Button
                       className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
-                      disabled={loadingState.inProgress || !currentPrompt}
+                      disabled={!!processingState.activeAction || !currentPrompt}
                       onClick={onUploadToLibrary}
                     >
                       <Upload />
