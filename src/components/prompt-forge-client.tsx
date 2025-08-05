@@ -636,7 +636,7 @@ Selected Suggestions:
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+                      className="w-full bg-accent text-accent-foreground hover:bg-accent/90 dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90"
                       disabled={!!processingState.activeAction || !currentPrompt}
                       onClick={handleCreateAssistant}
                     >
