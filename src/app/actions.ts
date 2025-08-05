@@ -398,7 +398,10 @@ const ALLOWED_FILE_TYPES = [
   'text/markdown',
 ];
 
-export async function handleUploadDocument(userId: string, formData: FormData): Promise<{ success: boolean; message: string }> {
+export async function handleUploadDocument(
+    userId: string, 
+    formData: FormData
+): Promise<{ success: boolean; message: string; content?: string; filename?: string; }> {
   if (!userId) {
     throw new Error('User not authenticated. Cannot upload document.');
   }
@@ -428,7 +431,7 @@ export async function handleUploadDocument(userId: string, formData: FormData): 
   uploadFormData.append('userId', userId);
 
   try {
-    const response = await fetch(`${BACKEND_URL}/documents/upload`, {
+    const response = await fetch(`${BACKEND_URL}/documents/upload-and-extract`, {
       method: 'POST',
       body: uploadFormData,
       // Note: Do not set 'Content-Type' header when using FormData with fetch,
@@ -441,10 +444,21 @@ export async function handleUploadDocument(userId: string, formData: FormData): 
     }
 
     const result = await response.json();
-    return { success: true, message: result.message || 'File uploaded successfully!' };
+    if (result.success && result.content) {
+        return { 
+            success: true, 
+            message: result.message || 'File processed successfully!',
+            content: result.content,
+            filename: result.filename
+        };
+    } else {
+        return { success: false, message: result.message || 'Failed to extract content from file.' };
+    }
 
   } catch (error) {
     console.error('Error uploading document:', error);
     return { success: false, message: getErrorMessage(error) };
   }
 }
+
+    

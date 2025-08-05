@@ -2,7 +2,7 @@
 'use client';
 
 import type { EvaluateAndIteratePromptOutput } from '@/ai/flows/evaluate-and-iterate-prompt';
-import { createContext, useContext, useState, ReactNode, Dispatch, SetStateAction } from 'react';
+import { createContext, useContext, useState, ReactNode, Dispatch, SetStateAction, useEffect } from 'react';
 
 type PromptForgeContextType = {
   userNeeds: string;
@@ -62,6 +62,21 @@ export function PromptForgeProvider({ children }: { children: ReactNode }) {
   const [selectedSuggestions, setSelectedSuggestions] = useState<string[]>([]);
   const [evaluationResult, setEvaluationResult] = useState<EvaluateAndIteratePromptOutput | null>(null);
 
+  // Effect to append document context to the prompt
+  useEffect(() => {
+    if (uploadedFileContent) {
+      const contextBlock = `\n\n--- [DOCUMENT CONTEXT] ---\n${uploadedFileContent}`;
+      
+      setCurrentPrompt(prevPrompt => {
+        // Remove old context block if it exists to prevent duplication
+        const oldContextIndex = prevPrompt.indexOf('\n\n--- [DOCUMENT CONTEXT] ---');
+        const basePrompt = oldContextIndex !== -1 ? prevPrompt.substring(0, oldContextIndex) : prevPrompt;
+        return basePrompt + contextBlock;
+      });
+    }
+  }, [uploadedFileContent, setCurrentPrompt]);
+
+
   const value = {
     userNeeds, setUserNeeds,
     currentPrompt, setCurrentPrompt,
@@ -96,3 +111,5 @@ export function usePromptForge() {
   }
   return context;
 }
+
+    

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useTransition, useCallback } from 'react';
+import { useState, useTransition, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { UploadCloud, FileText, X, Loader2 } from 'lucide-react';
@@ -11,6 +11,7 @@ import { handleUploadDocument } from '@/app/actions';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from './ui/button';
 import { Progress } from './ui/progress';
+import { usePromptForge } from '@/hooks/use-prompt-forge';
 
 const MAX_FILE_SIZE_MB = 10;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
@@ -23,6 +24,7 @@ const ALLOWED_FILE_TYPES = [
 
 export function DocumentManager() {
   const { userId, isAuthenticated, login } = useAuth();
+  const { setUploadedFileContent, uploadedFileName, setUploadedFileName } = usePromptForge();
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -91,15 +93,8 @@ export function DocumentManager() {
     formData.append('document', file);
 
     startTransition(async () => {
-      // Simulate progress for better UX
       const progressInterval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 95) {
-            clearInterval(progressInterval);
-            return 95;
-          }
-          return prev + 5;
-        });
+        setUploadProgress(prev => Math.min(prev + 5, 95));
       }, 200);
 
       try {
@@ -107,9 +102,10 @@ export function DocumentManager() {
         clearInterval(progressInterval);
         setUploadProgress(100);
 
-        if (result.success) {
+        if (result.success && result.content && result.filename) {
           toast({ title: 'Upload Successful', description: result.message });
-          // Potentially update a global context with the uploaded doc info here
+          setUploadedFileContent(result.content);
+          setUploadedFileName(result.filename);
         } else {
           toast({ variant: 'destructive', title: 'Upload Failed', description: result.message });
           setUploadProgress(0);
@@ -121,8 +117,7 @@ export function DocumentManager() {
       } finally {
         setTimeout(() => {
           setIsUploading(false);
-          // Keep file in view after upload, user can remove it
-          // setFile(null); 
+          setFile(null); 
         }, 1000);
       }
     });
@@ -134,7 +129,7 @@ export function DocumentManager() {
         <CardTitle>Context & Knowledge</CardTitle>
         <CardDescription>Upload documents to provide context for the assistant.</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent>
         <AnimatePresence mode="wait">
           {file ? (
             <motion.div
@@ -212,13 +207,22 @@ export function DocumentManager() {
           )}
         </AnimatePresence>
 
-         <div className="space-y-2 pt-4">
-            <h4 className="text-sm font-medium">Uploaded Documents</h4>
-            <div className="flex h-24 items-center justify-center rounded-lg border-2 border-dashed text-center">
-                <p className="text-sm text-muted-foreground">No documents uploaded yet.</p>
+         <div className="space-y-2 pt-6">
+            <h4 className="text-sm font-medium">Active Document</h4>
+            <div className="flex h-16 items-center justify-center rounded-lg border-2 border-dashed text-center">
+              {uploadedFileName ? (
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                  <FileText className="h-5 w-5 shrink-0 text-primary" />
+                  <span className="font-medium">{uploadedFileName}</span>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No document context applied.</p>
+              )}
             </div>
          </div>
       </CardContent>
     </Card>
   );
 }
+
+    
