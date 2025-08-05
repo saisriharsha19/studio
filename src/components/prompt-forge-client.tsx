@@ -577,9 +577,9 @@ Selected Suggestions:
               </CardHeader>
               <CardContent className="space-y-6">
                  <div className="flex items-center justify-center">
-                   <Button onClick={onEvaluate} disabled={!!processingState.activeAction || !currentPrompt || !userNeeds} variant="outline">
+                   <Button onClick={onEvaluate} disabled={!!processingState.activeAction || !currentPrompt || !userNeeds} variant="destructive">
                        {processingState.activeAction === 'evaluate' ? <Loader2 className="animate-spin" /> : <Bot />}
-                       Evaluate Current Prompt
+                       Iterate and Evaluate
                    </Button>
                  </div>
                 <div aria-live="polite" aria-atomic="true">
