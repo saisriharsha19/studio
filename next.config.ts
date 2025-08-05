@@ -7,6 +7,8 @@ module.exports = {
       allowedOrigins: [
         'localhost:3000',
         '*.app.github.dev',
+        '*',
+        'http://10.88.0.3:3000'
       ],
     },
   },

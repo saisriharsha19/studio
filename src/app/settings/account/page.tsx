@@ -43,7 +43,7 @@ export default function AccountSettingsPage() {
           <CardContent>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button onClick={logout} variant="outline">
+                <Button onClick={() => logout()} variant="outline">
                   Sign Out
                 </Button>
               </TooltipTrigger>

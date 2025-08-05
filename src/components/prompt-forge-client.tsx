@@ -70,7 +70,7 @@ const formatMetricName = (name: string) => {
 
 
 export function PromptForgeClient() {
-  const { isAuthenticated, userId } = useAuth();
+  const { isAuthenticated, userId, login } = useAuth();
   const { addPrompt } = usePromptHistory();
   const { addLibraryPrompt } = useLibrary();
   const { toast } = useToast();
@@ -112,8 +112,10 @@ export function PromptForgeClient() {
   };
 
   const copyToClipboard = (text: string) => {
+    if (!text) return;
     navigator.clipboard.writeText(text);
     setCopied(true);
+    toast({ title: "Copied!", description: "Prompt copied to clipboard." });
     setTimeout(() => setCopied(false), 2000);
   };
   
@@ -150,16 +152,16 @@ export function PromptForgeClient() {
           toast({ title: 'Success', description: `Task completed.` });
 
           if (task.result) {
-            if (actionType === 'generate') {
+            if (actionType === 'generate' && 'initial_prompt' in (task.result as any)) {
                 const result = task.result as GenerateInitialPromptOutput;
                 setCurrentPrompt(result.initial_prompt);
                 if (isAuthenticated) addPrompt(result.initial_prompt);
-            } else if (actionType === 'evaluate') {
+            } else if (actionType === 'evaluate' && 'improved_prompt' in (task.result as any)) {
                 const result = task.result as EvaluateAndIteratePromptOutput;
                 setEvaluationResult(result);
                 setCurrentPrompt(result.improved_prompt);
                 if (isAuthenticated) addPrompt(result.improved_prompt);
-            } else if (actionType === 'suggest') {
+            } else if (actionType === 'suggest' && Array.isArray(task.result)) {
                 const result = task.result as GeneratePromptSuggestionsOutput;
                 setSuggestions(result.map(s => s.description));
             }
@@ -275,6 +277,7 @@ Selected Suggestions:
     }
     if (!userId) {
         toast({ variant: 'destructive', title: 'Authentication Error', description: 'You must be logged in to upload to the library.'});
+        login();
         return;
     }
     addLibraryPrompt(currentPrompt);
@@ -285,7 +288,7 @@ Selected Suggestions:
       toast({ variant: 'destructive', title: 'Error', description: 'Please generate a prompt first.' });
       return;
     }
-    navigator.clipboard.writeText(currentPrompt);
+    copyToClipboard(currentPrompt);
     window.open('https://assistant.ai.it.ufl.edu/admin/assistants/new', '_blank', 'noopener,noreferrer');
     toast({
       title: 'Prompt Copied!',
@@ -390,11 +393,11 @@ Selected Suggestions:
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
                 >
-                  <Card className="border-primary/50 bg-primary/5">
+                  <Card className="bg-secondary/50 dark:bg-primary/20 border-secondary dark:border-primary/30">
                     <CardHeader className="flex-row items-center gap-4 space-y-0 p-4">
-                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                      <Loader2 className="h-5 w-5 animate-spin text-secondary-foreground dark:text-primary" />
                       <div>
-                        <CardDescription className="text-primary/90">{processingState.statusText}</CardDescription>
+                        <CardDescription className="text-secondary-foreground dark:text-primary/90">{processingState.statusText}</CardDescription>
                       </div>
                     </CardHeader>
                   </Card>
@@ -503,19 +506,20 @@ Selected Suggestions:
               </CardHeader>
               <CardContent className="space-y-6">
                 <div aria-live="polite" aria-atomic="true">
-                  {evaluationResult ? (
-                    <Accordion type="single" collapsible className="w-full" defaultValue='promptAlignment'>
-                      {Object.entries(evaluationResult).map(([key, value]) => {
-                        if (typeof value !== 'object' || value === null || !('score' in value)) return null;
-                        
-                        const metric = value as { score: number | null; summary: string | null };
-                        const score = metric.score;
+                  {isAuthenticated && evaluationResult ? (
+                    <Accordion type="single" collapsible className="w-full" defaultValue='alignment_score'>
+                      {(Object.keys(evaluationResult) as Array<keyof EvaluateAndIteratePromptOutput>)
+                        .filter(key => key.endsWith('_score'))
+                        .map((key) => {
+                        const score = evaluationResult[key] as number;
+                        const summaryKey = key.replace('_score', '_summary');
+                        const summary = evaluationResult[summaryKey as keyof typeof evaluationResult] as string;
 
                         return (
                           <AccordionItem value={key} key={key}>
                             <AccordionTrigger>
                               <div className="flex w-full items-center justify-between pr-4">
-                                <span>{formatMetricName(key)}</span>
+                                <span>{formatMetricName(key.replace('_score', ''))}</span>
                                 {typeof score === 'number' ? (
                                     <Badge variant={score > 0.7 ? 'default' : score > 0.4 ? 'secondary' : 'destructive'}>
                                         {Math.round(score * 100)}%
@@ -526,11 +530,11 @@ Selected Suggestions:
                               </div>
                             </AccordionTrigger>
                             <AccordionContent className="space-y-4 px-1">
-                                {metric.summary ? (
+                                {summary ? (
                                     <div>
                                     <p className="text-sm font-medium">Summary:</p>
                                     <p className="text-sm text-muted-foreground">
-                                        {metric.summary}
+                                        {summary}
                                     </p>
                                     </div>
                                 ) : (
@@ -543,7 +547,12 @@ Selected Suggestions:
                     </Accordion>
                   ) : (
                     <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 text-center">
-                      <p className="text-muted-foreground">Your evaluation results will appear here.</p>
+                      <p className="text-muted-foreground">
+                        {isAuthenticated ? 'Your evaluation results will appear here.' : 'Please sign in to view evaluation results.'}
+                      </p>
+                      {!isAuthenticated && (
+                        <Button onClick={login} className='mt-4'>Sign In</Button>
+                      )}
                     </div>
                   )}
                 </div>
