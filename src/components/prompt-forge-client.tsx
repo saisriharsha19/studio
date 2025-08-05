@@ -387,7 +387,7 @@ Selected Suggestions:
           <CardFooter>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button onClick={onGenerate} disabled={!!processingState.activeAction || !userNeeds}>
+                <Button onClick={onGenerate} disabled={!!processingState.activeAction || !userNeeds} variant="destructive">
                   {processingState.activeAction === 'generate' ? <Loader2 className="animate-spin" /> : <Sparkles />}
                   Generate Initial Prompt
                 </Button>
@@ -556,6 +556,7 @@ Selected Suggestions:
                     <Button
                       onClick={onIterate}
                       disabled={!!processingState.activeAction || !currentPrompt || (!iterationComments && selectedSuggestions.length === 0)}
+                      variant="destructive"
                     >
                       <Wrench />
                       Apply Feedback to Prompt
