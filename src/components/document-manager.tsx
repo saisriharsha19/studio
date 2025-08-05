@@ -129,12 +129,12 @@ export function DocumentManager() {
   };
 
   return (
-    <Card className="h-full">
+    <Card>
       <CardHeader>
         <CardTitle>Context & Knowledge</CardTitle>
         <CardDescription>Upload documents to provide context for the assistant.</CardDescription>
       </CardHeader>
-      <CardContent className="flex h-full flex-col gap-6">
+      <CardContent className="space-y-6">
         <AnimatePresence mode="wait">
           {file ? (
             <motion.div
@@ -212,7 +212,7 @@ export function DocumentManager() {
           )}
         </AnimatePresence>
 
-         <div className="mt-auto space-y-2 pt-4">
+         <div className="space-y-2 pt-4">
             <h4 className="text-sm font-medium">Uploaded Documents</h4>
             <div className="flex h-24 items-center justify-center rounded-lg border-2 border-dashed text-center">
                 <p className="text-sm text-muted-foreground">No documents uploaded yet.</p>
