@@ -3,7 +3,6 @@
 
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { UploadCloud, FileText, X, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -138,12 +137,12 @@ export function DocumentManager() {
   }, []);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Context & Knowledge</CardTitle>
-        <CardDescription>Upload documents to provide context for the assistant.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
+      <div className="flex flex-col space-y-1.5 p-4 sm:p-6">
+        <h3 className="text-lg font-medium leading-snug">Context & Knowledge</h3>
+        <p className="text-sm text-muted-foreground">Upload documents to provide context for the assistant.</p>
+      </div>
+      <div className="space-y-6 p-4 pt-0 sm:p-6 sm:pt-0">
         <AnimatePresence mode="wait">
           {isExtracting ? (
              <motion.div
@@ -200,8 +199,8 @@ export function DocumentManager() {
             <h4 className="text-sm font-medium">Active Documents</h4>
             <div className="min-h-[64px] rounded-lg border bg-muted/50 p-1">
               <TooltipProvider>
-                {uploadedFiles.length > 0 ? (
-                  <ScrollArea className="h-full max-h-48">
+                <ScrollArea className="h-full max-h-48">
+                  {uploadedFiles.length > 0 ? (
                       <ul className="space-y-1 p-1">
                         {uploadedFiles.map((file) => (
                            <li key={file.id} className="flex items-center gap-2 rounded-md p-2 animate-in fade-in-50">
@@ -227,16 +226,16 @@ export function DocumentManager() {
                           </li>
                         ))}
                       </ul>
-                  </ScrollArea>
-                ) : (
-                  <div className="flex h-16 items-center justify-center">
-                    <p className="text-sm text-muted-foreground">No document context applied.</p>
-                  </div>
-                )}
+                  ) : (
+                    <div className="flex h-16 items-center justify-center">
+                      <p className="text-sm text-muted-foreground">No document context applied.</p>
+                    </div>
+                  )}
+                </ScrollArea>
               </TooltipProvider>
             </div>
          </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
