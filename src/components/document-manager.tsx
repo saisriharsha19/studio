@@ -122,7 +122,7 @@ export function DocumentManager() {
     if (event.dataTransfer.files) {
       handleFilesChange(event.dataTransfer.files);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, login, handleFilesChange]);
 
   const handleDragOver = useCallback((event: React.DragEvent<HTMLLabelElement>) => {
     event.preventDefault();
@@ -137,82 +137,85 @@ export function DocumentManager() {
   }, []);
 
   return (
-    <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
-      <div className="flex flex-col space-y-1.5 p-4 sm:p-6">
+    <div className="space-y-6 rounded-lg border bg-card p-6 text-card-foreground shadow-sm">
+      <div className="space-y-1.5">
         <h3 className="text-lg font-medium leading-snug">Context & Knowledge</h3>
         <p className="text-sm text-muted-foreground">Upload documents to provide context for the assistant.</p>
       </div>
-      <div className="space-y-6 p-4 pt-0 sm:p-6 sm:pt-0">
-        <AnimatePresence mode="wait">
-          {isExtracting ? (
-             <motion.div
-                key="loading-view"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-12 text-center"
-            >
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="font-semibold">Extracting text...</p>
-                <p className="text-xs text-muted-foreground">Please wait while documents are processed.</p>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="upload-view"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-            >
-              <label
-                htmlFor="file-upload"
-                onDrop={handleDrop}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                className={cn(
-                  'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-12 text-center transition-colors',
-                  isDragOver ? 'border-primary bg-accent' : 'border-border hover:border-primary/50',
-                  !isAuthenticated && 'cursor-not-allowed opacity-60'
-                )}
-              >
-                <div className="rounded-full bg-muted p-3">
-                    <UploadCloud className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <p className="font-semibold">
-                  <span className="text-primary">Click to upload</span> or drag and drop
-                </p>
-                <p className="text-xs text-muted-foreground">PDF, DOCX, TXT, or MD (max. 10MB each)</p>
-              </label>
-              <input
-                id="file-upload"
-                type="file"
-                className="sr-only"
-                onChange={(e) => handleFilesChange(e.target.files)}
-                accept={ALLOWED_FILE_TYPES.join(',')}
-                disabled={!isAuthenticated || isExtracting}
-                multiple
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
 
-         <div className="space-y-2">
-            <h4 className="text-sm font-medium">Active Documents</h4>
-            <div className="min-h-[64px] rounded-lg border bg-muted/50 p-1">
-              <TooltipProvider>
-                <ScrollArea className="h-full max-h-48">
+      <AnimatePresence mode="wait">
+        {isExtracting ? (
+            <motion.div
+              key="loading-view"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-12 text-center"
+          >
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="font-semibold">Extracting text...</p>
+              <p className="text-xs text-muted-foreground">Please wait while documents are processed.</p>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="upload-view"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+          >
+            <label
+              htmlFor="file-upload"
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              className={cn(
+                'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-12 text-center transition-colors',
+                isDragOver ? 'border-primary bg-accent' : 'border-border hover:border-primary/50',
+                !isAuthenticated && 'cursor-not-allowed opacity-60'
+              )}
+            >
+              <div className="rounded-full bg-muted p-3">
+                  <UploadCloud className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <p className="font-semibold">
+                <span className="text-primary">Click to upload</span> or drag and drop
+              </p>
+              <p className="text-xs text-muted-foreground">PDF, DOCX, TXT, or MD (max. 10MB each)</p>
+            </label>
+            <input
+              id="file-upload"
+              type="file"
+              className="sr-only"
+              onChange={(e) => handleFilesChange(e.target.files)}
+              accept={ALLOWED_FILE_TYPES.join(',')}
+              disabled={!isAuthenticated || isExtracting}
+              multiple
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+        <div className="space-y-2">
+          <h4 className="text-sm font-medium">Active Documents</h4>
+          <div className="min-h-[64px] rounded-lg border bg-muted/50 p-1">
+            <TooltipProvider>
+              <ScrollArea className="h-full max-h-48">
+                <div className="p-1">
                   {uploadedFiles.length > 0 ? (
-                      <ul className="space-y-1 p-1">
+                      <ul className="space-y-1">
                         {uploadedFiles.map((file) => (
-                           <li key={file.id} className="flex items-center gap-2 rounded-md p-2 animate-in fade-in-50">
+                          <li key={file.id} className="flex items-center gap-2 rounded-md p-2 animate-in fade-in-50">
                             <FileText className="h-5 w-5 shrink-0 text-primary" />
-                            <Tooltip delayDuration={300}>
-                              <TooltipTrigger asChild>
-                                 <span className="flex-1 truncate text-sm font-medium text-muted-foreground">{file.name}</span>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>{file.name}</p>
-                              </TooltipContent>
-                            </Tooltip>
+                            <div className="flex-1 min-w-0">
+                              <Tooltip delayDuration={300}>
+                                <TooltipTrigger asChild>
+                                  <span className="truncate text-sm font-medium text-muted-foreground">{file.name}</span>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>{file.name}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
                             <Button
                                 variant="ghost"
                                 size="icon"
@@ -231,11 +234,11 @@ export function DocumentManager() {
                       <p className="text-sm text-muted-foreground">No document context applied.</p>
                     </div>
                   )}
-                </ScrollArea>
-              </TooltipProvider>
-            </div>
-         </div>
-      </div>
+                </div>
+              </ScrollArea>
+            </TooltipProvider>
+          </div>
+        </div>
     </div>
   );
 }
