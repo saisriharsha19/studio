@@ -11,12 +11,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { Button } from './ui/button';
 import { usePromptForge } from '@/hooks/use-prompt-forge';
 import mammoth from 'mammoth';
-import pdf from 'pdf-parse/lib/pdf-parse';
-
-// Add pdf-parse to window for browser usage
-if (typeof window !== 'undefined') {
-  (window as any).pdf = pdf;
-}
+import pdf from 'pdf-parse';
 
 const MAX_FILE_SIZE_MB = 10;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
