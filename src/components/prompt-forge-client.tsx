@@ -13,7 +13,6 @@ import {
   Wrench,
   Upload,
   Lightbulb,
-  RotateCw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -54,6 +53,7 @@ import { usePromptHistory } from '@/hooks/use-prompts';
 import { usePromptForge } from '@/hooks/use-prompt-forge';
 import { useLibrary } from '@/hooks/use-library';
 import type { GenerateInitialPromptOutput } from '@/ai/flows/generate-initial-prompt';
+import { Skeleton } from './ui/skeleton';
 
 type ActionType = 'generate' | 'evaluate' | 'suggest' | null;
 
@@ -88,6 +88,7 @@ export function PromptForgeClient() {
     activeAction: null,
     statusText: '',
   });
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
 
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -133,10 +134,31 @@ export function PromptForgeClient() {
     }
   };
 
-  const pollTaskStatus = (status_url: string, actionType: ActionType) => {
-    stopPolling(); 
+  const onGetSuggestions = async (prompt: string, comments?: string) => {
+    if (!prompt) return;
+    setSuggestionsLoading(true);
+    setSuggestions([]); // Clear previous suggestions
+    try {
+      const task = await handleGetPromptSuggestions({
+        current_prompt: prompt,
+        user_comments: comments,
+      });
+      // Suggestions now poll independently
+      pollTaskStatus(task.status_url, 'suggest');
+    } catch (error) {
+      setSuggestionsLoading(false);
+      toast({ variant: 'destructive', title: 'Suggestion Failed', description: getErrorMessage(error) });
+    }
+  };
 
-    pollingIntervalRef.current = setInterval(async () => {
+
+  const pollTaskStatus = (status_url: string, actionType: ActionType) => {
+    // For main actions, stop previous polling. For suggestions, let it run in parallel.
+    if (actionType !== 'suggest') {
+      stopPolling();
+    }
+
+    const intervalId = setInterval(async () => {
       try {
         const task: TaskStatusResponse = await getTaskResult(status_url);
 
@@ -147,15 +169,22 @@ export function PromptForgeClient() {
         };
 
         if (task.status === 'SUCCESS') {
-          stopPolling();
-          setProcessingState({ activeAction: null, statusText: 'Completed!' });
-          toast({ title: 'Success', description: `Task completed.` });
+          clearInterval(intervalId);
+          
+          if (actionType === 'suggest') {
+            setSuggestionsLoading(false);
+          } else {
+            setProcessingState({ activeAction: null, statusText: 'Completed!' });
+            toast({ title: 'Success', description: `Task completed.` });
+          }
 
           if (task.result) {
             if (actionType === 'generate' && 'initial_prompt' in (task.result as any)) {
                 const result = task.result as GenerateInitialPromptOutput;
                 setCurrentPrompt(result.initial_prompt);
                 if (isAuthenticated) addPrompt(result.initial_prompt);
+                // Automatically get suggestions for the new prompt
+                onGetSuggestions(result.initial_prompt);
             } else if (actionType === 'evaluate' && 'improved_prompt' in (task.result as any)) {
                 const result = task.result as EvaluateAndIteratePromptOutput;
                 setEvaluationResult(result);
@@ -168,18 +197,32 @@ export function PromptForgeClient() {
           }
 
         } else if (task.status === 'FAILURE') {
-          stopPolling();
-          setProcessingState({ activeAction: null, statusText: 'Failed!' });
+          clearInterval(intervalId);
+          if (actionType === 'suggest') {
+            setSuggestionsLoading(false);
+          } else {
+            setProcessingState({ activeAction: null, statusText: 'Failed!' });
+          }
           toast({ variant: 'destructive', title: 'Task Failed', description: task.error_message || 'An unknown error occurred.' });
         } else {
+          if (actionType !== 'suggest') {
             setProcessingState(prev => ({ ...prev, statusText: statusMap[task.status] || `Processing... (${task.status.toLowerCase()})` }));
+          }
         }
       } catch (error) {
-        stopPolling();
-        setProcessingState({ activeAction: null, statusText: 'Error!' });
+        clearInterval(intervalId);
+        if (actionType === 'suggest') {
+          setSuggestionsLoading(false);
+        } else {
+          setProcessingState({ activeAction: null, statusText: 'Error!' });
+        }
         toast({ variant: 'destructive', title: 'Polling Error', description: getErrorMessage(error) });
       }
     }, 3000); // Poll every 3 seconds
+
+    if (actionType !== 'suggest') {
+      pollingIntervalRef.current = intervalId;
+    }
   };
   
   useEffect(() => {
@@ -194,6 +237,7 @@ export function PromptForgeClient() {
     }
     setProcessingState({ activeAction: 'generate', statusText: 'Starting generation task...' });
     setEvaluationResult(null); // Clear previous results
+    setSuggestions([]); // Clear suggestions
     try {
       const task = await handleGenerateInitialPrompt({ user_needs: userNeeds });
       setProcessingState(prev => ({ ...prev, statusText: 'Task initiated, awaiting result...' }));
@@ -220,23 +264,6 @@ export function PromptForgeClient() {
       toast({ variant: 'destructive', title: 'Evaluation Failed', description: getErrorMessage(error) });
     }
   };
-
-  const onGetSuggestions = async () => {
-    if (!currentPrompt) return;
-    setProcessingState({ activeAction: 'suggest', statusText: 'Getting suggestions...' });
-    setSuggestions([]); // Clear previous suggestions
-    try {
-      const task = await handleGetPromptSuggestions({
-        current_prompt: currentPrompt,
-        user_comments: iterationComments,
-      });
-      setProcessingState(prev => ({ ...prev, statusText: 'Task initiated, awaiting suggestions...' }));
-      pollTaskStatus(task.status_url, 'suggest');
-    } catch (error) {
-      setProcessingState({ activeAction: null, statusText: '' });
-      toast({ variant: 'destructive', title: 'Suggestion Failed', description: getErrorMessage(error) });
-    }
-  };
   
   const onIterate = () => {
     if (!currentPrompt || (!iterationComments && selectedSuggestions.length === 0)) {
@@ -251,10 +278,14 @@ Selected Suggestions:
 - ${selectedSuggestions.join('\n- ')}
 ---
     `;
-    setCurrentPrompt(prev => `${prev}\n${feedbackText}`);
+    const newPrompt = `${currentPrompt}\n${feedbackText}`;
+    setCurrentPrompt(newPrompt);
+
+    // Get new suggestions based on the applied feedback
+    onGetSuggestions(newPrompt, iterationComments);
+
     setIterationComments('');
     setSelectedSuggestions([]);
-    setSuggestions([]);
     toast({ title: 'Feedback Applied', description: 'Your feedback has been added to the prompt. You can now re-evaluate it.' });
   };
   
@@ -396,7 +427,7 @@ Selected Suggestions:
                   <Card className="bg-primary text-primary-foreground shadow-lg shadow-primary/20 dark:bg-accent dark:text-accent-foreground dark:shadow-accent/20">
                     <CardHeader className="flex-row items-center gap-4 space-y-0 p-4">
                       <div className="relative flex h-5 w-5 items-center justify-center">
-                        <div className="absolute h-full w-full animate-spin rounded-full border-2 border-current border-b-transparent" />
+                        <div className="absolute h-full w-full animate-spin rounded-full border-2 border-current border-b-transparent dark:border-current" />
                         <Loader2 className="h-3 w-3" />
                       </div>
                       <div>
@@ -422,29 +453,16 @@ Selected Suggestions:
                   <div className="mb-4 flex items-center justify-between">
                     <p className="flex items-center text-sm font-medium">
                       <Lightbulb className="mr-2 h-5 w-5" />
-                      AI Suggestions:
+                      AI Suggestions
                     </p>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={onGetSuggestions}
-                          disabled={!!processingState.activeAction || !currentPrompt}
-                          className="h-6 w-6"
-                          aria-label="Regenerate AI suggestions"
-                        >
-                          <RotateCw
-                            className={cn('h-4 w-4', processingState.activeAction === 'suggest' && 'animate-spin')}
-                          />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Get AI suggestions</p>
-                      </TooltipContent>
-                    </Tooltip>
                   </div>
-                  {suggestions.length > 0 ? (
+                  {suggestionsLoading ? (
+                    <div className="space-y-2">
+                      <Skeleton className="h-5 w-3/4" />
+                      <Skeleton className="h-5 w-1/2" />
+                      <Skeleton className="h-5 w-2/3" />
+                    </div>
+                  ) : suggestions.length > 0 ? (
                     <motion.div
                       className="flex flex-wrap gap-2"
                       variants={containerVariants}
@@ -468,7 +486,9 @@ Selected Suggestions:
                       ))}
                     </motion.div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">Click the refresh icon to get suggestions.</p>
+                    <p className="text-sm text-muted-foreground">
+                      {currentPrompt ? 'Suggestions will appear here.' : 'Generate a prompt to get suggestions.'}
+                    </p>
                   )}
                 </div>
                 
@@ -601,5 +621,3 @@ Selected Suggestions:
     </TooltipProvider>
   );
 }
-
-    
