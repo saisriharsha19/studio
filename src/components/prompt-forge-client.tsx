@@ -435,7 +435,7 @@ Selected Suggestions:
                   <Card className="bg-primary text-primary-foreground shadow-lg shadow-primary/20 dark:bg-accent dark:text-accent-foreground dark:shadow-accent/20">
                     <CardHeader className="flex-row items-center gap-4 space-y-0 p-4">
                       <div className="relative flex h-5 w-5 items-center justify-center">
-                        <div className="absolute h-full w-full animate-spin rounded-full border-2 border-current border-b-transparent dark:border-current" />
+                        <div className="absolute h-full w-full animate-spin rounded-full border-2 border-b-transparent dark:border-current" />
                         <Loader2 className="h-3 w-3" />
                       </div>
                       <div>
@@ -556,43 +556,41 @@ Selected Suggestions:
               <CardContent className="space-y-6">
                 <div aria-live="polite" aria-atomic="true">
                   {isAuthenticated && evaluationResult ? (
-                    <Accordion type="single" collapsible className="w-full" defaultValue='alignment_score'>
+                    <Accordion type="single" collapsible className="w-full" defaultValue="summary">
+                      {evaluationResult.improvement_summary && (
+                        <AccordionItem value="summary">
+                          <AccordionTrigger>Improvement Summary</AccordionTrigger>
+                          <AccordionContent className="text-sm text-muted-foreground">
+                            {evaluationResult.improvement_summary}
+                          </AccordionContent>
+                        </AccordionItem>
+                      )}
                       {(Object.keys(evaluationResult) as Array<keyof EvaluateAndIteratePromptOutput>)
                         .filter(key => key.endsWith('_score'))
                         .map((key) => {
-                        const score = evaluationResult[key] as number;
-                        const summaryKey = key.replace('_score', '_summary');
-                        const summary = evaluationResult[summaryKey as keyof typeof evaluationResult] as string;
-
-                        return (
-                          <AccordionItem value={key} key={key}>
-                            <AccordionTrigger>
-                              <div className="flex w-full items-center justify-between pr-4">
-                                <span>{formatMetricName(key.replace('_score', ''))}</span>
-                                {typeof score === 'number' ? (
+                          const score = evaluationResult[key] as number;
+                          return (
+                            <AccordionItem value={key} key={key}>
+                              <AccordionTrigger>
+                                <div className="flex w-full items-center justify-between pr-4">
+                                  <span>{formatMetricName(key.replace('_score', ''))}</span>
+                                  {typeof score === 'number' ? (
                                     <Badge variant={score > 0.7 ? 'default' : score > 0.4 ? 'secondary' : 'destructive'}>
-                                        {Math.round(score * 100)}%
+                                      {Math.round(score * 100)}%
                                     </Badge>
-                                ) : (
+                                  ) : (
                                     <Badge variant="secondary">N/A</Badge>
-                                )}
-                              </div>
-                            </AccordionTrigger>
-                            <AccordionContent className="space-y-4 px-1">
-                                {summary ? (
-                                    <div>
-                                    <p className="text-sm font-medium">Summary:</p>
-                                    <p className="text-sm text-muted-foreground">
-                                        {summary}
-                                    </p>
-                                    </div>
-                                ) : (
-                                    <p className="text-sm text-muted-foreground">No summary provided.</p>
-                                )}
-                            </AccordionContent>
-                          </AccordionItem>
-                        );
-                      })}
+                                  )}
+                                </div>
+                              </AccordionTrigger>
+                              <AccordionContent>
+                                <p className="text-sm text-muted-foreground">
+                                  Score for {formatMetricName(key.replace('_score', ''))}.
+                                </p>
+                              </AccordionContent>
+                            </AccordionItem>
+                          );
+                        })}
                     </Accordion>
                   ) : (
                     <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 text-center">
