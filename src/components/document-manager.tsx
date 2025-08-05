@@ -230,4 +230,3 @@ export function DocumentManager() {
     </Card>
   );
 }
-
