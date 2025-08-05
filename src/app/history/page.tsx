@@ -6,11 +6,9 @@ export default function HistoryPage() {
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
       <AppHeader />
-      <div className="flex-1">
-        <main>
-          <PromptHistoryClient />
-        </main>
-      </div>
+      <main className="flex-1">
+        <PromptHistoryClient />
+      </main>
       <AppFooter />
     </div>
   );

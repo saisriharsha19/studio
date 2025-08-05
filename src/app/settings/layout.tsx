@@ -18,7 +18,7 @@ export default function SettingsLayout({
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
       <AppHeader />
-      <main className="mt-16 flex-1 bg-muted/40 py-8 md:py-10">
+      <main className="flex-1 bg-muted/40 py-8 md:py-10">
         <div className="container max-w-6xl px-4 sm:px-6 lg:px-8">
             <div className="mb-8 space-y-0.5">
                 <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Settings</h1>

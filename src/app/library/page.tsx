@@ -6,11 +6,9 @@ export default function LibraryPage() {
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
       <AppHeader />
-      <div className="flex-1">
-        <main>
-          <LibraryClient />
-        </main>
-      </div>
+      <main className="flex-1">
+        <LibraryClient />
+      </main>
       <AppFooter />
     </div>
   );
