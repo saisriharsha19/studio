@@ -50,6 +50,7 @@ import { useLibrary } from '@/hooks/use-library';
 import type { GenerateInitialPromptOutput } from '@/ai/flows/generate-initial-prompt';
 import { Skeleton } from './ui/skeleton';
 import { Separator } from './ui/separator';
+import { DocumentManager } from './document-manager';
 
 type ActionType = 'generate' | 'evaluate' | 'suggest' | null;
 
@@ -361,8 +362,14 @@ Selected Suggestions:
   
   return (
     <TooltipProvider>
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-5 lg:gap-12">
-        <div className="space-y-12 lg:col-span-3">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12">
+        <div className="lg:col-span-3">
+          <div className="sticky top-24">
+             <DocumentManager />
+          </div>
+        </div>
+
+        <div className="space-y-12 lg:col-span-5">
           <Card>
             <CardHeader>
               <h2 className="text-lg font-medium leading-snug">Describe Your Assistant</h2>
@@ -445,7 +452,7 @@ Selected Suggestions:
           </Card>
         </div>
 
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-4">
           <div className="sticky top-24 space-y-10">
             <AnimatePresence>
               {processingState.activeAction && (
@@ -458,7 +465,7 @@ Selected Suggestions:
                   <Card className="bg-primary text-primary-foreground shadow-lg shadow-primary/20 dark:bg-accent dark:text-accent-foreground dark:shadow-accent/20">
                     <CardHeader className="flex-row items-center gap-4 space-y-0 p-4">
                       <div className="relative flex h-5 w-5 items-center justify-center">
-                        <div className="absolute h-full w-full animate-spin rounded-full border-2 border-b-transparent border-current" />
+                        <div className="absolute h-full w-full animate-spin rounded-full border-2 border-b-transparent border-current dark:border-white/50 dark:border-b-transparent" />
                         <Loader2 className="h-3 w-3" />
                       </div>
                       <div>
@@ -665,3 +672,4 @@ Selected Suggestions:
     </TooltipProvider>
   );
 }
+
