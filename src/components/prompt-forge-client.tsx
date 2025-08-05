@@ -393,11 +393,16 @@ Selected Suggestions:
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
                 >
-                  <Card className="bg-secondary/50 dark:bg-primary/20 border-secondary dark:border-primary/30">
+                  <Card className="bg-secondary text-secondary-foreground shadow-lg dark:bg-primary dark:text-primary-foreground dark:shadow-primary/20">
                     <CardHeader className="flex-row items-center gap-4 space-y-0 p-4">
-                      <Loader2 className="h-5 w-5 animate-spin text-secondary-foreground dark:text-primary" />
+                      <div className="relative flex h-5 w-5 items-center justify-center">
+                        <div className="absolute h-full w-full animate-spin rounded-full border-2 border-b-transparent" />
+                        <Loader2 className="h-3 w-3" />
+                      </div>
                       <div>
-                        <CardDescription className="text-secondary-foreground dark:text-primary/90">{processingState.statusText}</CardDescription>
+                        <CardDescription className="font-medium text-secondary-foreground dark:text-primary-foreground">
+                          {processingState.statusText}
+                        </CardDescription>
                       </div>
                     </CardHeader>
                   </Card>
@@ -596,3 +601,5 @@ Selected Suggestions:
     </TooltipProvider>
   );
 }
+
+    
