@@ -393,10 +393,10 @@ Selected Suggestions:
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
                 >
-                  <Card className="bg-primary text-primary-foreground shadow-lg dark:bg-accent dark:text-accent-foreground dark:shadow-accent/20">
+                  <Card className="bg-primary text-primary-foreground shadow-lg shadow-primary/20 dark:bg-accent dark:text-accent-foreground dark:shadow-accent/20">
                     <CardHeader className="flex-row items-center gap-4 space-y-0 p-4">
                       <div className="relative flex h-5 w-5 items-center justify-center">
-                        <div className="absolute h-full w-full animate-spin rounded-full border-2 border-b-transparent" />
+                        <div className="absolute h-full w-full animate-spin rounded-full border-2 border-current border-b-transparent" />
                         <Loader2 className="h-3 w-3" />
                       </div>
                       <div>
