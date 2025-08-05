@@ -6,9 +6,11 @@ export default function Home() {
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
       <AppHeader />
-      <main className="flex-1 p-6 sm:p-8 md:p-10">
-        <h1 className="sr-only">Navigator Sailor</h1>
-        <PromptForgeClient />
+      <main className="flex-1">
+        <div className="h-full p-6 sm:p-8 md:p-10">
+            <h1 className="sr-only">Navigator Sailor</h1>
+            <PromptForgeClient />
+        </div>
       </main>
       <AppFooter />
     </div>

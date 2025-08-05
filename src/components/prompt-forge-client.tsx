@@ -362,16 +362,17 @@ Selected Suggestions:
   
   return (
     <TooltipProvider>
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12">
-        <div className="space-y-12 lg:col-span-7">
-          <Card>
+      <div className="grid h-full grid-cols-1 gap-8 lg:grid-cols-3 lg:gap-12">
+        {/* Left Column */}
+        <div className="lg:col-span-1">
+          <Card className="h-full">
             <CardHeader>
               <h2 className="text-lg font-medium leading-snug">Describe Your Assistant</h2>
               <CardDescription>
                 What are the primary goals and functionalities of your AI assistant?
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-10">
+            <CardContent>
               <div className="space-y-4">
                 <Label htmlFor="user-needs" className="text-base">User Needs</Label>
                 <Textarea
@@ -398,7 +399,10 @@ Selected Suggestions:
               </Tooltip>
             </CardFooter>
           </Card>
+        </div>
 
+        {/* Center Column - Scrollable */}
+        <div className="lg:col-span-1 flex flex-col gap-8 overflow-y-auto">
           <Card>
             <CardHeader>
               <h2 className="text-lg font-medium leading-snug">System Prompt</h2>
@@ -406,8 +410,7 @@ Selected Suggestions:
                 This is the generated system prompt. You can manually edit it before evaluation or refinement.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <Label htmlFor="system-prompt" className="text-base">Prompt</Label>
+            <CardContent>
               <div className="relative">
                 <Textarea
                   id="system-prompt"
@@ -448,8 +451,8 @@ Selected Suggestions:
           <DocumentManager />
         </div>
 
-        <div className="lg:col-span-5">
-          <div className="sticky top-24 space-y-10">
+        {/* Right Column */}
+        <div className="lg:col-span-1 flex flex-col gap-8">
             <AnimatePresence>
               {processingState.activeAction && (
                 <motion.div
@@ -458,14 +461,14 @@ Selected Suggestions:
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <Card className="bg-primary text-primary-foreground shadow-lg shadow-primary/20 dark:bg-accent dark:text-accent-foreground dark:shadow-accent/20">
+                  <Card className="shadow-lg bg-primary text-primary-foreground shadow-primary/20 dark:bg-accent dark:text-accent-foreground dark:shadow-accent/20">
                     <CardHeader className="flex-row items-center gap-4 space-y-0 p-4">
                       <div className="relative flex h-5 w-5 items-center justify-center">
-                        <div className="absolute h-full w-full animate-spin rounded-full border-2 border-b-transparent border-primary-foreground dark:border-current" />
+                        <div className="absolute h-full w-full animate-spin rounded-full border-2 border-b-transparent border-current" />
                         <Loader2 className="h-3 w-3" />
                       </div>
                       <div>
-                        <CardDescription className="font-medium text-primary-foreground dark:text-accent-foreground">
+                        <CardDescription className="font-medium text-inherit">
                           {processingState.statusText}
                         </CardDescription>
                       </div>
@@ -663,7 +666,6 @@ Selected Suggestions:
               </CardFooter>
             </Card>
           </div>
-        </div>
       </div>
     </TooltipProvider>
   );
