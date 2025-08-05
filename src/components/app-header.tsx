@@ -155,7 +155,7 @@ export function AppHeader() {
                   <DropdownMenuItem onClick={() => logout()} className="cursor-pointer">Sign Out</DropdownMenuItem>
                 </>
               ) : (
-                <DropdownMenuItem onClick={() => login()} className="cursor-pointer">Sign In with GatorLink</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => login()} className="cursor-pointer">Sign In</DropdownMenuItem>
               )}
             </DropdownMenuContent>
           </DropdownMenu>

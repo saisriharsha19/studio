@@ -40,10 +40,10 @@ export default function SettingsLayout({
                 <UserCircle className="h-12 w-12 text-muted-foreground sm:h-16 sm:w-16" />
                 <h2 className="mt-6 text-xl font-semibold tracking-tight sm:text-2xl">Access Your Settings</h2>
                 <p className="mt-2 text-muted-foreground">
-                Sign in with your GatorLink to manage your profile, appearance, and account settings.
+                Sign in to manage your profile, appearance, and account settings.
                 </p>
                 <Button onClick={login} className="mt-6">
-                Sign In with GatorLink
+                  Sign In
                 </Button>
             </div>
             )}

@@ -4,31 +4,30 @@ import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useSession } from 'next-auth/react';
 
 export default function ProfileSettingsPage() {
-  const { data: session } = useSession();
+  const { userId } = useAuth();
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Your Profile</CardTitle>
         <CardDescription>
-          This information is based on your university credentials and cannot be edited here.
+          This is your mock user profile. In a real application, this would be based on your university credentials.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="name">Name</Label>
-          <Input id="name" defaultValue={session?.user?.name ?? 'Albert Gator'} disabled />
+          <Input id="name" defaultValue={'Mock User'} disabled />
         </div>
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
-          <Input id="email" defaultValue={session?.user?.email ?? 'albert.gator@ufl.edu'} disabled />
+          <Input id="email" defaultValue={'mock.user@example.com'} disabled />
         </div>
         <div className="space-y-2">
           <Label htmlFor="userId">User ID</Label>
-          <Input id="userId" defaultValue={session?.user?.id ?? 'N/A'} disabled />
+          <Input id="userId" defaultValue={userId ?? 'N/A'} disabled />
         </div>
       </CardContent>
     </Card>

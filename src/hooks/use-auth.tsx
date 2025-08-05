@@ -1,6 +1,7 @@
+
 'use client';
 
-import { SessionProvider, useSession, signIn, signOut } from 'next-auth/react';
+import { useToast } from '@/hooks/use-toast';
 import * as React from 'react';
 
 type AuthContextType = {
@@ -13,31 +14,35 @@ type AuthContextType = {
 
 const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
 
-function AuthProviderContent({ children }: { children: React.ReactNode }) {
-  const { data: session, status } = useSession();
-  
-  const isAuthenticated = status === 'authenticated';
-  
-  // In a real app, you might get this from the session token
-  const isAdmin = isAuthenticated && session?.user?.email === 'admin@ufl.edu';
-  const userId = session?.user?.id ?? null;
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [isAuthenticated, setIsAuthenticated] = React.useState(true); // Default to logged in
+  const { toast } = useToast();
 
-  const login = () => signIn('gatorlink');
-  const logout = () => signOut();
+  // For this mock, we'll use a static user ID and admin status.
+  const userId = 'mock-user-123';
+  const isAdmin = true; // Set to true for full access during development
+
+  const login = () => {
+    setIsAuthenticated(true);
+    toast({
+      title: 'Logged In (Mock)',
+      description: 'You are now signed in with a mock user account.',
+    });
+  };
+
+  const logout = () => {
+    setIsAuthenticated(false);
+    toast({
+      title: 'Logged Out (Mock)',
+      description: 'You have been signed out.',
+    });
+  };
 
   return (
     <AuthContext.Provider value={{ isAuthenticated, userId, isAdmin, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  return (
-    <SessionProvider>
-      <AuthProviderContent>{children}</AuthProviderContent>
-    </SessionProvider>
-  )
 }
 
 export function useAuth() {
