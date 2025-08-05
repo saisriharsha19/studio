@@ -13,6 +13,7 @@ import {
   Wrench,
   Upload,
   Lightbulb,
+  RefreshCw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -91,6 +92,7 @@ export function PromptForgeClient() {
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
 
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const suggestionPollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const [copied, setCopied] = useState(false);
 
@@ -127,36 +129,22 @@ export function PromptForgeClient() {
     return String(error);
   };
 
-  const stopPolling = () => {
-    if (pollingIntervalRef.current) {
+  const stopPolling = (poller: 'main' | 'suggestions') => {
+    if (poller === 'main' && pollingIntervalRef.current) {
       clearInterval(pollingIntervalRef.current);
       pollingIntervalRef.current = null;
     }
-  };
-
-  const onGetSuggestions = async (prompt: string, comments?: string) => {
-    if (!prompt) return;
-    setSuggestionsLoading(true);
-    setSuggestions([]); // Clear previous suggestions
-    try {
-      const task = await handleGetPromptSuggestions({
-        current_prompt: prompt,
-        user_comments: comments,
-      });
-      // Suggestions now poll independently
-      pollTaskStatus(task.status_url, 'suggest');
-    } catch (error) {
-      setSuggestionsLoading(false);
-      toast({ variant: 'destructive', title: 'Suggestion Failed', description: getErrorMessage(error) });
+    if (poller === 'suggestions' && suggestionPollingIntervalRef.current) {
+      clearInterval(suggestionPollingIntervalRef.current);
+      suggestionPollingIntervalRef.current = null;
     }
   };
-
 
   const pollTaskStatus = (status_url: string, actionType: ActionType) => {
-    // For main actions, stop previous polling. For suggestions, let it run in parallel.
-    if (actionType !== 'suggest') {
-      stopPolling();
-    }
+    const isSuggestionTask = actionType === 'suggest';
+    
+    // Stop any existing poller for the same type
+    stopPolling(isSuggestionTask ? 'suggestions' : 'main');
 
     const intervalId = setInterval(async () => {
       try {
@@ -169,9 +157,9 @@ export function PromptForgeClient() {
         };
 
         if (task.status === 'SUCCESS') {
-          clearInterval(intervalId);
+          stopPolling(isSuggestionTask ? 'suggestions' : 'main');
           
-          if (actionType === 'suggest') {
+          if (isSuggestionTask) {
             setSuggestionsLoading(false);
           } else {
             setProcessingState({ activeAction: null, statusText: 'Completed!' });
@@ -183,35 +171,34 @@ export function PromptForgeClient() {
                 const result = task.result as GenerateInitialPromptOutput;
                 setCurrentPrompt(result.initial_prompt);
                 if (isAuthenticated) addPrompt(result.initial_prompt);
-                // Automatically get suggestions for the new prompt
                 onGetSuggestions(result.initial_prompt);
             } else if (actionType === 'evaluate' && 'improved_prompt' in (task.result as any)) {
                 const result = task.result as EvaluateAndIteratePromptOutput;
                 setEvaluationResult(result);
                 setCurrentPrompt(result.improved_prompt);
                 if (isAuthenticated) addPrompt(result.improved_prompt);
-            } else if (actionType === 'suggest' && Array.isArray(task.result)) {
+            } else if (isSuggestionTask && Array.isArray(task.result)) {
                 const result = task.result as GeneratePromptSuggestionsOutput;
                 setSuggestions(result.map(s => s.description));
             }
           }
 
         } else if (task.status === 'FAILURE') {
-          clearInterval(intervalId);
-          if (actionType === 'suggest') {
+          stopPolling(isSuggestionTask ? 'suggestions' : 'main');
+          if (isSuggestionTask) {
             setSuggestionsLoading(false);
           } else {
             setProcessingState({ activeAction: null, statusText: 'Failed!' });
           }
           toast({ variant: 'destructive', title: 'Task Failed', description: task.error_message || 'An unknown error occurred.' });
         } else {
-          if (actionType !== 'suggest') {
+          if (!isSuggestionTask) {
             setProcessingState(prev => ({ ...prev, statusText: statusMap[task.status] || `Processing... (${task.status.toLowerCase()})` }));
           }
         }
       } catch (error) {
-        clearInterval(intervalId);
-        if (actionType === 'suggest') {
+        stopPolling(isSuggestionTask ? 'suggestions' : 'main');
+        if (isSuggestionTask) {
           setSuggestionsLoading(false);
         } else {
           setProcessingState({ activeAction: null, statusText: 'Error!' });
@@ -220,14 +207,35 @@ export function PromptForgeClient() {
       }
     }, 3000); // Poll every 3 seconds
 
-    if (actionType !== 'suggest') {
+    if (isSuggestionTask) {
+      suggestionPollingIntervalRef.current = intervalId;
+    } else {
       pollingIntervalRef.current = intervalId;
     }
   };
   
+  const onGetSuggestions = async (prompt: string, comments?: string) => {
+    if (!prompt || suggestionsLoading) return;
+    setSuggestionsLoading(true);
+    setSuggestions([]);
+    try {
+      const task = await handleGetPromptSuggestions({
+        current_prompt: prompt,
+        user_comments: comments,
+      });
+      pollTaskStatus(task.status_url, 'suggest');
+    } catch (error) {
+      setSuggestionsLoading(false);
+      toast({ variant: 'destructive', title: 'Suggestion Failed', description: getErrorMessage(error) });
+    }
+  };
+
   useEffect(() => {
     // Cleanup polling on component unmount
-    return () => stopPolling();
+    return () => {
+      stopPolling('main');
+      stopPolling('suggestions');
+    }
   }, []);
   
   const onGenerate = async () => {
@@ -281,12 +289,12 @@ Selected Suggestions:
     const newPrompt = `${currentPrompt}\n${feedbackText}`;
     setCurrentPrompt(newPrompt);
 
-    // Get new suggestions based on the applied feedback
+    // Automatically get new suggestions based on the applied feedback
     onGetSuggestions(newPrompt, iterationComments);
 
     setIterationComments('');
     setSelectedSuggestions([]);
-    toast({ title: 'Feedback Applied', description: 'Your feedback has been added to the prompt. You can now re-evaluate it.' });
+    toast({ title: 'Feedback Applied', description: 'Your feedback has been added to the prompt for re-evaluation.' });
   };
   
   const handleSuggestionToggle = (suggestion: string) => {
@@ -455,6 +463,22 @@ Selected Suggestions:
                       <Lightbulb className="mr-2 h-5 w-5" />
                       AI Suggestions
                     </p>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onGetSuggestions(currentPrompt)}
+                          disabled={suggestionsLoading || !currentPrompt}
+                          className="h-7 w-7"
+                        >
+                          <RefreshCw className={cn("h-4 w-4", suggestionsLoading && "animate-spin")} />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Refresh Suggestions</p>
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
                   {suggestionsLoading ? (
                     <div className="space-y-2">
@@ -487,7 +511,7 @@ Selected Suggestions:
                     </motion.div>
                   ) : (
                     <p className="text-sm text-muted-foreground">
-                      {currentPrompt ? 'Suggestions will appear here.' : 'Generate a prompt to get suggestions.'}
+                      {currentPrompt ? 'Generate or refresh suggestions.' : 'Generate a prompt to get suggestions.'}
                     </p>
                   )}
                 </div>
@@ -621,3 +645,4 @@ Selected Suggestions:
     </TooltipProvider>
   );
 }
+ 
