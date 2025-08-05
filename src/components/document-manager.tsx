@@ -201,13 +201,13 @@ export function DocumentManager() {
             <div className="max-h-48 space-y-1 overflow-y-auto p-1">
               {uploadedFiles.length > 0 ? (
                 <ul className="space-y-1">
-                  {uploadedFiles.map((file) => (
+                  {uploadedFiles.map((file, index) => (
                     <li key={file.id} className="flex items-center gap-2 rounded-md p-2 animate-in fade-in-50">
                       <FileText className="h-5 w-5 shrink-0 text-primary" />
                       <div className="flex-1 min-w-0">
                         <Tooltip delayDuration={300}>
                           <TooltipTrigger asChild>
-                            <span className="truncate text-sm font-medium text-muted-foreground">{file.name}</span>
+                            <span className="text-sm font-medium text-muted-foreground">{`Document ${index + 1}`}</span>
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>{file.name}</p>
