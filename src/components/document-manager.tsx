@@ -169,7 +169,7 @@ export function DocumentManager() {
               onDragLeave={handleDragLeave}
               className={cn(
                 'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-12 text-center transition-colors',
-                isDragOver ? 'border-primary bg-accent' : 'border-border hover:border-primary/50',
+                isDragOver ? 'border-primary bg-accent dark:border-accent' : 'border-border hover:border-primary/50 dark:hover:border-accent',
                 !isAuthenticated && 'cursor-not-allowed opacity-60'
               )}
             >
@@ -177,7 +177,7 @@ export function DocumentManager() {
                   <UploadCloud className="h-8 w-8 text-muted-foreground" />
               </div>
               <p className="font-semibold">
-                <span className="text-primary">Click to upload</span> or drag and drop
+                <span className="text-primary dark:text-accent">Click to upload</span> or drag and drop
               </p>
               <p className="text-xs text-muted-foreground">PDF, DOCX, TXT, or MD (max. 10MB each)</p>
             </label>
@@ -197,23 +197,23 @@ export function DocumentManager() {
       <div className="space-y-2">
         <h4 className="text-sm font-medium">Active Documents</h4>
         <div className="min-h-[64px] rounded-lg border bg-muted/50 p-1">
-          <TooltipProvider>
-            <div className="max-h-48 space-y-1 overflow-y-auto p-1">
+          <div className="max-h-48 space-y-1 overflow-y-auto p-1">
+            <TooltipProvider>
               {uploadedFiles.length > 0 ? (
                 <ul className="space-y-1">
                   {uploadedFiles.map((file, index) => (
                     <li key={file.id} className="flex items-center gap-2 rounded-md p-2 animate-in fade-in-50">
-                      <FileText className="h-5 w-5 shrink-0 text-primary" />
-                      <div className="flex-1 min-w-0">
+                      <FileText className="h-5 w-5 shrink-0 text-primary dark:text-accent" />
                         <Tooltip delayDuration={300}>
                           <TooltipTrigger asChild>
-                            <span className="text-sm font-medium text-muted-foreground">{`Document ${index + 1}`}</span>
+                            <div className="flex-1 min-w-0">
+                                <span className="text-sm font-medium text-muted-foreground">{`Document ${index + 1}`}</span>
+                            </div>
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>{file.name}</p>
                           </TooltipContent>
                         </Tooltip>
-                      </div>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -232,8 +232,8 @@ export function DocumentManager() {
                   <p className="text-sm text-muted-foreground">No document context applied.</p>
                 </div>
               )}
-            </div>
-          </TooltipProvider>
+            </TooltipProvider>
+          </div>
         </div>
       </div>
     </div>
