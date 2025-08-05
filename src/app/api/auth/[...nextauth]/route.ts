@@ -43,10 +43,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   pages: {
     signIn: '/', // Redirect to home page for sign-in
   },
-  actions: {
-    async signIn({ user, account, profile, email, credentials }) {
-      // After successful authentication, redirect to the home page.
-      // This prevents the "Unexpected end of JSON input" error.
+  // FIX: Add actions block to handle post-authentication redirect
+  // This resolves the "Unexpected end of JSON input" error.
+  events: {
+    async signIn() {
       redirect('/');
     },
   },
