@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useTransition, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { UploadCloud, FileText, X, Loader2 } from 'lucide-react';
@@ -121,7 +121,7 @@ export function DocumentManager() {
         <CardTitle>Context & Knowledge</CardTitle>
         <CardDescription>Upload documents to provide context for the assistant.</CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col">
+      <CardContent>
         <AnimatePresence mode="wait">
           {isExtracting ? (
              <motion.div
@@ -173,7 +173,7 @@ export function DocumentManager() {
           )}
         </AnimatePresence>
 
-         <div className="space-y-2 pt-6">
+         <div className="pt-6 space-y-2">
             <h4 className="text-sm font-medium">Active Document</h4>
             <div className="flex h-16 items-center justify-center rounded-lg border bg-muted/50 px-4 text-center">
               {uploadedFileName ? (
