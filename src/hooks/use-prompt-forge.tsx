@@ -4,6 +4,12 @@
 import type { EvaluateAndIteratePromptOutput } from '@/ai/flows/evaluate-and-iterate-prompt';
 import { createContext, useContext, useState, ReactNode, Dispatch, SetStateAction, useEffect } from 'react';
 
+type UploadedFile = {
+  id: string;
+  name: string;
+  content: string;
+};
+
 type PromptForgeContextType = {
   userNeeds: string;
   setUserNeeds: Dispatch<SetStateAction<string>>;
@@ -13,8 +19,8 @@ type PromptForgeContextType = {
   setPromptsGenerated: Dispatch<SetStateAction<number>>;
   knowledgeBase: string;
   setKnowledgeBase: Dispatch<SetStateAction<string>>;
-  uploadedFileContent: string;
-  setUploadedFileContent: Dispatch<SetStateAction<string>>;
+  uploadedFiles: UploadedFile[];
+  setUploadedFiles: Dispatch<SetStateAction<UploadedFile[]>>;
   fewShotExamples: string;
   setFewShotExamples: Dispatch<SetStateAction<string>>;
   scrapeUrl: string;
@@ -29,8 +35,6 @@ type PromptForgeContextType = {
   setMaxPages: Dispatch<SetStateAction<number>>;
   preferSitemap: boolean;
   setPreferSitemap: Dispatch<SetStateAction<boolean>>;
-  uploadedFileName: string;
-  setUploadedFileName: Dispatch<SetStateAction<string>>;
   iterationComments: string;
   setIterationComments: Dispatch<SetStateAction<string>>;
   suggestions: string[];
@@ -48,7 +52,7 @@ export function PromptForgeProvider({ children }: { children: ReactNode }) {
   const [currentPrompt, setCurrentPrompt] = useState('');
   const [promptsGenerated, setPromptsGenerated] = useState(0);
   const [knowledgeBase, setKnowledgeBase] = useState('');
-  const [uploadedFileContent, setUploadedFileContent] = useState('');
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [fewShotExamples, setFewShotExamples] = useState('');
   const [scrapeUrl, setScrapeUrl] = useState('');
   const [sitemapUrl, setSitemapUrl] = useState('');
@@ -56,7 +60,6 @@ export function PromptForgeProvider({ children }: { children: ReactNode }) {
   const [maxSubdomains, setMaxSubdomains] = useState(10);
   const [maxPages, setMaxPages] = useState(100);
   const [preferSitemap, setPreferSitemap] = useState(true);
-  const [uploadedFileName, setUploadedFileName] = useState('');
   const [iterationComments, setIterationComments] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [selectedSuggestions, setSelectedSuggestions] = useState<string[]>([]);
@@ -64,17 +67,27 @@ export function PromptForgeProvider({ children }: { children: ReactNode }) {
 
   // Effect to append document context to the prompt
   useEffect(() => {
-    if (uploadedFileContent) {
-      const contextBlock = `\n\n--- [DOCUMENT CONTEXT] ---\n${uploadedFileContent}`;
+    const contextMarker = '\n\n--- [DOCUMENT CONTEXT] ---';
+    
+    setCurrentPrompt(prevPrompt => {
+      // Find and remove the old context block if it exists
+      const oldContextIndex = prevPrompt.indexOf(contextMarker);
+      const basePrompt = oldContextIndex !== -1 ? prevPrompt.substring(0, oldContextIndex) : prevPrompt;
+
+      if (uploadedFiles.length === 0) {
+        return basePrompt; // Return just the base prompt if no files
+      }
+
+      // Build the new context block from all uploaded files
+      const newContextContent = uploadedFiles
+        .map(file => `\n## Document: ${file.name}\n\n${file.content}`)
+        .join('\n\n');
       
-      setCurrentPrompt(prevPrompt => {
-        // Remove old context block if it exists to prevent duplication
-        const oldContextIndex = prevPrompt.indexOf('\n\n--- [DOCUMENT CONTEXT] ---');
-        const basePrompt = oldContextIndex !== -1 ? prevPrompt.substring(0, oldContextIndex) : prevPrompt;
-        return basePrompt + contextBlock;
-      });
-    }
-  }, [uploadedFileContent, setCurrentPrompt]);
+      const newContextBlock = `${contextMarker}${newContextContent}`;
+      
+      return basePrompt + newContextBlock;
+    });
+  }, [uploadedFiles, setCurrentPrompt]);
 
 
   const value = {
@@ -82,7 +95,7 @@ export function PromptForgeProvider({ children }: { children: ReactNode }) {
     currentPrompt, setCurrentPrompt,
     promptsGenerated, setPromptsGenerated,
     knowledgeBase, setKnowledgeBase,
-    uploadedFileContent, setUploadedFileContent,
+    uploadedFiles, setUploadedFiles,
     fewShotExamples, setFewShotExamples,
     scrapeUrl, setScrapeUrl,
     sitemapUrl, setSitemapUrl,
@@ -90,7 +103,6 @@ export function PromptForgeProvider({ children }: { children: ReactNode }) {
     maxSubdomains, setMaxSubdomains,
     maxPages, setMaxPages,
     preferSitemap, setPreferSitemap,
-    uploadedFileName, setUploadedFileName,
     iterationComments, setIterationComments,
     suggestions, setSuggestions,
     selectedSuggestions, setSelectedSuggestions,
@@ -112,4 +124,3 @@ export function usePromptForge() {
   return context;
 }
 
-    
