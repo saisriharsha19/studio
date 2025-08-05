@@ -1,5 +1,6 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
+import { redirect } from 'next/navigation';
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -41,5 +42,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   pages: {
     signIn: '/', // Redirect to home page for sign-in
-  }
+  },
+  actions: {
+    async signIn({ user, account, profile, email, credentials }) {
+      // After successful authentication, redirect to the home page.
+      // This prevents the "Unexpected end of JSON input" error.
+      redirect('/');
+    },
+  },
 });
