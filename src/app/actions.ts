@@ -186,8 +186,9 @@ export async function deleteHistoryPromptFromDB(id: string, userId: string): Pro
 
 
 // --- Library Actions (library_prompts table) ---
-export async function getLibraryPromptsFromDB(userId: string | null): Promise<Prompt[]> {
+async function getLibraryPromptsFromLocalDB(userId: string | null): Promise<Prompt[]> {
   try {
+    console.log('Fetching library prompts from local DB.');
     const sql = `
       SELECT
         lp.id,
@@ -226,10 +227,46 @@ export async function getLibraryPromptsFromDB(userId: string | null): Promise<Pr
       };
     });
   } catch (error) {
-    console.error('Failed to get library prompts:', error);
-    return [];
+    console.error('Failed to get library prompts from local DB:', error);
+    return []; // Return empty array on error
   }
 }
+
+export async function getLibraryPromptsFromDB(userId: string | null): Promise<Prompt[]> {
+  if (process.env.PYTHON_BACKEND_URL) {
+    try {
+      const url = new URL(`${BACKEND_URL}/library/prompts`);
+      if (userId) {
+        url.searchParams.append('user_id', userId);
+      }
+      
+      console.log(`Fetching library prompts from API: ${url.toString()}`);
+      
+      const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(5000), // 5-second timeout
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: 'Failed to parse API error response.' }));
+        throw new Error(errorData.detail || `API request failed with status ${response.status}`);
+      }
+      
+      const prompts: Prompt[] = await response.json();
+      console.log('Successfully fetched prompts from API.');
+      return prompts;
+
+    } catch (error) {
+      console.warn(`API call for library prompts failed: ${getErrorMessage(error)}. Falling back to local database.`);
+      return getLibraryPromptsFromLocalDB(userId);
+    }
+  } else {
+    // If no backend URL is configured, go straight to the local DB.
+    return getLibraryPromptsFromLocalDB(userId);
+  }
+}
+
 
 export async function addLibraryPromptToDB(promptText: string, userId: string): Promise<Prompt> {
     if (!userId) throw new Error('User not authenticated.');
