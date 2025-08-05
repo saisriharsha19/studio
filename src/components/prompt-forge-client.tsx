@@ -111,10 +111,38 @@ export function PromptForgeClient() {
 
   const copyToClipboard = (text: string) => {
     if (!text) return;
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    toast({ title: "Copied!", description: "Prompt copied to clipboard." });
-    setTimeout(() => setCopied(false), 2000);
+    if (navigator.clipboard && window.isSecureContext) {
+      // Use modern clipboard API in secure contexts
+      navigator.clipboard.writeText(text)
+        .then(() => {
+          setCopied(true);
+          toast({ title: 'Copied!', description: 'Prompt copied to clipboard.' });
+          setTimeout(() => setCopied(false), 2000);
+        })
+        .catch(err => {
+          toast({ variant: 'destructive', title: 'Copy Failed', description: 'Could not copy text.' });
+          console.error('Clipboard write failed:', err);
+        });
+    } else {
+      // Fallback for insecure contexts or older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'absolute';
+      textArea.style.left = '-9999px';
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        setCopied(true);
+        toast({ title: 'Copied!', description: 'Prompt copied to clipboard.' });
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err) {
+        toast({ variant: 'destructive', title: 'Copy Failed', description: 'Could not copy text.' });
+        console.error('Fallback copy failed:', err);
+      } finally {
+        document.body.removeChild(textArea);
+      }
+    }
   };
   
   const getErrorMessage = (error: unknown): string => {
@@ -430,7 +458,7 @@ Selected Suggestions:
                   <Card className="bg-primary text-primary-foreground shadow-lg shadow-primary/20 dark:bg-accent dark:text-accent-foreground dark:shadow-accent/20">
                     <CardHeader className="flex-row items-center gap-4 space-y-0 p-4">
                       <div className="relative flex h-5 w-5 items-center justify-center">
-                        <div className="absolute h-full w-full animate-spin rounded-full border-2 border-b-transparent border-current dark:border-accent-foreground" />
+                        <div className="absolute h-full w-full animate-spin rounded-full border-2 border-b-transparent border-current" />
                         <Loader2 className="h-3 w-3" />
                       </div>
                       <div>

@@ -89,7 +89,6 @@ export async function handleIterateOnPrompt(input: { currentPrompt: string; user
   return { newPrompt: input.currentPrompt };
 }
 
-
 export type TaskStatusResponse = {
   task_id: string;
   task_type: string;
@@ -342,7 +341,8 @@ export async function addLibraryPromptToDB(promptText: string, userId: string): 
 export async function deleteLibraryPromptFromDB(promptId: string, userId: string): Promise<{ success: boolean }> {
   if (!userId) throw new Error('User not authenticated.');
   
-  const isAdmin = userId === 'mock-user-123';
+  // This is a mock admin check. Replace with a real role/permission system.
+  const isAdmin = userId === 'mock-user-123'; 
   if (!isAdmin) {
     throw new Error('You do not have permission to delete library prompts.');
   }
@@ -384,5 +384,67 @@ export async function toggleStarForPrompt(promptId: string, userId: string): Pro
   } catch (error: any) {
      console.error('Failed to toggle star for prompt:', error);
     throw new Error(error.message || 'Failed to toggle star for prompt.');
+  }
+}
+
+
+// --- Document Upload Action ---
+const MAX_FILE_SIZE_MB = 10;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+const ALLOWED_FILE_TYPES = [
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+  'text/plain',
+  'text/markdown',
+];
+
+export async function handleUploadDocument(userId: string, formData: FormData): Promise<{ success: boolean; message: string }> {
+  if (!userId) {
+    throw new Error('User not authenticated. Cannot upload document.');
+  }
+
+  if (!process.env.PYTHON_BACKEND_URL) {
+    throw new Error('Backend URL is not configured. Cannot upload document.');
+  }
+
+  const file = formData.get('document') as File | null;
+
+  if (!file) {
+    return { success: false, message: 'No file was uploaded.' };
+  }
+
+  // --- Security & Validation ---
+  if (file.size > MAX_FILE_SIZE_BYTES) {
+    return { success: false, message: `File is too large. Max size is ${MAX_FILE_SIZE_MB}MB.` };
+  }
+
+  if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+    return { success: false, message: `Invalid file type. Allowed types: PDF, DOCX, TXT, MD.` };
+  }
+  // --- End Security & Validation ---
+
+  const uploadFormData = new FormData();
+  uploadFormData.append('document', file);
+  uploadFormData.append('userId', userId);
+
+  try {
+    const response = await fetch(`${BACKEND_URL}/documents/upload`, {
+      method: 'POST',
+      body: uploadFormData,
+      // Note: Do not set 'Content-Type' header when using FormData with fetch,
+      // the browser will automatically set it with the correct boundary.
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'An unknown error occurred during upload.' }));
+      throw new Error(errorData.detail || `File upload failed with status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return { success: true, message: result.message || 'File uploaded successfully!' };
+
+  } catch (error) {
+    console.error('Error uploading document:', error);
+    return { success: false, message: getErrorMessage(error) };
   }
 }
