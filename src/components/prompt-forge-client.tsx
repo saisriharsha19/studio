@@ -33,17 +33,11 @@ import {
   getTaskResult,
   type TaskStatusResponse,
 } from '@/app/actions';
-import { Badge, badgeVariants } from './ui/badge';
+import { Badge } from './ui/badge';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 import type { EvaluateAndIteratePromptOutput } from '@/ai/flows/evaluate-and-iterate-prompt';
 import type { GeneratePromptSuggestionsOutput } from '@/ai/flows/get-prompt-suggestions';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
 import {
   Tooltip,
   TooltipContent,
@@ -55,6 +49,7 @@ import { usePromptForge } from '@/hooks/use-prompt-forge';
 import { useLibrary } from '@/hooks/use-library';
 import type { GenerateInitialPromptOutput } from '@/ai/flows/generate-initial-prompt';
 import { Skeleton } from './ui/skeleton';
+import { Separator } from './ui/separator';
 
 type ActionType = 'generate' | 'evaluate' | 'suggest' | null;
 
@@ -65,7 +60,7 @@ type ProcessingState = {
 
 // Helper to format metric names for display
 const formatMetricName = (name: string) => {
-    const spaced = name.replace(/([A-Z])/g, ' $1');
+    const spaced = name.replace(/_score$/, '').replace(/_/g, ' ');
     return spaced.charAt(0).toUpperCase() + spaced.slice(1);
 };
 
@@ -435,7 +430,7 @@ Selected Suggestions:
                   <Card className="bg-primary text-primary-foreground shadow-lg shadow-primary/20 dark:bg-accent dark:text-accent-foreground dark:shadow-accent/20">
                     <CardHeader className="flex-row items-center gap-4 space-y-0 p-4">
                       <div className="relative flex h-5 w-5 items-center justify-center">
-                        <div className="absolute h-full w-full animate-spin rounded-full border-2 border-b-transparent dark:border-current" />
+                        <div className="absolute h-full w-full animate-spin rounded-full border-2 border-b-transparent border-current dark:border-current" />
                         <Loader2 className="h-3 w-3" />
                       </div>
                       <div>
@@ -499,7 +494,7 @@ Selected Suggestions:
                             type="button"
                             onClick={() => handleSuggestionToggle(suggestion)}
                             aria-pressed={selectedSuggestions.includes(suggestion)}
-                            className={cn(badgeVariants({ variant: selectedSuggestions.includes(suggestion) ? 'default' : 'secondary' }), "cursor-pointer items-center transition-all hover:opacity-80 text-xs px-3 py-1 font-normal")}
+                            className={cn("cursor-pointer items-center transition-all hover:opacity-80 text-xs px-3 py-1 font-normal", badgeVariants({ variant: selectedSuggestions.includes(suggestion) ? 'default' : 'secondary' }))}
                           >
                             {selectedSuggestions.includes(suggestion) && (
                               <Check className="mr-1.5 h-4 w-4" />
@@ -556,42 +551,41 @@ Selected Suggestions:
               <CardContent className="space-y-6">
                 <div aria-live="polite" aria-atomic="true">
                   {isAuthenticated && evaluationResult ? (
-                    <Accordion type="single" collapsible className="w-full" defaultValue="summary">
+                    <div className="space-y-4">
                       {evaluationResult.improvement_summary && (
-                        <AccordionItem value="summary">
-                          <AccordionTrigger>Improvement Summary</AccordionTrigger>
-                          <AccordionContent className="text-sm text-muted-foreground">
+                        <div className="space-y-1">
+                          <h4 className="text-sm font-medium text-foreground">Improvement Summary</h4>
+                          <p className="text-sm text-muted-foreground">
                             {evaluationResult.improvement_summary}
-                          </AccordionContent>
-                        </AccordionItem>
+                          </p>
+                        </div>
                       )}
-                      {(Object.keys(evaluationResult) as Array<keyof EvaluateAndIteratePromptOutput>)
-                        .filter(key => key.endsWith('_score'))
-                        .map((key) => {
-                          const score = evaluationResult[key] as number;
-                          return (
-                            <AccordionItem value={key} key={key}>
-                              <AccordionTrigger>
-                                <div className="flex w-full items-center justify-between pr-4">
-                                  <span>{formatMetricName(key.replace('_score', ''))}</span>
+                      
+                      <Separator />
+
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-medium text-foreground">Evaluation Scores</h4>
+                        <ul className="space-y-1.5">
+                          {(Object.keys(evaluationResult) as Array<keyof EvaluateAndIteratePromptOutput>)
+                            .filter(key => key.endsWith('_score'))
+                            .map((key) => {
+                              const score = evaluationResult[key] as number;
+                              return (
+                                <li key={key} className="flex items-center justify-between">
+                                  <span className="text-sm text-muted-foreground">{formatMetricName(key)}</span>
                                   {typeof score === 'number' ? (
-                                    <Badge variant={score > 0.7 ? 'default' : score > 0.4 ? 'secondary' : 'destructive'}>
+                                    <Badge variant={score > 0.7 ? 'default' : score > 0.4 ? 'secondary' : 'destructive'} className="w-16 justify-center">
                                       {Math.round(score * 100)}%
                                     </Badge>
                                   ) : (
-                                    <Badge variant="secondary">N/A</Badge>
+                                    <Badge variant="secondary" className="w-16 justify-center">N/A</Badge>
                                   )}
-                                </div>
-                              </AccordionTrigger>
-                              <AccordionContent>
-                                <p className="text-sm text-muted-foreground">
-                                  Score for {formatMetricName(key.replace('_score', ''))}.
-                                </p>
-                              </AccordionContent>
-                            </AccordionItem>
-                          );
-                        })}
-                    </Accordion>
+                                </li>
+                              );
+                            })}
+                        </ul>
+                      </div>
+                    </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 text-center">
                       <p className="text-muted-foreground">
@@ -643,4 +637,5 @@ Selected Suggestions:
     </TooltipProvider>
   );
 }
- 
+
+    
