@@ -198,17 +198,17 @@ export function DocumentManager() {
 
          <div className="space-y-2">
             <h4 className="text-sm font-medium">Active Documents</h4>
-            <div className="min-h-[64px] rounded-lg border bg-muted/50 p-2">
+            <div className="min-h-[64px] rounded-lg border bg-muted/50 p-1">
               <TooltipProvider>
                 {uploadedFiles.length > 0 ? (
                   <ScrollArea className="h-full max-h-48">
-                      <ul className="space-y-2 p-2">
+                      <ul className="space-y-1 p-1">
                         {uploadedFiles.map((file) => (
-                          <li key={file.id} className="flex items-center justify-between gap-3 text-sm text-muted-foreground animate-in fade-in-50">
+                           <li key={file.id} className="flex items-center gap-2 rounded-md p-2 animate-in fade-in-50">
                             <FileText className="h-5 w-5 shrink-0 text-primary" />
-                            <Tooltip>
+                            <Tooltip delayDuration={300}>
                               <TooltipTrigger asChild>
-                                <span className="font-medium truncate flex-1 text-left">{file.name}</span>
+                                 <span className="flex-1 truncate text-sm font-medium text-muted-foreground">{file.name}</span>
                               </TooltipTrigger>
                               <TooltipContent>
                                 <p>{file.name}</p>
