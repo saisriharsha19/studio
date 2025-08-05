@@ -362,97 +362,90 @@ Selected Suggestions:
   
   return (
     <TooltipProvider>
-      <div className="grid h-full grid-cols-1 gap-8 lg:grid-cols-3 lg:gap-12">
-        {/* Left Column */}
-        <div className="lg:col-span-1">
-          <Card className="h-full">
-            <CardHeader>
-              <h2 className="text-lg font-medium leading-snug">Describe Your Assistant</h2>
-              <CardDescription>
-                What are the primary goals and functionalities of your AI assistant?
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <Label htmlFor="user-needs" className="text-base">User Needs</Label>
-                <Textarea
-                  id="user-needs"
-                  placeholder="e.g., An assistant that helps university students find course information, check deadlines, and book appointments with advisors..."
-                  value={userNeeds}
-                  onChange={(e) => setUserNeeds(e.target.value)}
-                  className="min-h-[120px]"
-                  disabled={!!processingState.activeAction}
-                />
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button onClick={onGenerate} disabled={!!processingState.activeAction || !userNeeds}>
-                    {processingState.activeAction === 'generate' ? <Loader2 className="animate-spin" /> : <Sparkles />}
-                    Generate Initial Prompt
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Generate a new prompt based on your needs.</p>
-                </TooltipContent>
-              </Tooltip>
-            </CardFooter>
-          </Card>
-        </div>
-
-        {/* Center Column - Scrollable */}
-        <div className="lg:col-span-1 flex flex-col gap-8 overflow-y-auto">
-          <Card>
-            <CardHeader>
-              <h2 className="text-lg font-medium leading-snug">System Prompt</h2>
-              <CardDescription>
-                This is the generated system prompt. You can manually edit it before evaluation or refinement.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="relative">
-                <Textarea
-                  id="system-prompt"
-                  placeholder="Your generated or refined prompt will appear here."
-                  value={currentPrompt}
-                  onChange={(e) => setCurrentPrompt(e.target.value)}
-                  className="min-h-[200px] pr-12"
-                  disabled={!!processingState.activeAction}
-                />
-                {currentPrompt && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute top-3 right-3 h-8 w-8"
-                        onClick={() => copyToClipboard(currentPrompt)}
-                        aria-label="Copy generated prompt"
-                      >
-                        {copied ? <Check className="text-primary" /> : <Clipboard />}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Copy prompt</p>
-                    </TooltipContent>
-                  </Tooltip>
-                )}
-              </div>
-            </CardContent>
-            <CardFooter>
-                <Button onClick={onEvaluate} disabled={!!processingState.activeAction || !currentPrompt || !userNeeds}>
-                    {processingState.activeAction === 'evaluate' ? <Loader2 className="animate-spin" /> : <Bot />}
-                    Evaluate Prompt
+      <div className="flex h-full flex-col gap-8">
+        {/* Top Row for Initial Input */}
+        <Card>
+          <CardHeader>
+            <h2 className="text-lg font-medium leading-snug">1. Describe Your Assistant</h2>
+            <CardDescription>
+              What are the primary goals and functionalities of your AI assistant? This will be used to generate the initial prompt.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <Label htmlFor="user-needs" className="sr-only">User Needs</Label>
+              <Textarea
+                id="user-needs"
+                placeholder="e.g., An assistant that helps university students find course information, check deadlines, and book appointments with advisors..."
+                value={userNeeds}
+                onChange={(e) => setUserNeeds(e.target.value)}
+                className="min-h-[120px]"
+                disabled={!!processingState.activeAction}
+              />
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button onClick={onGenerate} disabled={!!processingState.activeAction || !userNeeds}>
+                  {processingState.activeAction === 'generate' ? <Loader2 className="animate-spin" /> : <Sparkles />}
+                  Generate Initial Prompt
                 </Button>
-            </CardFooter>
-          </Card>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Generate a new prompt based on your needs.</p>
+              </TooltipContent>
+            </Tooltip>
+          </CardFooter>
+        </Card>
 
-          <DocumentManager />
-        </div>
+        {/* Main 2-Column Grid */}
+        <div className="grid flex-1 grid-cols-1 gap-8 lg:grid-cols-2">
+          {/* Left Column */}
+          <div className="flex flex-col gap-8">
+            <Card>
+              <CardHeader>
+                <h2 className="text-lg font-medium leading-snug">2. System Prompt & Context</h2>
+                <CardDescription>
+                  This is the generated system prompt. You can manually edit it before evaluation or refinement.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="relative">
+                  <Textarea
+                    id="system-prompt"
+                    placeholder="Your generated or refined prompt will appear here."
+                    value={currentPrompt}
+                    onChange={(e) => setCurrentPrompt(e.target.value)}
+                    className="min-h-[200px] pr-12"
+                    disabled={!!processingState.activeAction}
+                  />
+                  {currentPrompt && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-3 right-3 h-8 w-8"
+                          onClick={() => copyToClipboard(currentPrompt)}
+                          aria-label="Copy generated prompt"
+                        >
+                          {copied ? <Check className="text-primary" /> : <Clipboard />}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Copy prompt</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+            <DocumentManager />
+          </div>
 
-        {/* Right Column */}
-        <div className="lg:col-span-1 flex flex-col gap-8">
+          {/* Right Column */}
+          <div className="flex flex-col gap-8">
             <AnimatePresence>
               {processingState.activeAction && (
                 <motion.div
@@ -464,7 +457,7 @@ Selected Suggestions:
                   <Card className="shadow-lg bg-primary text-primary-foreground shadow-primary/20 dark:bg-accent dark:text-accent-foreground dark:shadow-accent/20">
                     <CardHeader className="flex-row items-center gap-4 space-y-0 p-4">
                       <div className="relative flex h-5 w-5 items-center justify-center">
-                        <div className="absolute h-full w-full animate-spin rounded-full border-2 border-b-transparent border-current" />
+                        <div className="absolute h-full w-full animate-spin rounded-full border-2 border-b-transparent border-current dark:border-current" />
                         <Loader2 className="h-3 w-3" />
                       </div>
                       <div>
@@ -480,7 +473,7 @@ Selected Suggestions:
 
             <Card>
               <CardHeader>
-                <h2 className="text-lg font-medium leading-snug">Prompt Refinement</h2>
+                <h2 className="text-lg font-medium leading-snug">3. Prompt Refinement</h2>
                 <CardDescription>
                   Provide feedback on the current prompt to get AI-generated suggestions for improvement.
                 </CardDescription>
@@ -577,12 +570,18 @@ Selected Suggestions:
 
             <Card>
               <CardHeader>
-                <h2 className="text-lg font-medium leading-snug">Evaluation &amp; Deployment</h2>
+                <h2 className="text-lg font-medium leading-snug">4. Evaluation &amp; Deployment</h2>
                 <CardDescription>
                   Review the results from our AI evaluator and deploy your agent.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                 <div className="flex items-center justify-center">
+                   <Button onClick={onEvaluate} disabled={!!processingState.activeAction || !currentPrompt || !userNeeds} variant="outline">
+                       {processingState.activeAction === 'evaluate' ? <Loader2 className="animate-spin" /> : <Bot />}
+                       Evaluate Current Prompt
+                   </Button>
+                 </div>
                 <div aria-live="polite" aria-atomic="true">
                   {isAuthenticated && evaluationResult ? (
                     <div className="space-y-4">
@@ -651,7 +650,8 @@ Selected Suggestions:
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+                      className="w-full"
+                      variant="secondary"
                       disabled={!!processingState.activeAction || !currentPrompt}
                       onClick={onUploadToLibrary}
                     >
@@ -666,6 +666,7 @@ Selected Suggestions:
               </CardFooter>
             </Card>
           </div>
+        </div>
       </div>
     </TooltipProvider>
   );

@@ -7,7 +7,7 @@ export default function Home() {
     <div className="flex min-h-screen w-full flex-col bg-background">
       <AppHeader />
       <main className="flex-1">
-        <div className="h-full p-6 sm:p-8 md:p-10">
+        <div className="container mx-auto h-full max-w-7xl p-6 sm:p-8 md:p-10">
             <h1 className="sr-only">Navigator Sailor</h1>
             <PromptForgeClient />
         </div>
