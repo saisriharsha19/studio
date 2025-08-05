@@ -1,17 +1,22 @@
 
 'use client';
 
-import { useState, useTransition, useCallback, useRef, useEffect } from 'react';
+import { useState, useTransition, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { UploadCloud, FileText, X, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { handleUploadDocument } from '@/app/actions';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from './ui/button';
-import { Progress } from './ui/progress';
 import { usePromptForge } from '@/hooks/use-prompt-forge';
+import mammoth from 'mammoth';
+import pdf from 'pdf-parse/lib/pdf-parse';
+
+// Add pdf-parse to window for browser usage
+if (typeof window !== 'undefined') {
+  (window as any).pdf = pdf;
+}
 
 const MAX_FILE_SIZE_MB = 10;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
@@ -25,32 +30,72 @@ const ALLOWED_FILE_TYPES = [
 export function DocumentManager() {
   const { userId, isAuthenticated, login } = useAuth();
   const { setUploadedFileContent, uploadedFileName, setUploadedFileName } = usePromptForge();
-  const [file, setFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isExtracting, setIsExtracting] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
-  const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
-  const handleFileChange = (selectedFile: File | null) => {
-    if (selectedFile) {
-      if (selectedFile.size > MAX_FILE_SIZE_BYTES) {
-        toast({
-          variant: 'destructive',
-          title: 'File Too Large',
-          description: `The maximum file size is ${MAX_FILE_SIZE_MB}MB.`,
-        });
+  const resetState = () => {
+    setUploadedFileName('');
+    setUploadedFileContent('');
+  };
+
+  const handleFileChange = async (selectedFile: File | null) => {
+    if (!isAuthenticated) {
+        toast({ variant: 'destructive', title: 'Please sign in to use documents.' });
+        login();
         return;
+    }
+    if (!selectedFile) return;
+
+    // --- Validation ---
+    if (selectedFile.size > MAX_FILE_SIZE_BYTES) {
+      toast({
+        variant: 'destructive',
+        title: 'File Too Large',
+        description: `The maximum file size is ${MAX_FILE_SIZE_MB}MB.`,
+      });
+      return;
+    }
+    if (!ALLOWED_FILE_TYPES.includes(selectedFile.type)) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid File Type',
+        description: 'Please upload a PDF, DOCX, TXT, or MD file.',
+      });
+      return;
+    }
+    // --- End Validation ---
+
+    setIsExtracting(true);
+    resetState();
+
+    try {
+      let textContent = '';
+      if (selectedFile.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+        // Handle .docx
+        const arrayBuffer = await selectedFile.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer });
+        textContent = result.value;
+      } else if (selectedFile.type === 'application/pdf') {
+        // Handle .pdf
+        const arrayBuffer = await selectedFile.arrayBuffer();
+        const data = await pdf(arrayBuffer);
+        textContent = data.text;
+      } else {
+        // Handle .txt, .md
+        textContent = await selectedFile.text();
       }
-      if (!ALLOWED_FILE_TYPES.includes(selectedFile.type)) {
-        toast({
-          variant: 'destructive',
-          title: 'Invalid File Type',
-          description: 'Please upload a PDF, DOCX, TXT, or MD file.',
-        });
-        return;
-      }
-      setFile(selectedFile);
+
+      setUploadedFileContent(textContent);
+      setUploadedFileName(selectedFile.name);
+      toast({ title: 'Extraction Successful', description: `Extracted content from ${selectedFile.name}.` });
+
+    } catch (error: any) {
+      console.error('File extraction error:', error);
+      toast({ variant: 'destructive', title: 'Extraction Failed', description: 'Could not read text from the document.' });
+      resetState();
+    } finally {
+      setIsExtracting(false);
     }
   };
 
@@ -61,7 +106,7 @@ export function DocumentManager() {
     if (event.dataTransfer.files && event.dataTransfer.files[0]) {
       handleFileChange(event.dataTransfer.files[0]);
     }
-  }, []);
+  }, [isAuthenticated]);
 
   const handleDragOver = useCallback((event: React.DragEvent<HTMLLabelElement>) => {
     event.preventDefault();
@@ -75,100 +120,25 @@ export function DocumentManager() {
     setIsDragOver(false);
   }, []);
 
-  const onUpload = () => {
-    if (!file || !userId) {
-      if (!isAuthenticated) {
-        toast({ variant: 'destructive', title: 'Please sign in to upload documents.' });
-        login();
-      } else {
-        toast({ variant: 'destructive', title: 'No file selected.' });
-      }
-      return;
-    }
-
-    setIsUploading(true);
-    setUploadProgress(0); // Reset progress
-
-    const formData = new FormData();
-    formData.append('document', file);
-
-    startTransition(async () => {
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => Math.min(prev + 5, 95));
-      }, 200);
-
-      try {
-        const result = await handleUploadDocument(userId, formData);
-        clearInterval(progressInterval);
-        setUploadProgress(100);
-
-        if (result.success && result.content && result.filename) {
-          toast({ title: 'Upload Successful', description: result.message });
-          setUploadedFileContent(result.content);
-          setUploadedFileName(result.filename);
-        } else {
-          toast({ variant: 'destructive', title: 'Upload Failed', description: result.message });
-          setUploadProgress(0);
-        }
-      } catch (error: any) {
-        clearInterval(progressInterval);
-        setUploadProgress(0);
-        toast({ variant: 'destructive', title: 'Upload Error', description: error.message });
-      } finally {
-        setTimeout(() => {
-          setIsUploading(false);
-          setFile(null); 
-        }, 1000);
-      }
-    });
-  };
-
   return (
     <Card>
       <CardHeader>
         <CardTitle>Context & Knowledge</CardTitle>
         <CardDescription>Upload documents to provide context for the assistant.</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex flex-col">
         <AnimatePresence mode="wait">
-          {file ? (
-            <motion.div
-              key="file-view"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="space-y-4"
+          {isExtracting ? (
+             <motion.div
+                key="loading-view"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-12 text-center"
             >
-              <div className="flex items-center gap-3 rounded-lg border bg-muted/50 p-3">
-                <FileText className="h-6 w-6 shrink-0 text-primary" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-sm">{file.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {(file.size / 1024 / 1024).toFixed(2)} MB
-                  </p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 shrink-0"
-                  onClick={() => setFile(null)}
-                  disabled={isUploading}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-              {isUploading ? (
-                 <Progress value={uploadProgress} className="w-full h-2" />
-              ) : (
-                <Button className="w-full" onClick={onUpload} disabled={isPending || !isAuthenticated}>
-                  {isPending ? (
-                    <Loader2 className="animate-spin" />
-                  ) : (
-                    <UploadCloud />
-                  )}
-                  Upload Document
-                </Button>
-              )}
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="font-semibold">Extracting text...</p>
+                <p className="text-xs text-muted-foreground">Please wait while the document is processed.</p>
             </motion.div>
           ) : (
             <motion.div
@@ -184,7 +154,8 @@ export function DocumentManager() {
                 onDragLeave={handleDragLeave}
                 className={cn(
                   'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-12 text-center transition-colors',
-                  isDragOver ? 'border-primary bg-accent' : 'border-border hover:border-primary/50'
+                  isDragOver ? 'border-primary bg-accent' : 'border-border hover:border-primary/50',
+                  !isAuthenticated && 'cursor-not-allowed opacity-60'
                 )}
               >
                 <div className="rounded-full bg-muted p-3">
@@ -201,7 +172,7 @@ export function DocumentManager() {
                 className="sr-only"
                 onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
                 accept={ALLOWED_FILE_TYPES.join(',')}
-                disabled={isPending}
+                disabled={!isAuthenticated || isExtracting}
               />
             </motion.div>
           )}
@@ -209,11 +180,20 @@ export function DocumentManager() {
 
          <div className="space-y-2 pt-6">
             <h4 className="text-sm font-medium">Active Document</h4>
-            <div className="flex h-16 items-center justify-center rounded-lg border-2 border-dashed text-center">
+            <div className="flex h-16 items-center justify-center rounded-lg border bg-muted/50 px-4 text-center">
               {uploadedFileName ? (
                 <div className="flex items-center gap-3 text-sm text-muted-foreground">
                   <FileText className="h-5 w-5 shrink-0 text-primary" />
-                  <span className="font-medium">{uploadedFileName}</span>
+                  <span className="font-medium truncate flex-1">{uploadedFileName}</span>
+                   <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 shrink-0"
+                      onClick={resetState}
+                      disabled={isExtracting}
+                    >
+                      <X className="h-4 w-4" />
+                   </Button>
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">No document context applied.</p>
@@ -224,5 +204,3 @@ export function DocumentManager() {
     </Card>
   );
 }
-
-    
