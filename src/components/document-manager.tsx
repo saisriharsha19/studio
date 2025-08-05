@@ -13,6 +13,7 @@ import { usePromptForge } from '@/hooks/use-prompt-forge';
 import mammoth from 'mammoth';
 import * as pdfjsLib from 'pdfjs-dist';
 import { ScrollArea } from './ui/scroll-area';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
@@ -198,32 +199,41 @@ export function DocumentManager() {
          <div className="space-y-2">
             <h4 className="text-sm font-medium">Active Documents</h4>
             <div className="min-h-[64px] rounded-lg border bg-muted/50 p-2">
-              {uploadedFiles.length > 0 ? (
-                 <ScrollArea className="h-full max-h-48">
-                    <ul className="space-y-2 p-2">
-                      {uploadedFiles.map((file) => (
-                        <li key={file.id} className="flex items-center gap-3 text-sm text-muted-foreground animate-in fade-in-50">
-                          <FileText className="h-5 w-5 shrink-0 text-primary" />
-                          <span className="font-medium truncate flex-1">{file.name}</span>
-                          <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 shrink-0"
-                              onClick={() => handleRemoveFile(file.id)}
-                              disabled={isExtracting}
-                              aria-label={`Remove ${file.name}`}
-                            >
-                              <X className="h-4 w-4" />
-                          </Button>
-                        </li>
-                      ))}
-                    </ul>
-                 </ScrollArea>
-              ) : (
-                <div className="flex h-16 items-center justify-center">
-                  <p className="text-sm text-muted-foreground">No document context applied.</p>
-                </div>
-              )}
+              <TooltipProvider>
+                {uploadedFiles.length > 0 ? (
+                  <ScrollArea className="h-full max-h-48">
+                      <ul className="space-y-2 p-2">
+                        {uploadedFiles.map((file) => (
+                          <li key={file.id} className="flex items-center justify-between gap-3 text-sm text-muted-foreground animate-in fade-in-50">
+                            <FileText className="h-5 w-5 shrink-0 text-primary" />
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="font-medium truncate flex-1 text-left">{file.name}</span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{file.name}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 shrink-0"
+                                onClick={() => handleRemoveFile(file.id)}
+                                disabled={isExtracting}
+                                aria-label={`Remove ${file.name}`}
+                              >
+                                <X className="h-4 w-4" />
+                            </Button>
+                          </li>
+                        ))}
+                      </ul>
+                  </ScrollArea>
+                ) : (
+                  <div className="flex h-16 items-center justify-center">
+                    <p className="text-sm text-muted-foreground">No document context applied.</p>
+                  </div>
+                )}
+              </TooltipProvider>
             </div>
          </div>
       </CardContent>
