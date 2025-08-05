@@ -11,7 +11,10 @@ import { useAuth } from '@/hooks/use-auth';
 import { Button } from './ui/button';
 import { usePromptForge } from '@/hooks/use-prompt-forge';
 import mammoth from 'mammoth';
-import pdf from 'pdf-parse';
+import * as pdfjsLib from 'pdfjs-dist';
+
+// Set up the worker source for pdfjs-dist
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 const MAX_FILE_SIZE_MB = 10;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
@@ -67,17 +70,22 @@ export function DocumentManager() {
     try {
       let textContent = '';
       if (selectedFile.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-        // Handle .docx
         const arrayBuffer = await selectedFile.arrayBuffer();
         const result = await mammoth.extractRawText({ arrayBuffer });
         textContent = result.value;
       } else if (selectedFile.type === 'application/pdf') {
-        // Handle .pdf
         const arrayBuffer = await selectedFile.arrayBuffer();
-        const data = await pdf(arrayBuffer);
-        textContent = data.text;
+        const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+        const numPages = pdf.numPages;
+        const textParts = [];
+        for (let i = 1; i <= numPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items.map(item => ('str' in item ? item.str : '')).join(' ');
+          textParts.push(pageText);
+        }
+        textContent = textParts.join('\n\n');
       } else {
-        // Handle .txt, .md
         textContent = await selectedFile.text();
       }
 

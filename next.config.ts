@@ -18,12 +18,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  webpack: (config, { isServer }) => {
-    // Aliasing pdf-parse to its browser-specific build
-    // to prevent server-side modules like 'fs' from being bundled on the client.
-    config.resolve.alias['pdf-parse'] = 'pdf-parse/lib/pdf-parse.js';
-    return config;
-  },
   experimental: {
     serverActions: {
       allowedOrigins: [
