@@ -211,17 +211,14 @@ export async function getLibraryPromptsFromDB(userId: string | null): Promise<Pr
   }
 }
 
-export async function addLibraryPromptToDB(promptText: string, userId: string): Promise<Prompt> {
-    if (!userId) throw new Error('User not authenticated.');
+export async function addLibraryPromptToDB(request: { prompt_text: string, user_id: string }): Promise<Prompt> {
+    if (!request.user_id) throw new Error('User not authenticated.');
   
     try {
       const response = await fetch(`${BACKEND_URL}/library/prompts`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            prompt_text: promptText,
-            user_id: userId,
-          }),
+          body: JSON.stringify(request),
       });
   
       if (!response.ok) {
@@ -239,20 +236,18 @@ export async function addLibraryPromptToDB(promptText: string, userId: string): 
     }
 }
 
-export async function deleteLibraryPromptFromDB(promptId: string, userId: string): Promise<{ success: boolean }> {
-  if (!userId) throw new Error('User not authenticated.');
-
+export async function deleteLibraryPromptFromDB(promptId: string): Promise<{ success: boolean }> {
   try {
-    // The user_id is likely used on the backend via a token, not sent in the body for a DELETE request.
     const response = await fetch(`${BACKEND_URL}/library/prompts/${promptId}`, {
         method: 'DELETE',
     });
 
+    if (response.status === 204) {
+      revalidatePath('/library');
+      return { success: true };
+    }
+    
     if (!response.ok) {
-        if (response.status === 204) {
-          revalidatePath('/library');
-          return { success: true };
-        }
         const errorData = await response.json().catch(() => ({ detail: 'Failed to parse API error response.' }));
         throw new Error(errorData.detail || `API request failed with status ${response.status}`);
     }
@@ -265,8 +260,8 @@ export async function deleteLibraryPromptFromDB(promptId: string, userId: string
   }
 }
 
-export async function toggleStarForPrompt(promptId: string, userId: string): Promise<{ success: boolean, action: 'starred' | 'unstarred' }> {
-  if (!userId) throw new Error('User not authenticated.');
+export async function toggleStarForPrompt(promptId: string, request: { user_id: string }): Promise<{ success: boolean, action: 'starred' | 'unstarred' }> {
+  if (!request.user_id) throw new Error('User not authenticated.');
 
   try {
     const response = await fetch(`${BACKEND_URL}/library/prompts/${promptId}/toggle-star`, {
@@ -274,7 +269,7 @@ export async function toggleStarForPrompt(promptId: string, userId: string): Pro
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ user_id: userId }),
+        body: JSON.stringify(request),
     });
 
     if (!response.ok) {

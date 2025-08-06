@@ -65,12 +65,13 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     if (!text.trim()) return;
     
     try {
-      const newPrompt = await addLibraryPromptToDB(text, userId);
-      setLibraryPrompts(prev => [newPrompt, ...prev].sort((a,b) => (b.stars ?? 0) - (a.stars ?? 0)));
+      await addLibraryPromptToDB({ prompt_text: text, user_id: userId });
       toast({
         title: 'Prompt Added to Library',
         description: 'The new prompt has been added to the public library.',
       });
+      // Re-fetch the entire list to ensure correct order and data.
+      await loadPrompts();
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -78,7 +79,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         description: error.message || 'An error occurred while saving the prompt.',
       });
     }
-  }, [isAuthenticated, userId, toast]);
+  }, [isAuthenticated, userId, toast, loadPrompts]);
 
   const deleteLibraryPrompt = useCallback(async (id: string) => {
     if (!isAuthenticated || !userId || !isAdmin) {
@@ -94,7 +95,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     setLibraryPrompts(prev => prev.filter(p => p.id !== id));
 
     try {
-      await deleteLibraryPromptFromDB(id, userId);
+      await deleteLibraryPromptFromDB(id);
       toast({
         title: 'Prompt Deleted',
         description: 'The prompt has been removed from the library.',
@@ -137,10 +138,10 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     );
 
     try {
-        const result = await toggleStarForPrompt(promptId, userId);
-        // If the optimistic action was wrong, we need to revert and apply the correct state.
+        const result = await toggleStarForPrompt(promptId, { user_id: userId });
+        // If the optimistic action was wrong, or to ensure consistency, we can reload.
         if (result.action !== optimisticAction) {
-           await loadPrompts(); // Most reliable way to resync state
+           await loadPrompts(); // Resync state if server disagrees with optimistic update.
         }
     } catch (error: any) {
         toast({
