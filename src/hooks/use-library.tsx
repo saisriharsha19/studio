@@ -24,25 +24,33 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const { isAuthenticated, userId, isAdmin } = useAuth();
 
+  const loadPrompts = useCallback(async () => {
+    // This check prevents fetching when there's no active user session.
+    if (!isAuthenticated) {
+      setLibraryPrompts([]);
+      setIsLoading(false);
+      return;
+    }
+    try {
+      setIsLoading(true);
+      const initialPrompts = await getLibraryPromptsFromDB(userId);
+      setLibraryPrompts(initialPrompts);
+    } catch (error) {
+      console.error('Failed to load prompts from library', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Could not load the prompt library. The API might be down.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast, userId, isAuthenticated]);
+
+
   useEffect(() => {
-    const loadPrompts = async () => {
-      try {
-        setIsLoading(true);
-        const initialPrompts = await getLibraryPromptsFromDB(userId);
-        setLibraryPrompts(initialPrompts);
-      } catch (error) {
-        console.error('Failed to load prompts from library', error);
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: 'Could not load the prompt library.',
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
     loadPrompts();
-  }, [toast, userId]);
+  }, [loadPrompts]);
 
   const addLibraryPrompt = useCallback(async (text: string) => {
     if (!isAuthenticated || !userId) {
@@ -108,11 +116,13 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         return;
     }
 
+    const originalPrompts = [...libraryPrompts];
+
     // Optimistic update
     setLibraryPrompts(prev =>
       prev.map(p => {
         if (p.id === promptId) {
-          const isStarred = p.isStarredByUser;
+          const isStarred = !!p.isStarredByUser;
           const currentStars = p.stars || 0;
           return {
             ...p,
@@ -125,7 +135,15 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     );
 
     try {
-        await toggleStarForPrompt(promptId, userId);
+        const result = await toggleStarForPrompt(promptId, userId);
+        // Sync with the actual state from the server
+        setLibraryPrompts(prev =>
+          prev.map(p =>
+            p.id === promptId
+              ? { ...p, isStarredByUser: result.isStarred, stars: result.stars }
+              : p
+          )
+        );
     } catch (error: any) {
         toast({
             variant: 'destructive',
@@ -133,22 +151,9 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
             description: error.message,
         });
         // Revert optimistic update on failure
-        setLibraryPrompts(prev =>
-            prev.map(p => {
-                if (p.id === promptId) {
-                    const isStarred = p.isStarredByUser;
-                    const currentStars = p.stars || 0;
-                    return {
-                        ...p,
-                        isStarredByUser: !isStarred, // Revert the flag
-                        stars: isStarred ? currentStars - 1 : currentStars + 1, // Revert the count
-                    };
-                }
-                return p;
-            })
-        );
+        setLibraryPrompts(originalPrompts);
     }
-  }, [isAuthenticated, userId, toast]);
+  }, [isAuthenticated, userId, toast, libraryPrompts]);
 
   return (
     <LibraryContext.Provider value={{ libraryPrompts, addLibraryPrompt, toggleStar, isLoading, deleteLibraryPrompt }}>

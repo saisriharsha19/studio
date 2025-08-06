@@ -184,205 +184,115 @@ export async function deleteHistoryPromptFromDB(id: string, userId: string): Pro
 }
 
 
-// --- Library Actions (library_prompts table) ---
-async function getLibraryPromptsFromLocalDB(userId: string | null): Promise<Prompt[]> {
-  try {
-    console.log('Fetching library prompts from local DB.');
-    const sql = `
-      SELECT
-        lp.id,
-        lp.userId,
-        lp.text,
-        lp.createdAt,
-        lp.summary,
-        lp.tags,
-        COUNT(ps.promptId) as stars,
-        ${userId ? `(SELECT 1 FROM prompt_stars WHERE promptId = lp.id AND userId = ?) as isStarredByUser` : '0 as isStarredByUser'}
-      FROM library_prompts lp
-      LEFT JOIN prompt_stars ps ON lp.id = ps.promptId
-      GROUP BY lp.id
-      ORDER BY stars DESC, lp.createdAt DESC
-    `;
-    const params = userId ? [userId] : [];
-    const results = await db.query<any>(sql, params);
-
-    return results.map((p: any) => {
-      let parsedTags: string[] = [];
-      if (p.tags && typeof p.tags === 'string' && p.tags.startsWith('[')) {
-          try {
-              parsedTags = JSON.parse(p.tags);
-          } catch (e) {
-              // Ignore parse errors for old data
-          }
-      } else if (Array.isArray(p.tags)) {
-        parsedTags = p.tags;
-      }
-      return {
-        ...p,
-        isStarredByUser: !!p.isstarredbyuser,
-        stars: Number(p.stars),
-        tags: parsedTags,
-        summary: p.summary || p.tags,
-      };
-    });
-  } catch (error) {
-    console.error('Failed to get library prompts from local DB:', error);
-    return []; // Return empty array on error
-  }
-}
-
+// --- Library Actions (API only) ---
 export async function getLibraryPromptsFromDB(userId: string | null): Promise<Prompt[]> {
-  if (process.env.PYTHON_BACKEND_URL) {
-    try {
-      const url = new URL(`${BACKEND_URL}/library/prompts`);
-      if (userId) {
-        url.searchParams.append('user_id', userId);
-      }
-      
-      console.log(`Fetching library prompts from API: ${url.toString()}`);
-      
-      const response = await fetch(url.toString(), {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-        signal: AbortSignal.timeout(5000), // 5-second timeout
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ detail: 'Failed to parse API error response.' }));
-        throw new Error(errorData.detail || `API request failed with status ${response.status}`);
-      }
-      
-      const prompts: Prompt[] = await response.json();
-      console.log('Successfully fetched prompts from API.');
-      return prompts;
-
-    } catch (error) {
-      console.warn(`API call for library prompts failed: ${getErrorMessage(error)}. Falling back to local database.`);
-      return getLibraryPromptsFromLocalDB(userId);
+  try {
+    const url = new URL(`${BACKEND_URL}/library/prompts`);
+    if (userId) {
+      url.searchParams.append('user_id', userId);
     }
-  } else {
-    // If no backend URL is configured, go straight to the local DB.
-    return getLibraryPromptsFromLocalDB(userId);
+    
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store', // Ensure fresh data
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Failed to parse API error response.' }));
+      throw new Error(errorData.detail || `API request failed with status ${response.status}`);
+    }
+    
+    const prompts: Prompt[] = await response.json();
+    return prompts;
+  } catch (error) {
+    console.error(`API call for library prompts failed: ${getErrorMessage(error)}`);
+    // On failure, return an empty array as there's no fallback.
+    return [];
   }
 }
-
 
 export async function addLibraryPromptToDB(promptText: string, userId: string): Promise<Prompt> {
     if (!userId) throw new Error('User not authenticated.');
   
     try {
-      const existsSql = 'SELECT 1 FROM library_prompts WHERE text = ?';
-      const existingPrompts = await db.query(existsSql, [promptText]);
-      if (existingPrompts.length > 0) {
-          throw new Error('This prompt is already in the library.');
-      }
-  
-      // The new backend has a dedicated endpoint for this
-      const response = await fetch(`${BACKEND_URL}/prompts/analyze-and-tag`, {
+      const response = await fetch(`${BACKEND_URL}/library/prompts`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt_text: promptText }),
+          body: JSON.stringify({
+            text: promptText,
+            user_id: userId,
+          }),
       });
   
       if (!response.ok) {
-          throw new Error('Failed to analyze prompt for tags and summary.');
+        const errorData = await response.json().catch(() => ({ detail: 'Failed to parse API error response.' }));
+        throw new Error(errorData.detail || `API request failed with status ${response.status}`);
       }
-  
-      const taskResponse: TaskCreationResponse = await response.json();
-      let analysisResult: any;
-  
-      // Poll for the result of the analysis task
-      for (let i = 0; i < 10; i++) { // Poll for max 20 seconds
-          await new Promise(res => setTimeout(res, 2000));
-          const statusRes = await fetch(`${BACKEND_URL}${taskResponse.status_url}`);
-          const statusData = await statusRes.json();
-          if (statusData.status === 'SUCCESS') {
-              analysisResult = statusData.result;
-              break;
-          } else if (statusData.status === 'FAILURE') {
-              throw new Error('Analysis task failed.');
-          }
-      }
-  
-      if (!analysisResult) {
-          throw new Error('Analysis task timed out.');
-      }
-  
-      const newPromptData = {
-        id: crypto.randomUUID(),
-        userId: userId,
-        text: promptText,
-        createdAt: new Date().toISOString(),
-        summary: analysisResult.summary,
-        tags: JSON.stringify(analysisResult.tags),
-      };
-  
-      const insertSql = 'INSERT INTO library_prompts (id, userId, text, createdAt, summary, tags) VALUES (?, ?, ?, ?, ?, ?)';
-      await db.run(insertSql, [newPromptData.id, newPromptData.userId, newPromptData.text, newPromptData.createdAt, newPromptData.summary, newPromptData.tags]);
       
+      const newPrompt: Prompt = await response.json();
       revalidatePath('/library');
-      
-      return {
-          id: newPromptData.id,
-          userId: newPromptData.userId,
-          text: newPromptData.text,
-          createdAt: newPromptData.createdAt,
-          summary: newPromptData.summary,
-          tags: analysisResult.tags,
-          stars: 0,
-          isStarredByUser: false,
-      };
+      return newPrompt;
+
     } catch (error: any) {
-      console.error('Failed to add prompt to library:', error);
+      console.error('Failed to add prompt to library via API:', error);
       throw new Error(error.message || 'Failed to save prompt to library.');
     }
-  }
+}
 
 export async function deleteLibraryPromptFromDB(promptId: string, userId: string): Promise<{ success: boolean }> {
   if (!userId) throw new Error('User not authenticated.');
-  
-  // This is a mock admin check. Replace with a real role/permission system.
-  const isAdmin = userId === 'mock-user-123'; 
-  if (!isAdmin) {
-    throw new Error('You do not have permission to delete library prompts.');
-  }
 
   try {
-    const sql = 'DELETE FROM library_prompts WHERE id = ?';
-    const result = await db.run(sql, [promptId]);
-    
-    if (result.rowCount === 0) {
-      throw new Error("Prompt not found.");
+    const response = await fetch(`${BACKEND_URL}/library/prompts/${promptId}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ user_id: userId }), // Assuming backend needs user_id for permission check
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: 'Failed to parse API error response.' }));
+        throw new Error(errorData.detail || `API request failed with status ${response.status}`);
     }
 
     revalidatePath('/library');
     return { success: true };
   } catch (error: any) {
-    console.error('Failed to delete prompt from library:', error);
+    console.error('Failed to delete prompt from library via API:', error);
     throw new Error(error.message || 'Failed to delete prompt from library.');
   }
 }
 
-export async function toggleStarForPrompt(promptId: string, userId: string): Promise<{ success: boolean }> {
+export async function toggleStarForPrompt(promptId: string, userId: string): Promise<{ success: boolean, isStarred: boolean, stars: number }> {
   if (!userId) throw new Error('User not authenticated.');
 
   try {
-    const selectSql = 'SELECT 1 FROM prompt_stars WHERE promptId = ? AND userId = ?';
-    const existingStars = await db.query(selectSql, [promptId, userId]);
-    const isStarred = existingStars.length > 0;
+    const response = await fetch(`${BACKEND_URL}/library/prompts/${promptId}/star`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ user_id: userId }),
+    });
 
-    if (isStarred) {
-      const deleteSql = 'DELETE FROM prompt_stars WHERE promptId = ? AND userId = ?';
-      await db.run(deleteSql, [promptId, userId]);
-    } else {
-      const insertSql = 'INSERT INTO prompt_stars (promptId, userId) VALUES (?, ?)';
-      await db.run(insertSql, [promptId, userId]);
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: 'Failed to parse API error response.' }));
+        throw new Error(errorData.detail || `API request failed with status ${response.status}`);
     }
     
     revalidatePath('/library');
-    return { success: true };
+    const result = await response.json();
+
+    return { 
+      success: true,
+      isStarred: result.is_starred,
+      stars: result.stars,
+    };
+
   } catch (error: any) {
-     console.error('Failed to toggle star for prompt:', error);
+     console.error('Failed to toggle star for prompt via API:', error);
     throw new Error(error.message || 'Failed to toggle star for prompt.');
   }
 }

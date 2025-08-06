@@ -44,7 +44,7 @@ function createPostgresClient(): DbClient {
 }
 
 function createSqliteClient(): DbClient {
-  const db = new Database(path.join(process.cwd(), 'prompt_library.db'));
+  const db = new Database(path.join(process.cwd(), 'prompt_history.db'));
   db.pragma('journal_mode = WAL');
 
   return {
@@ -67,13 +67,13 @@ function initializeDbClient(): DbClient {
     console.log('Connecting to PostgreSQL...');
     return createPostgresClient();
   }
-  // Development/Fallback: Use SQLite
+  // Development/Fallback: Use SQLite for prompt history only
   else {
-    console.log('Using SQLite for development.');
+    console.log('Using SQLite for development (prompt history only).');
     const client = createSqliteClient();
     
-    // For SQLite, we can create tables and indexes on the fly.
-    // For Postgres, migrations should be handled by a separate script/service.
+    // For SQLite, we create the history table.
+    // The prompt library is now managed by the external API.
     client.exec(`
       CREATE TABLE IF NOT EXISTS prompts (
         id TEXT PRIMARY KEY,
@@ -82,31 +82,13 @@ function initializeDbClient(): DbClient {
         createdAt TEXT NOT NULL
       );
       CREATE INDEX IF NOT EXISTS idx_prompts_userId ON prompts(userId);
-
-      CREATE TABLE IF NOT EXISTS library_prompts (
-        id TEXT PRIMARY KEY,
-        userId TEXT NOT NULL,
-        text TEXT NOT NULL,
-        createdAt TEXT NOT NULL,
-        summary TEXT,
-        tags TEXT
-      );
-
-      CREATE TABLE IF NOT EXISTS prompt_stars (
-        promptId TEXT NOT NULL,
-        userId TEXT NOT NULL,
-        PRIMARY KEY (promptId, userId),
-        FOREIGN KEY (promptId) REFERENCES library_prompts(id) ON DELETE CASCADE
-      );
-      CREATE INDEX IF NOT EXISTS idx_prompt_stars_promptId ON prompt_stars(promptId);
-      CREATE INDEX IF NOT EXISTS idx_prompt_stars_userId ON prompt_stars(userId);
     `);
     return client;
   }
 }
 
 // Initialize the client, reusing the connection in development environments
-export const db = global.dbClient || initializeDbClient();
+export const db = global.dbClient || initializeDbClien();
 
 if (process.env.NODE_ENV !== 'production') {
   global.dbClient = db;
