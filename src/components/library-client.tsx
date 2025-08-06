@@ -96,6 +96,8 @@ export function LibraryClient() {
     const tagsMatch = prompt.tags?.some(tag => tag.toLowerCase().includes(query));
     return textMatch || summaryMatch || tagsMatch;
   });
+  
+  const isValidDate = (date: any) => date && !isNaN(new Date(date).getTime());
 
   return (
     <TooltipProvider>
@@ -191,9 +193,11 @@ export function LibraryClient() {
                               </CardTitle>
                               <CardDescription>
                                 Added{' '}
-                                {formatDistanceToNow(new Date(prompt.createdAt), {
-                                  addSuffix: true,
-                                })}
+                                {isValidDate(prompt.createdAt)
+                                  ? formatDistanceToNow(new Date(prompt.createdAt), {
+                                      addSuffix: true,
+                                    })
+                                  : 'recently'}
                               </CardDescription>
                           </CardHeader>
                           
@@ -290,7 +294,7 @@ export function LibraryClient() {
                                         <AlertDialogDescription>
                                             This action cannot be undone. This will permanently delete this prompt from the public library.
                                         </AlertDialogDescription>
-                                        </AlertDialogHeader>
+                                        </Header>
                                         <AlertDialogFooter>
                                         <AlertDialogCancel className={cn(buttonVariants({variant: 'default'}))}>Cancel</AlertDialogCancel>
                                         <AlertDialogAction onClick={() => deleteLibraryPrompt(prompt.id)} className={cn(buttonVariants({variant: 'destructive'}))}>

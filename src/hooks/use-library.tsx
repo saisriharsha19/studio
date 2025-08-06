@@ -18,21 +18,24 @@ type LibraryContextType = {
 
 const LibraryContext = createContext<LibraryContextType | undefined>(undefined);
 
+const POLLING_INTERVAL = 15000; // Poll every 15 seconds
+
 export function LibraryProvider({ children }: { children: ReactNode }) {
   const [libraryPrompts, setLibraryPrompts] = useState<Prompt[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const { isAuthenticated, userId, isAdmin } = useAuth();
 
-  const loadPrompts = useCallback(async () => {
-    // This check prevents fetching when there's no active user session.
+  const loadPrompts = useCallback(async (isInitialLoad = false) => {
     if (!isAuthenticated) {
       setLibraryPrompts([]);
-      setIsLoading(false);
+      if (isInitialLoad) setIsLoading(false);
       return;
     }
+    
+    if (isInitialLoad) setIsLoading(true);
+
     try {
-      setIsLoading(true);
       const initialPrompts = await getLibraryPromptsFromDB(userId);
       setLibraryPrompts(initialPrompts);
     } catch (error) {
@@ -43,13 +46,20 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         description: 'Could not load the prompt library. The API might be down.',
       });
     } finally {
-      setIsLoading(false);
+      if (isInitialLoad) setIsLoading(false);
     }
   }, [toast, userId, isAuthenticated]);
 
 
   useEffect(() => {
-    loadPrompts();
+    loadPrompts(true); // Initial load
+    
+    const interval = setInterval(() => {
+      loadPrompts(false); // Subsequent polls
+    }, POLLING_INTERVAL);
+
+    // Clean up the interval on component unmount
+    return () => clearInterval(interval);
   }, [loadPrompts]);
 
   const addLibraryPrompt = useCallback(async (text: string) => {
@@ -71,7 +81,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         description: 'The new prompt has been added to the public library.',
       });
       // Re-fetch the entire list to ensure correct order and data.
-      await loadPrompts();
+      await loadPrompts(false);
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -141,7 +151,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         const result = await toggleStarForPrompt(promptId, { user_id: userId });
         // If the optimistic action was wrong, or to ensure consistency, we can reload.
         if (result.action !== optimisticAction) {
-           await loadPrompts(); // Resync state if server disagrees with optimistic update.
+           await loadPrompts(false); // Resync state if server disagrees with optimistic update.
         }
     } catch (error: any) {
         toast({
