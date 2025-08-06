@@ -39,7 +39,7 @@ import { Skeleton } from './ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 import { Badge } from './ui/badge';
-import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatDistanceToNow } from 'date-fns';
 
 function PromptCardSkeleton() {
