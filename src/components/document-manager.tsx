@@ -73,16 +73,16 @@ export function DocumentManager() {
         textContent = await file.text();
       }
 
-      // Sanitize the text content to make it JSON-safe
-      const sanitizedContent = textContent
-        .replace(/[\u0000-\u001F\u007F-\u009F]/g, "") // Remove non-printable control characters
-        .replace(/\s+/g, ' ') // Replace multiple whitespace characters with a single space
-        .trim(); // Trim leading/trailing whitespace
+      // Sanitize the text content to make it JSON-safe.
+      // 1. Remove non-printable control characters.
+      const cleanedText = textContent.replace(/[\u0000-\u001F\u007F-\u009F]/g, "");
+      // 2. Stringify and slice to escape all quotes, backslashes, etc.
+      const jsonSafeContent = JSON.stringify(cleanedText).slice(1, -1);
 
       return {
         id: `${file.name}-${file.lastModified}`,
         name: file.name,
-        content: sanitizedContent,
+        content: jsonSafeContent,
       };
     } catch (error: any) {
       console.error(`File extraction error for ${file.name}:`, error);
