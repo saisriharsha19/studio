@@ -44,7 +44,7 @@ function createPostgresClient(): DbClient {
 }
 
 function createSqliteClient(): DbClient {
-  const db = new Database(path.join(process.cwd(), 'prompt_history.db'));
+  const db = new Database(path.join(process.cwd(), 'local_dev.db'));
   db.pragma('journal_mode = WAL');
 
   return {
@@ -69,11 +69,11 @@ function initializeDbClient(): DbClient {
   }
   // Development/Fallback: Use SQLite for prompt history only
   else {
-    console.log('Using SQLite for development (prompt history only).');
+    console.log('Using SQLite for development (local prompt history only).');
     const client = createSqliteClient();
     
-    // For SQLite, we create the history table.
-    // The prompt library is now managed by the external API.
+    // The prompt library is now fully managed by the external API.
+    // We only create the history table for local dev.
     client.exec(`
       CREATE TABLE IF NOT EXISTS prompts (
         id TEXT PRIMARY KEY,
@@ -88,7 +88,7 @@ function initializeDbClient(): DbClient {
 }
 
 // Initialize the client, reusing the connection in development environments
-export const db = global.dbClient || initializeDbClien();
+export const db = global.dbClient || initializeDbClient();
 
 if (process.env.NODE_ENV !== 'production') {
   global.dbClient = db;

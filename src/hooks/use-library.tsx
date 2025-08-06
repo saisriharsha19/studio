@@ -66,7 +66,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     
     try {
       const newPrompt = await addLibraryPromptToDB(text, userId);
-      setLibraryPrompts(prev => [newPrompt, ...prev]);
+      setLibraryPrompts(prev => [newPrompt, ...prev].sort((a,b) => (b.stars ?? 0) - (a.stars ?? 0)));
       toast({
         title: 'Prompt Added to Library',
         description: 'The new prompt has been added to the public library.',
@@ -117,13 +117,15 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     }
 
     const originalPrompts = [...libraryPrompts];
+    let optimisticAction: 'starred' | 'unstarred' | undefined;
 
     // Optimistic update
     setLibraryPrompts(prev =>
       prev.map(p => {
         if (p.id === promptId) {
           const isStarred = !!p.isStarredByUser;
-          const currentStars = p.stars || 0;
+          optimisticAction = isStarred ? 'unstarred' : 'starred';
+          const currentStars = p.stars ?? 0;
           return {
             ...p,
             isStarredByUser: !isStarred,
@@ -136,14 +138,10 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
 
     try {
         const result = await toggleStarForPrompt(promptId, userId);
-        // Sync with the actual state from the server
-        setLibraryPrompts(prev =>
-          prev.map(p =>
-            p.id === promptId
-              ? { ...p, isStarredByUser: result.isStarred, stars: result.stars }
-              : p
-          )
-        );
+        // If the optimistic action was wrong, we need to revert and apply the correct state.
+        if (result.action !== optimisticAction) {
+           await loadPrompts(); // Most reliable way to resync state
+        }
     } catch (error: any) {
         toast({
             variant: 'destructive',
@@ -153,7 +151,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         // Revert optimistic update on failure
         setLibraryPrompts(originalPrompts);
     }
-  }, [isAuthenticated, userId, toast, libraryPrompts]);
+  }, [isAuthenticated, userId, toast, libraryPrompts, loadPrompts]);
 
   return (
     <LibraryContext.Provider value={{ libraryPrompts, addLibraryPrompt, toggleStar, isLoading, deleteLibraryPrompt }}>
