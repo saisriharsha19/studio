@@ -1,0 +1,44 @@
+# FastAPI and ASGI
+fastapi
+uvicorn[standard]
+pydantic
+
+# Database
+sqlalchemy
+asyncpg
+alembic
+psycopg2-binary
+
+# Redis and Caching
+redis
+aioredis
+
+# Background Tasks
+celery
+flower
+
+# HTTP and Async
+aiohttp
+httpx
+
+# AI and ML
+deepeval
+openai
+
+# Rate Limiting
+slowapi
+
+# Environment and Config
+python-dotenv
+pydantic-settings
+
+
+# Monitoring and Logging
+structlog
+prometheus-client
+
+# Security
+cryptography
+passlib[bcrypt]
+python-jose[cryptography]
+
