@@ -10,9 +10,9 @@ export default function AboutPage() {
               src="/NavGAI-19.png"
               width={60}
               height={60}
-              alt="NaviGator Logo"
+              alt="Navigator Logo"
           />
-        <CardTitle className="text-2xl">Navigator Sailor</CardTitle>
+        <CardTitle className="text-2xl">Navigator Prompt</CardTitle>
         <CardDescription>Version 1.0.0</CardDescription>
       </CardHeader>
       <CardContent className="text-center text-sm text-muted-foreground">

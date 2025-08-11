@@ -53,8 +53,8 @@ export function AppHeader() {
                   </SheetHeader>
                   <nav className="grid gap-6 text-lg font-medium">
                     <Link href="/" className="flex items-center gap-2 text-lg font-semibold">
-                      <Image src="/NavGAI-19.png" width={25} height={25} alt="NaviGator Logo" />
-                      <span className="font-bold">NaviGator Sailor</span>
+                      <Image src="/NavGAI-19.png" width={25} height={25} alt="Navigator Logo" />
+                      <span className="font-bold">Navigator Prompt</span>
                     </Link>
                     {navItems.map((item) => (
                       <Link
@@ -76,8 +76,8 @@ export function AppHeader() {
           {/* Desktop: Show full nav */}
           <nav className="hidden flex-col gap-6 font-medium md:flex md:flex-row md:items-center md:gap-5 lg:gap-6">
             <Link href="/" className="flex items-center gap-2 text-lg font-semibold md:text-base">
-              <Image src="/NavGAI-19.png" width={25} height={25} alt="NaviGator Logo" />
-              <h1 className="text-xl font-bold tracking-tight">NaviGator Sailor</h1>
+              <Image src="/NavGAI-19.png" width={25} height={25} alt="Navigator Logo" />
+              <h1 className="text-xl font-bold tracking-tight">Navigator Prompt</h1>
             </Link>
             {navItems.map((item) => (
               <Link
