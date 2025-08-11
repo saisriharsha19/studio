@@ -101,41 +101,41 @@ export function LibraryClient() {
 
   return (
     <TooltipProvider>
-        <Dialog open={!!viewingPrompt} onOpenChange={(isOpen) => !isOpen && setViewingPrompt(null)}>
-            <DialogContent className="sm:max-w-2xl">
-                <DialogHeader>
-                    <DialogTitle>{viewingPrompt?.summary || 'Prompt Details'}</DialogTitle>
-                    <DialogDescription>
-                        Full content of the selected prompt. You can copy it from here.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="relative p-6">
-                    <ScrollArea className="h-96 w-full rounded-md border bg-muted/50 p-4">
-                        <p className="text-sm text-foreground whitespace-pre-wrap">
-                            {viewingPrompt?.text}
-                        </p>
-                    </ScrollArea>
-                    {viewingPrompt && (
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="absolute top-8 right-12 h-10 w-10 hover:bg-accent hover:text-accent-foreground"
-                                    onClick={() => copyToClipboard(viewingPrompt)}
-                                    aria-label="Copy prompt"
-                                >
-                                    {copiedId === viewingPrompt.id ? <Check className="h-6 w-6 text-primary" /> : <Clipboard className="h-6 w-6" />}
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Copy prompt</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    )}
-                </div>
-            </DialogContent>
-        </Dialog>
+      <Dialog open={!!viewingPrompt} onOpenChange={(isOpen) => !isOpen && setViewingPrompt(null)}>
+          <DialogContent className="sm:max-w-2xl">
+              <DialogHeader>
+                  <DialogTitle>{viewingPrompt?.summary || 'Prompt Details'}</DialogTitle>
+                  <DialogDescription>
+                      Full content of the selected prompt. You can copy it from here.
+                  </DialogDescription>
+              </DialogHeader>
+              <div className="relative p-6">
+                  <ScrollArea className="h-96 w-full rounded-md border bg-muted/50 p-4">
+                      <p className="text-sm text-foreground whitespace-pre-wrap">
+                          {viewingPrompt?.text}
+                      </p>
+                  </ScrollArea>
+                  {viewingPrompt && (
+                      <Tooltip>
+                          <TooltipTrigger asChild>
+                              <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="absolute top-8 right-12 h-10 w-10 hover:bg-accent hover:text-accent-foreground"
+                                  onClick={() => copyToClipboard(viewingPrompt)}
+                                  aria-label="Copy prompt"
+                              >
+                                  {copiedId === viewingPrompt.id ? <Check className="h-6 w-6 text-primary" /> : <Clipboard className="h-6 w-6" />}
+                              </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                              <p>Copy prompt</p>
+                          </TooltipContent>
+                      </Tooltip>
+                  )}
+              </div>
+          </DialogContent>
+      </Dialog>
 
       <div className="container mx-auto max-w-7xl py-8 px-4 sm:px-6 lg:px-8">
         <div className="mb-8 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
