@@ -37,8 +37,9 @@ import { formatDistanceToNow } from 'date-fns';
 import { Input } from './ui/input';
 import { Skeleton } from './ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider } from './ui/tooltip';
 import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
 function PromptCardSkeleton() {
   return (
@@ -60,6 +61,29 @@ function PromptCardSkeleton() {
     </Card>
   );
 }
+
+const containerVariants = {
+  hidden: { opacity: 1 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      type: 'spring',
+      stiffness: 100,
+      damping: 10,
+    },
+  },
+};
 
 export function PromptHistoryClient() {
   const { prompts, deletePrompt, isLoading } = usePromptHistory();
@@ -189,10 +213,15 @@ export function PromptHistoryClient() {
               {Array.from({ length: 8 }).map((_, i) => <li key={i}><PromptCardSkeleton /></li>)}
             </ul>
           ) : filteredPrompts.length > 0 ? (
-            <ul className="grid grid-cols-1 gap-6">
+            <motion.ul
+              className="grid grid-cols-1 gap-6"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+            >
               {filteredPrompts.map((prompt) => (
-                <li key={prompt.id}>
-                  <Card className="flex flex-col">
+                <motion.li key={prompt.id} variants={itemVariants}>
+                  <Card className="flex h-full flex-col">
                     <CardHeader className="p-4 sm:p-6">
                       <CardTitle>
                         {getPromptTitle(prompt.text)}
@@ -278,9 +307,9 @@ export function PromptHistoryClient() {
                       )}
                     </CardFooter>
                   </Card>
-                </li>
+                </motion.li>
               ))}
-            </ul>
+            </motion.ul>
           ) : (
             <div role="region" aria-labelledby="empty-history-heading" className="flex h-[50vh] flex-col items-center justify-center rounded-lg border-2 border-dashed">
               <svg

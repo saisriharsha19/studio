@@ -60,6 +60,28 @@ const formatMetricName = (name: string) => {
     return spaced.charAt(0).toUpperCase() + spaced.slice(1);
 };
 
+const containerVariants = {
+  hidden: { opacity: 1 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      type: 'spring',
+      stiffness: 100,
+      damping: 10,
+    },
+  },
+};
 
 export function PromptForgeClient() {
   const { isAuthenticated, userId, login } = useAuth();
@@ -85,24 +107,6 @@ export function PromptForgeClient() {
   const suggestionPollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const [copied, setCopied] = useState(false);
-
-  const containerVariants = {
-    hidden: { opacity: 1 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-    },
-  };
 
   const copyToClipboard = (text: string) => {
     if (!text) return;
@@ -366,44 +370,51 @@ Selected Suggestions:
   
   return (
     <TooltipProvider>
-      <div className="flex h-full flex-col gap-8">
-        <Card>
-          <CardHeader>
-            <h2 className="text-lg font-medium leading-snug">1. Describe Your Assistant</h2>
-            <CardDescription>
-              What are the primary goals and functionalities of your AI assistant? This will be used to generate the initial prompt.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <Label htmlFor="user-needs" className="sr-only">User Needs</Label>
-              <Textarea
-                id="user-needs"
-                placeholder="e.g., An assistant that helps university students find course information, check deadlines, and book appointments with advisors..."
-                value={userNeeds}
-                onChange={(e) => setUserNeeds(e.target.value)}
-                className="min-h-[120px]"
-                disabled={!!processingState.activeAction}
-              />
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button onClick={onGenerate} disabled={!!processingState.activeAction || !userNeeds} variant="destructive">
-                  {processingState.activeAction === 'generate' ? <Loader2 className="animate-spin" /> : <Sparkles />}
-                  Generate Initial Prompt
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Generate a new prompt based on your needs.</p>
-              </TooltipContent>
-            </Tooltip>
-          </CardFooter>
-        </Card>
+      <motion.div
+        className="flex h-full flex-col gap-8"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.div variants={itemVariants}>
+          <Card>
+            <CardHeader>
+              <h2 className="text-lg font-medium leading-snug">1. Describe Your Assistant</h2>
+              <CardDescription>
+                What are the primary goals and functionalities of your AI assistant? This will be used to generate the initial prompt.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <Label htmlFor="user-needs" className="sr-only">User Needs</Label>
+                <Textarea
+                  id="user-needs"
+                  placeholder="e.g., An assistant that helps university students find course information, check deadlines, and book appointments with advisors..."
+                  value={userNeeds}
+                  onChange={(e) => setUserNeeds(e.target.value)}
+                  className="min-h-[120px]"
+                  disabled={!!processingState.activeAction}
+                />
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button onClick={onGenerate} disabled={!!processingState.activeAction || !userNeeds} variant="destructive">
+                    {processingState.activeAction === 'generate' ? <Loader2 className="animate-spin" /> : <Sparkles />}
+                    Generate Initial Prompt
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Generate a new prompt based on your needs.</p>
+                </TooltipContent>
+              </Tooltip>
+            </CardFooter>
+          </Card>
+        </motion.div>
 
         <div className="grid flex-1 grid-cols-1 gap-8 lg:grid-cols-2">
-          <div className="flex flex-col gap-8">
+          <motion.div className="flex flex-col gap-8" variants={itemVariants}>
             <Card>
               <CardHeader>
                 <h2 className="text-lg font-medium leading-snug">2. System Prompt & Context</h2>
@@ -443,9 +454,9 @@ Selected Suggestions:
               </CardContent>
             </Card>
             <DocumentManager />
-          </div>
+          </motion.div>
 
-          <div className="flex flex-col gap-8">
+          <motion.div className="flex flex-col gap-8" variants={itemVariants}>
             <AnimatePresence>
               {processingState.activeAction && (
                 <motion.div
@@ -666,9 +677,9 @@ Selected Suggestions:
                 </Tooltip>
               </CardFooter>
             </Card>
-          </div>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
     </TooltipProvider>
   );
 }
