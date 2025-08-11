@@ -294,7 +294,7 @@ export function LibraryClient() {
                                         <AlertDialogDescription>
                                             This action cannot be undone. This will permanently delete this prompt from the public library.
                                         </AlertDialogDescription>
-                                        </Header>
+                                        </AlertDialogHeader>
                                         <AlertDialogFooter>
                                         <AlertDialogCancel className={cn(buttonVariants({variant: 'default'}))}>Cancel</AlertDialogCancel>
                                         <AlertDialogAction onClick={() => deleteLibraryPrompt(prompt.id)} className={cn(buttonVariants({variant: 'destructive'}))}>
