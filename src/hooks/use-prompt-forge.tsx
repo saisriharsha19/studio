@@ -10,6 +10,13 @@ type UploadedFile = {
   content: string;
 };
 
+type ActionType = 'generate' | 'evaluate' | 'suggest' | null;
+
+type ProcessingState = {
+  activeAction: ActionType;
+  statusText: string;
+};
+
 type PromptForgeContextType = {
   userNeeds: string;
   setUserNeeds: Dispatch<SetStateAction<string>>;
@@ -43,6 +50,11 @@ type PromptForgeContextType = {
   setSelectedSuggestions: Dispatch<SetStateAction<string[]>>;
   evaluationResult: EvaluateAndIteratePromptOutput | null;
   setEvaluationResult: Dispatch<SetStateAction<EvaluateAndIteratePromptOutput | null>>;
+  // State for background tasks
+  processingState: ProcessingState;
+  setProcessingState: Dispatch<SetStateAction<ProcessingState>>;
+  taskStatusUrl: string | null;
+  setTaskStatusUrl: Dispatch<SetStateAction<string | null>>;
 };
 
 const PromptForgeContext = createContext<PromptForgeContextType | undefined>(undefined);
@@ -64,6 +76,14 @@ export function PromptForgeProvider({ children }: { children: ReactNode }) {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [selectedSuggestions, setSelectedSuggestions] = useState<string[]>([]);
   const [evaluationResult, setEvaluationResult] = useState<EvaluateAndIteratePromptOutput | null>(null);
+
+  // New state for managing background tasks globally
+  const [processingState, setProcessingState] = useState<ProcessingState>({
+    activeAction: null,
+    statusText: '',
+  });
+  const [taskStatusUrl, setTaskStatusUrl] = useState<string | null>(null);
+
 
   // Effect to append document context to the prompt
   useEffect(() => {
@@ -106,7 +126,10 @@ export function PromptForgeProvider({ children }: { children: ReactNode }) {
     iterationComments, setIterationComments,
     suggestions, setSuggestions,
     selectedSuggestions, setSelectedSuggestions,
-    evaluationResult, setEvaluationResult
+    evaluationResult, setEvaluationResult,
+    // Provide task state to context
+    processingState, setProcessingState,
+    taskStatusUrl, setTaskStatusUrl,
   };
   
   return (
@@ -123,4 +146,3 @@ export function usePromptForge() {
   }
   return context;
 }
-

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Bot,
@@ -54,11 +54,6 @@ import { DocumentManager } from './document-manager';
 
 type ActionType = 'generate' | 'evaluate' | 'suggest' | null;
 
-type ProcessingState = {
-  activeAction: ActionType;
-  statusText: string;
-};
-
 // Helper to format metric names for display
 const formatMetricName = (name: string) => {
     const spaced = name.replace(/_score$/, '').replace(/_/g, ' ');
@@ -78,15 +73,14 @@ export function PromptForgeClient() {
     iterationComments, setIterationComments,
     suggestions, setSuggestions,
     selectedSuggestions, setSelectedSuggestions,
-    evaluationResult, setEvaluationResult
+    evaluationResult, setEvaluationResult,
+    processingState, setProcessingState,
+    taskStatusUrl, setTaskStatusUrl,
   } = usePromptForge();
 
-  const [processingState, setProcessingState] = useState<ProcessingState>({
-    activeAction: null,
-    statusText: '',
-  });
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
-
+  
+  // Use a ref to ensure polling intervals don't conflict or get redefined on re-renders
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const suggestionPollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -113,7 +107,6 @@ export function PromptForgeClient() {
   const copyToClipboard = (text: string) => {
     if (!text) return;
     if (navigator.clipboard && window.isSecureContext) {
-      // Use modern clipboard API in secure contexts
       navigator.clipboard.writeText(text)
         .then(() => {
           setCopied(true);
@@ -125,7 +118,6 @@ export function PromptForgeClient() {
           console.error('Clipboard write failed:', err);
         });
     } else {
-      // Fallback for insecure contexts or older browsers
       const textArea = document.createElement('textarea');
       textArea.value = text;
       textArea.style.position = 'absolute';
@@ -152,8 +144,8 @@ export function PromptForgeClient() {
     }
     return String(error);
   };
-
-  const stopPolling = (poller: 'main' | 'suggestions') => {
+  
+  const stopPolling = useCallback((poller: 'main' | 'suggestions') => {
     if (poller === 'main' && pollingIntervalRef.current) {
       clearInterval(pollingIntervalRef.current);
       pollingIntervalRef.current = null;
@@ -162,12 +154,11 @@ export function PromptForgeClient() {
       clearInterval(suggestionPollingIntervalRef.current);
       suggestionPollingIntervalRef.current = null;
     }
-  };
+  }, []);
 
-  const pollTaskStatus = (status_url: string, actionType: ActionType) => {
+  const pollTaskStatus = useCallback((status_url: string, actionType: ActionType) => {
     const isSuggestionTask = actionType === 'suggest';
     
-    // Stop any existing poller for the same type
     stopPolling(isSuggestionTask ? 'suggestions' : 'main');
 
     const intervalId = setInterval(async () => {
@@ -182,20 +173,19 @@ export function PromptForgeClient() {
 
         if (task.status === 'SUCCESS') {
           stopPolling(isSuggestionTask ? 'suggestions' : 'main');
-          
-          if (isSuggestionTask) {
-            setSuggestionsLoading(false);
+          if (!isSuggestionTask) {
+             setTaskStatusUrl(null);
+             setProcessingState({ activeAction: null, statusText: 'Completed!' });
           } else {
-            setProcessingState({ activeAction: null, statusText: 'Completed!' });
-            toast({ title: 'Success', description: `Task completed.` });
+             setSuggestionsLoading(false);
           }
-
+          toast({ title: 'Success', description: `Task completed.` });
+          
           if (task.result) {
             if (actionType === 'generate' && 'initial_prompt' in (task.result as any)) {
                 const result = task.result as GenerateInitialPromptOutput;
                 setCurrentPrompt(result.initial_prompt);
                 if (isAuthenticated) addPrompt(result.initial_prompt);
-                onGetSuggestions(result.initial_prompt);
             } else if (actionType === 'evaluate' && 'improved_prompt' in (task.result as any)) {
                 const result = task.result as EvaluateAndIteratePromptOutput;
                 setEvaluationResult(result);
@@ -212,6 +202,7 @@ export function PromptForgeClient() {
           if (isSuggestionTask) {
             setSuggestionsLoading(false);
           } else {
+            setTaskStatusUrl(null);
             setProcessingState({ activeAction: null, statusText: 'Failed!' });
           }
           toast({ variant: 'destructive', title: 'Task Failed', description: task.error_message || 'An unknown error occurred.' });
@@ -225,18 +216,36 @@ export function PromptForgeClient() {
         if (isSuggestionTask) {
           setSuggestionsLoading(false);
         } else {
+          setTaskStatusUrl(null);
           setProcessingState({ activeAction: null, statusText: 'Error!' });
         }
         toast({ variant: 'destructive', title: 'Polling Error', description: getErrorMessage(error) });
       }
-    }, 3000); // Poll every 3 seconds
+    }, 3000);
 
     if (isSuggestionTask) {
       suggestionPollingIntervalRef.current = intervalId;
     } else {
       pollingIntervalRef.current = intervalId;
     }
-  };
+  }, [stopPolling, setTaskStatusUrl, setProcessingState, toast, setCurrentPrompt, isAuthenticated, addPrompt, setEvaluationResult, setSuggestions]);
+
+  // Effect to resume polling if the user navigates back to the page
+  useEffect(() => {
+    if (taskStatusUrl && processingState.activeAction) {
+      pollTaskStatus(taskStatusUrl, processingState.activeAction);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only on initial mount
+
+
+  // Cleanup polling on component unmount
+  useEffect(() => {
+    return () => {
+      stopPolling('main');
+      stopPolling('suggestions');
+    }
+  }, [stopPolling]);
   
   const onGetSuggestions = async (prompt: string, comments?: string) => {
     if (!prompt || suggestionsLoading) return;
@@ -253,27 +262,21 @@ export function PromptForgeClient() {
       toast({ variant: 'destructive', title: 'Suggestion Failed', description: getErrorMessage(error) });
     }
   };
-
-  useEffect(() => {
-    // Cleanup polling on component unmount
-    return () => {
-      stopPolling('main');
-      stopPolling('suggestions');
-    }
-  }, []);
   
   const onGenerate = async () => {
     if (!userNeeds) {
       toast({ variant: 'destructive', title: 'Error', description: 'Please describe your assistant needs first.' });
       return;
     }
-    setProcessingState({ activeAction: 'generate', statusText: 'Starting generation task...' });
-    setEvaluationResult(null); // Clear previous results
-    setSuggestions([]); // Clear suggestions
+    const action: ActionType = 'generate';
+    setProcessingState({ activeAction: action, statusText: 'Starting generation task...' });
+    setEvaluationResult(null);
+    setSuggestions([]);
     try {
       const task = await handleGenerateInitialPrompt({ user_needs: userNeeds });
+      setTaskStatusUrl(task.status_url);
       setProcessingState(prev => ({ ...prev, statusText: 'Task initiated, awaiting result...' }));
-      pollTaskStatus(task.status_url, 'generate');
+      pollTaskStatus(task.status_url, action);
     } catch (error) {
       setProcessingState({ activeAction: null, statusText: '' });
       toast({ variant: 'destructive', title: 'Generation Failed', description: getErrorMessage(error) });
@@ -285,12 +288,14 @@ export function PromptForgeClient() {
       toast({ variant: 'destructive', title: 'Error', description: 'A prompt and user needs are required for evaluation.' });
       return;
     }
-    setProcessingState({ activeAction: 'evaluate', statusText: 'Starting evaluation task...' });
-    setEvaluationResult(null); // Clear previous results
+    const action: ActionType = 'evaluate';
+    setProcessingState({ activeAction: action, statusText: 'Starting evaluation task...' });
+    setEvaluationResult(null);
     try {
       const task = await handleEvaluatePrompt({ prompt: currentPrompt, user_needs: userNeeds });
+      setTaskStatusUrl(task.status_url);
       setProcessingState(prev => ({ ...prev, statusText: 'Task initiated, awaiting evaluation...' }));
-      pollTaskStatus(task.status_url, 'evaluate');
+      pollTaskStatus(task.status_url, action);
     } catch (error) {
       setProcessingState({ activeAction: null, statusText: '' });
       toast({ variant: 'destructive', title: 'Evaluation Failed', description: getErrorMessage(error) });
@@ -313,7 +318,6 @@ Selected Suggestions:
     const newPrompt = `${currentPrompt}\n${feedbackText}`;
     setCurrentPrompt(newPrompt);
 
-    // Automatically get new suggestions based on the applied feedback
     onGetSuggestions(newPrompt, iterationComments);
 
     setIterationComments('');
@@ -363,7 +367,6 @@ Selected Suggestions:
   return (
     <TooltipProvider>
       <div className="flex h-full flex-col gap-8">
-        {/* Top Row for Initial Input */}
         <Card>
           <CardHeader>
             <h2 className="text-lg font-medium leading-snug">1. Describe Your Assistant</h2>
@@ -399,9 +402,7 @@ Selected Suggestions:
           </CardFooter>
         </Card>
 
-        {/* Main 2-Column Grid */}
         <div className="grid flex-1 grid-cols-1 gap-8 lg:grid-cols-2">
-          {/* Left Column */}
           <div className="flex flex-col gap-8">
             <Card>
               <CardHeader>
@@ -444,7 +445,6 @@ Selected Suggestions:
             <DocumentManager />
           </div>
 
-          {/* Right Column */}
           <div className="flex flex-col gap-8">
             <AnimatePresence>
               {processingState.activeAction && (
