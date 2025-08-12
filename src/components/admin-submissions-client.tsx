@@ -50,7 +50,7 @@ export function AdminSubmissionsClient({
   const handleStatusChange = (status: string) => {
     const params = new URLSearchParams(window.location.search);
     params.set('status', status);
-    router.replace(`${pathname}?${params.toString()}`);
+    router.push(`${pathname}?${params.toString()}`);
   };
 
   const openReviewDialog = (submission: LibrarySubmission) => {
@@ -69,7 +69,7 @@ export function AdminSubmissionsClient({
         title: 'Success',
         description: `Submission has been ${action}d.`,
       });
-      // Refresh data
+      // Refresh data by navigating
       handleStatusChange(initialStatus);
       setIsDialogOpen(false);
     } catch (error: any) {
@@ -198,3 +198,5 @@ export function AdminSubmissionsClient({
     </>
   );
 }
+
+    

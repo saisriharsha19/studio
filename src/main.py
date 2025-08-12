@@ -97,6 +97,12 @@ async def require_admin(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
         )
+    # Also check if the user from the token is an admin
+    if not current_user or not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User does not have admin privileges"
+        )
     return True
 
 # --- Pydantic Models ---
@@ -142,7 +148,7 @@ class LibrarySubmissionResponse(BaseModel):
     created_at: datetime
     summary: Optional[str] = None
     tags: Optional[List[str]] = None
-    user_email: Optional[str] = None
+    user: Optional[UserResponse] = None
 
 class AdminReviewRequest(BaseModel):
     action: str  # "approve" or "reject"
@@ -415,7 +421,6 @@ async def get_library_submissions(
     response_submissions = []
     for submission in submissions:
         submission_response = LibrarySubmissionResponse.model_validate(submission)
-        submission_response.user_email = submission.user.email if submission.user else None
         response_submissions.append(submission_response)
     
     return response_submissions
