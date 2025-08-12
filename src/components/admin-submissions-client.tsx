@@ -2,9 +2,9 @@
 'use client';
 
 import * as React from 'react';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { LibrarySubmission } from '@/hooks/use-prompts';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,12 +16,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Textarea } from './ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { reviewLibrarySubmission } from '@/app/actions';
-import { ThumbsUp, ThumbsDown, Eye, FileClock, User } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, Eye, FileClock } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 
 type ReviewAction = 'approve' | 'reject';
@@ -37,25 +36,21 @@ export function AdminSubmissionsClient({
   const pathname = usePathname();
   const { toast } = useToast();
 
-  const [submissions, setSubmissions] = React.useState(initialSubmissions);
   const [selectedSubmission, setSelectedSubmission] = React.useState<LibrarySubmission | null>(null);
   const [reviewNotes, setReviewNotes] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
-  React.useEffect(() => {
-    setSubmissions(initialSubmissions);
-  }, [initialSubmissions]);
-
   const handleStatusChange = (status: string) => {
     const params = new URLSearchParams(window.location.search);
     params.set('status', status);
+    // Use router.push to trigger a re-fetch of server component data
     router.push(`${pathname}?${params.toString()}`);
   };
 
   const openReviewDialog = (submission: LibrarySubmission) => {
     setSelectedSubmission(submission);
-    setReviewNotes('');
+    setReviewNotes(submission.admin_notes || '');
     setIsDialogOpen(true);
   };
 
@@ -69,7 +64,7 @@ export function AdminSubmissionsClient({
         title: 'Success',
         description: `Submission has been ${action}d.`,
       });
-      // Refresh data by navigating
+      // Refresh the current view by re-navigating
       handleStatusChange(initialStatus);
       setIsDialogOpen(false);
     } catch (error: any) {
@@ -100,10 +95,10 @@ export function AdminSubmissionsClient({
               </div>
               <div className="text-sm">
                 <p>
-                  <span className="font-semibold">Submitted by:</span> {selectedSubmission.user?.email || 'Unknown User'}
+                  <span className="font-semibold">Submitted by:</span> {selectedSubmission.user?.full_name || 'N/A'} ({selectedSubmission.user?.email || 'Unknown User'})
                 </p>
                 <p>
-                  <span className="font-semibold">Notes:</span> {selectedSubmission.submission_notes || 'N/A'}
+                  <span className="font-semibold">User Notes:</span> {selectedSubmission.submission_notes || 'N/A'}
                 </p>
               </div>
               <Textarea
@@ -144,7 +139,7 @@ export function AdminSubmissionsClient({
           </Tabs>
         </CardHeader>
         <CardContent>
-          {submissions.length > 0 ? (
+          {initialSubmissions.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -155,7 +150,7 @@ export function AdminSubmissionsClient({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {submissions.map((sub) => (
+                {initialSubmissions.map((sub) => (
                   <TableRow key={sub.id}>
                     <TableCell>
                       <div className="font-medium">{sub.user?.full_name || 'N/A'}</div>
