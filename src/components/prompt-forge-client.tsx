@@ -296,7 +296,9 @@ export function PromptForgeClient() {
     setProcessingState({ activeAction: action, statusText: 'Starting evaluation task...' });
     setEvaluationResult(null);
     try {
-      const task = await handleEvaluatePrompt({ prompt: currentPrompt, user_needs: userNeeds });
+      // Pass the full current prompt as the user_needs for evaluation,
+      // as it contains both the base needs and the added context.
+      const task = await handleEvaluatePrompt({ prompt: currentPrompt, user_needs: currentPrompt });
       setTaskStatusUrl(task.status_url);
       setProcessingState(prev => ({ ...prev, statusText: 'Task initiated, awaiting evaluation...' }));
       pollTaskStatus(task.status_url, action);
