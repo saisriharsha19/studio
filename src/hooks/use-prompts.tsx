@@ -6,6 +6,26 @@ import { useToast } from './use-toast';
 import { deleteHistoryPromptFromDB, getHistoryPromptsFromDB } from '@/app/actions';
 import { useAuth } from './use-auth';
 
+// Represents a user in the system
+export type User = {
+  id: string;
+  email: string;
+  username: string;
+  full_name: string;
+  is_admin: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+// Represents platform-wide statistics
+export type PlatformStats = {
+  total_users: number;
+  total_prompts_in_history: number;
+  total_prompts_in_library: number;
+  pending_submissions: number;
+};
+
 export type Prompt = {
   id: string;
   userId: string;
@@ -25,6 +45,7 @@ export type LibrarySubmission = {
     status: 'PENDING' | 'APPROVED' | 'REJECTED';
     submitted_at: string;
     admin_notes?: string;
+    user?: User; 
 };
 
 
@@ -117,5 +138,3 @@ export function usePromptHistory() {
   }
   return context;
 }
-
-    

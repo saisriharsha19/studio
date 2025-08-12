@@ -5,11 +5,12 @@ import type { GenerateInitialPromptOutput } from '@/ai/flows/generate-initial-pr
 import type { EvaluateAndIteratePromptOutput } from '@/ai/flows/evaluate-and-iterate-prompt';
 import type { GeneratePromptSuggestionsOutput } from '@/ai/flows/get-prompt-suggestions';
 import { db } from '@/lib/db';
-import type { Prompt, LibrarySubmission } from '@/hooks/use-prompts';
+import type { Prompt, LibrarySubmission, User, PlatformStats } from '@/hooks/use-prompts';
 import { revalidatePath } from 'next/cache';
 import type { GeneratePromptMetadataOutput } from '@/ai/flows/generate-prompt-tags';
 
 const BACKEND_URL = process.env.PYTHON_BACKEND_URL || 'http://localhost:5000';
+const ADMIN_KEY = process.env.ADMIN_KEY;
 
 const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error) {
@@ -156,7 +157,6 @@ export async function getHistoryPromptsFromDB(userId: string): Promise<Prompt[]>
 // The ADMIN_KEY should be stored securely and not exposed on the client-side.
 // This function assumes an admin context if an admin key is available.
 export async function deleteHistoryPromptFromDB(id: string, userId: string): Promise<{ success: boolean }> {
-  const ADMIN_KEY = process.env.ADMIN_KEY;
   if (!ADMIN_KEY) {
       throw new Error("Admin action required, but no admin key is configured.");
   }
@@ -172,6 +172,7 @@ export async function deleteHistoryPromptFromDB(id: string, userId: string): Pro
 
     if (response.status === 204) {
       revalidatePath('/history');
+      revalidatePath(`/admin/users/${userId}`);
       return { success: true };
     }
     
@@ -244,7 +245,6 @@ export async function submitPromptToLibrary(request: { prompt_text: string, subm
 
 
 export async function deleteLibraryPromptFromDB(promptId: string): Promise<{ success: boolean }> {
-  const ADMIN_KEY = process.env.ADMIN_KEY;
   if (!ADMIN_KEY) {
       throw new Error("Admin action required, but no admin key is configured.");
   }
@@ -304,5 +304,81 @@ export async function toggleStarForPrompt(promptId: string, request: { user_id: 
   } catch (error: any) {
      console.error('Failed to toggle star for prompt via API:', error);
     throw new Error(error.message || 'Failed to toggle star for prompt.');
+  }
+}
+
+// --- Admin Actions ---
+
+export async function getAdminStats(): Promise<PlatformStats> {
+  if (!ADMIN_KEY) throw new Error("Admin action required.");
+  try {
+    const response = await fetch(`${BACKEND_URL}/admin/stats`, {
+      headers: { 'X-Admin-Key': ADMIN_KEY },
+      cache: 'no-store',
+    });
+    if (!response.ok) throw new Error('Failed to fetch admin stats.');
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching admin stats:', error);
+    // Return a default/empty stats object on error
+    return {
+      total_users: 0,
+      total_prompts_in_history: 0,
+      total_prompts_in_library: 0,
+      pending_submissions: 0,
+    };
+  }
+}
+
+export async function getAdminUsers(): Promise<User[]> {
+  if (!ADMIN_KEY) throw new Error("Admin action required.");
+  try {
+    const response = await fetch(`${BACKEND_URL}/admin/users`, {
+      headers: { 'X-Admin-Key': ADMIN_KEY },
+      cache: 'no-store',
+    });
+    if (!response.ok) throw new Error('Failed to fetch users.');
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    return [];
+  }
+}
+
+export async function getAdminLibrarySubmissions(status: 'PENDING' | 'APPROVED' | 'REJECTED'): Promise<LibrarySubmission[]> {
+  if (!ADMIN_KEY) throw new Error("Admin action required.");
+  try {
+    const response = await fetch(`${BACKEND_URL}/admin/library/submissions?status=${status}`, {
+      headers: { 'X-Admin-Key': ADMIN_KEY },
+      cache: 'no-store',
+    });
+    if (!response.ok) throw new Error('Failed to fetch library submissions.');
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching library submissions:', error);
+    return [];
+  }
+}
+
+export async function reviewLibrarySubmission(submissionId: string, action: 'approve' | 'reject', adminNotes?: string): Promise<{ success: boolean }> {
+  if (!ADMIN_KEY) throw new Error("Admin action required.");
+  try {
+    const response = await fetch(`${BACKEND_URL}/admin/library/submissions/${submissionId}/review`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Admin-Key': ADMIN_KEY,
+      },
+      body: JSON.stringify({ action, admin_notes: adminNotes }),
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Failed to review submission.');
+    }
+    revalidatePath('/admin/submissions');
+    return { success: true };
+  } catch (error) {
+    console.error('Error reviewing submission:', error);
+    throw error;
   }
 }
