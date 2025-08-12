@@ -101,7 +101,7 @@ export function PromptHistoryClient() {
   };
   
   const filteredPrompts = prompts.filter(prompt => 
-    prompt.text.toLowerCase().includes(searchQuery.toLowerCase())
+    prompt.text && prompt.text.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const getPromptTitle = (text: string) => {
@@ -174,7 +174,7 @@ export function PromptHistoryClient() {
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"
                 height="24"
-                viewBox="0 0 24 24"
+                viewBox="0 0 24"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
@@ -340,5 +340,3 @@ export function PromptHistoryClient() {
     </TooltipProvider>
   );
 }
-
-    
