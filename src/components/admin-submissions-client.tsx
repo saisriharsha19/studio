@@ -83,6 +83,8 @@ export function AdminSubmissionsClient({
     }
   };
 
+  const isValidDate = (date: any) => date && !isNaN(new Date(date).getTime());
+
   return (
     <>
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -160,7 +162,9 @@ export function AdminSubmissionsClient({
                       <div className="text-sm text-muted-foreground">{sub.user?.email}</div>
                     </TableCell>
                     <TableCell className="hidden sm:table-cell">
-                      {formatDistanceToNow(new Date(sub.submitted_at), { addSuffix: true })}
+                      {isValidDate(sub.submitted_at)
+                        ? formatDistanceToNow(new Date(sub.submitted_at), { addSuffix: true })
+                        : 'Invalid date'}
                     </TableCell>
                     <TableCell>
                       <Badge
