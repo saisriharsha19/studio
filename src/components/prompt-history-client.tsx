@@ -37,7 +37,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Input } from './ui/input';
 import { Skeleton } from './ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
-import { Tooltip, TooltipContent, TooltipProvider } from './ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 
@@ -87,7 +87,7 @@ const itemVariants = {
 
 export function PromptHistoryClient() {
   const { prompts, deletePrompt, isLoading } = usePromptHistory();
-  const { isAuthenticated, login } = useAuth();
+  const { isAuthenticated, login, isAdmin } = useAuth();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewingPrompt, setViewingPrompt] = useState<Prompt | null>(null);
@@ -209,12 +209,12 @@ export function PromptHistoryClient() {
 
         <ScrollArea className="h-full">
           {isLoading ? (
-            <ul className="grid grid-cols-1 gap-6">
+            <ul className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {Array.from({ length: 8 }).map((_, i) => <li key={i}><PromptCardSkeleton /></li>)}
             </ul>
           ) : filteredPrompts.length > 0 ? (
             <motion.ul
-              className="grid grid-cols-1 gap-6"
+              className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
               variants={containerVariants}
               initial="hidden"
               animate="visible"
@@ -223,7 +223,7 @@ export function PromptHistoryClient() {
                 <motion.li key={prompt.id} variants={itemVariants}>
                   <Card className="flex h-full flex-col">
                     <CardHeader className="p-4 sm:p-6">
-                      <CardTitle>
+                      <CardTitle className="text-lg leading-snug">
                         {getPromptTitle(prompt.text)}
                       </CardTitle>
                       <CardDescription>
@@ -275,7 +275,7 @@ export function PromptHistoryClient() {
                         </TooltipContent>
                       </Tooltip>
 
-                      {isAuthenticated && (
+                      {isAdmin && (
                         <AlertDialog>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -286,14 +286,14 @@ export function PromptHistoryClient() {
                               </AlertDialogTrigger>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Delete prompt</p>
+                              <p>Delete prompt (Admin)</p>
                             </TooltipContent>
                           </Tooltip>
                           <AlertDialogContent>
                             <AlertDialogHeader className="text-center sm:text-left">
                               <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                               <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete this prompt from your history.
+                                This action cannot be undone. This will permanently delete this prompt from the user's history.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -316,7 +316,7 @@ export function PromptHistoryClient() {
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"
                 height="24"
-                viewBox="0 0 24 24"
+                viewBox="0 0 24"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
@@ -340,3 +340,5 @@ export function PromptHistoryClient() {
     </TooltipProvider>
   );
 }
+
+    

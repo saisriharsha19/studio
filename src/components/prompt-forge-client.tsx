@@ -54,7 +54,6 @@ import { DocumentManager } from './document-manager';
 
 type ActionType = 'generate' | 'evaluate' | 'suggest' | null;
 
-// Helper to format metric names for display
 const formatMetricName = (name: string) => {
     const spaced = name.replace(/_score$/, '').replace(/_/g, ' ');
     return spaced.charAt(0).toUpperCase() + spaced.slice(1);
@@ -85,8 +84,7 @@ const itemVariants = {
 
 export function PromptForgeClient() {
   const { isAuthenticated, userId, login } = useAuth();
-  const { addPrompt } = usePromptHistory();
-  const { addLibraryPrompt } = useLibrary();
+  const { addLibrarySubmission } = useLibrary();
   const { toast } = useToast();
 
   const {
@@ -104,7 +102,6 @@ export function PromptForgeClient() {
 
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   
-  // Use a ref to ensure polling intervals don't conflict or get redefined on re-renders
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const suggestionPollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -191,12 +188,10 @@ export function PromptForgeClient() {
             if (actionType === 'generate' && 'initial_prompt' in (task.result as any)) {
                 const result = task.result as GenerateInitialPromptOutput;
                 setCurrentPrompt(result.initial_prompt);
-                if (isAuthenticated) addPrompt(result.initial_prompt);
             } else if (actionType === 'evaluate' && 'improved_prompt' in (task.result as any)) {
                 const result = task.result as EvaluateAndIteratePromptOutput;
                 setEvaluationResult(result);
                 setCurrentPrompt(result.improved_prompt);
-                if (isAuthenticated) addPrompt(result.improved_prompt);
             } else if (isSuggestionTask && Array.isArray(task.result)) {
                 const result = task.result as GeneratePromptSuggestionsOutput;
                 setSuggestions(result.map(s => s.description));
@@ -234,18 +229,15 @@ export function PromptForgeClient() {
     } else {
       pollingIntervalRef.current = intervalId;
     }
-  }, [stopPolling, setTaskStatusUrl, setProcessingState, toast, setCurrentPrompt, isAuthenticated, addPrompt, setEvaluationResult, setSuggestions]);
+  }, [stopPolling, setTaskStatusUrl, setProcessingState, toast, setCurrentPrompt, setEvaluationResult, setSuggestions]);
 
-  // Effect to resume polling if the user navigates back to the page
   useEffect(() => {
     if (taskStatusUrl && processingState.activeAction) {
       pollTaskStatus(taskStatusUrl, processingState.activeAction);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run only on initial mount
+  }, []); 
 
 
-  // Cleanup polling on component unmount
   useEffect(() => {
     return () => {
       stopPolling('main');
@@ -343,21 +335,21 @@ Selected Suggestions:
     );
   };
   
-  const onUploadToLibrary = () => {
+  const onSubmitToLibrary = () => {
     if (!currentPrompt) {
         toast({
             variant: 'destructive',
             title: 'Error',
-            description: 'There is no prompt to upload.',
+            description: 'There is no prompt to submit.',
         });
         return;
     }
     if (!userId) {
-        toast({ variant: 'destructive', title: 'Authentication Error', description: 'You must be logged in to upload to the library.'});
+        toast({ variant: 'destructive', title: 'Authentication Error', description: 'You must be logged in to submit to the library.'});
         login();
         return;
     }
-    addLibraryPrompt(currentPrompt);
+    addLibrarySubmission(currentPrompt);
   };
 
   const handleCreateAssistant = () => {
@@ -671,14 +663,14 @@ Selected Suggestions:
                       className="w-full"
                       variant="secondary"
                       disabled={!!processingState.activeAction || !currentPrompt}
-                      onClick={onUploadToLibrary}
+                      onClick={onSubmitToLibrary}
                     >
                       <Upload />
-                      Upload to Prompt Library
+                      Submit to Prompt Library
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Share this prompt with the community by adding it to the public library.</p>
+                    <p>Submit this prompt for admin review to be added to the public library.</p>
                   </TooltipContent>
                 </Tooltip>
               </CardFooter>
@@ -689,3 +681,5 @@ Selected Suggestions:
     </TooltipProvider>
   );
 }
+
+    
