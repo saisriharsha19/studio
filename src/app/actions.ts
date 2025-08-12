@@ -9,7 +9,7 @@ import type { Prompt, LibrarySubmission } from '@/hooks/use-prompts';
 import { revalidatePath } from 'next/cache';
 import type { GeneratePromptMetadataOutput } from '@/ai/flows/generate-prompt-tags';
 
-const BACKEND_URL = process.env.PYTHON_BACKEND_URL || 'http://localhost:8000';
+const BACKEND_URL = process.env.PYTHON_BACKEND_URL || 'http://localhost:5000';
 
 const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error) {
@@ -306,5 +306,3 @@ export async function toggleStarForPrompt(promptId: string, request: { user_id: 
     throw new Error(error.message || 'Failed to toggle star for prompt.');
   }
 }
-
-    
