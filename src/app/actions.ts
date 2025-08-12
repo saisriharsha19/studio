@@ -318,17 +318,20 @@ export async function toggleStarForPrompt(promptId: string, request: { user_id: 
 // --- Admin Actions ---
 
 export async function getAdminStats(): Promise<PlatformStats> {
-  if (!ADMIN_KEY) throw new Error("Admin action required.");
   try {
     const response = await fetch(`${BACKEND_URL}/admin/stats`, {
-      headers: { 'X-Admin-Key': ADMIN_KEY },
+      headers: { 'X-Admin-Key': ADMIN_KEY || '' },
       cache: 'no-store',
     });
-    if (!response.ok) throw new Error('Failed to fetch admin stats.');
+    if (!response.ok) {
+      const errorBody = await response.text();
+      console.error('Failed to fetch admin stats, server responded with:', errorBody);
+      throw new Error(`Failed to fetch admin stats. Status: ${response.status}`);
+    }
     return await response.json();
   } catch (error) {
     console.error('Error fetching admin stats:', error);
-    // Return a default/empty stats object on error
+    // Return a default/empty stats object on error to prevent crashing the page.
     return {
       users: { total: 0, active: 0, admins: 0 },
       prompts: { user_prompts: 0, library_prompts: 0 },

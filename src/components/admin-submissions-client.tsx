@@ -2,13 +2,13 @@
 'use client';
 
 import * as React from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import type { LibrarySubmission } from '@/hooks/use-prompts';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import {
   Dialog,
   DialogContent,
@@ -23,6 +23,7 @@ import { reviewLibrarySubmission } from '@/app/actions';
 import { ThumbsUp, ThumbsDown, Eye, FileClock } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { formatDistanceToNow } from 'date-fns';
 
 type ReviewAction = 'approve' | 'reject';
 type Status = 'PENDING' | 'APPROVED' | 'REJECTED';
@@ -54,25 +55,18 @@ export function AdminSubmissionsClient({
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
-  const submissionsMap: Record<Status, LibrarySubmission[]> = React.useMemo(() => ({
+  const submissionsMap: Record<Status, LibrarySubmission[]> = {
     PENDING: pendingSubmissions,
     APPROVED: approvedSubmissions,
     REJECTED: rejectedSubmissions,
-  }), [pendingSubmissions, approvedSubmissions, rejectedSubmissions]);
+  };
 
   const currentSubmissions = submissionsMap[status] || [];
 
-  React.useEffect(() => {
-    const currentUrlStatus = (new URLSearchParams(window.location.search).get('status') as Status) || 'PENDING';
-    if (currentUrlStatus !== status) {
-      setStatus(currentUrlStatus);
-    }
-  }, [pathname, status]);
-
   const handleStatusChange = (newStatus: string) => {
     const validStatus = newStatus as Status;
-    router.push(`/admin/submissions?status=${validStatus}`);
     setStatus(validStatus);
+    router.push(`${pathname}?status=${validStatus}`);
   };
 
   const openReviewDialog = (submission: LibrarySubmission) => {
@@ -92,7 +86,8 @@ export function AdminSubmissionsClient({
         description: `Submission has been ${action}d.`,
       });
       setIsDialogOpen(false);
-      router.refresh();
+      // This will force a server-side refetch of the page with new props
+      router.refresh(); 
     } catch (error: any) {
       toast({
         variant: 'destructive',
