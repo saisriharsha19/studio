@@ -2,13 +2,13 @@
 'use client';
 
 import * as React from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import type { LibrarySubmission } from '@/hooks/use-prompts';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import {
   Dialog,
   DialogContent,
@@ -22,12 +22,12 @@ import { useToast } from '@/hooks/use-toast';
 import { reviewLibrarySubmission } from '@/app/actions';
 import { ThumbsUp, ThumbsDown, Eye, FileClock } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
 type ReviewAction = 'approve' | 'reject';
 type Status = 'PENDING' | 'APPROVED' | 'REJECTED';
 
-// A more robust date validation function
-const isValidDate = (date: any) => {
+const isValidDate = (date: any): date is string | number | Date => {
   if (!date) return false;
   const parsedDate = new Date(date);
   return !isNaN(parsedDate.getTime());
@@ -45,7 +45,7 @@ export function AdminSubmissionsClient({
   rejectedSubmissions: LibrarySubmission[];
 }) {
   const router = useRouter();
-  const pathname = useSearchParams(); // Corrected hook
+  const pathname = usePathname();
   const { toast } = useToast();
 
   const [status, setStatus] = React.useState<Status>(initialStatus);
@@ -54,19 +54,16 @@ export function AdminSubmissionsClient({
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
-  // Map submissions to their statuses
   const submissionsMap: Record<Status, LibrarySubmission[]> = React.useMemo(() => ({
     PENDING: pendingSubmissions,
     APPROVED: approvedSubmissions,
     REJECTED: rejectedSubmissions,
   }), [pendingSubmissions, approvedSubmissions, rejectedSubmissions]);
 
-  // The list of submissions to display is now derived from the status
   const currentSubmissions = submissionsMap[status] || [];
 
-  // This effect ensures the component state is in sync with the URL's search param
   React.useEffect(() => {
-    const currentUrlStatus = (pathname.get('status') as Status) || 'PENDING';
+    const currentUrlStatus = (new URLSearchParams(window.location.search).get('status') as Status) || 'PENDING';
     if (currentUrlStatus !== status) {
       setStatus(currentUrlStatus);
     }
@@ -74,10 +71,8 @@ export function AdminSubmissionsClient({
 
   const handleStatusChange = (newStatus: string) => {
     const validStatus = newStatus as Status;
-    // Update the URL, which will cause the parent page to re-render with new props
-    // if the logic is server-based, or just update the client state for filtering
     router.push(`/admin/submissions?status=${validStatus}`);
-    setStatus(validStatus); // Also update local state to reflect change immediately
+    setStatus(validStatus);
   };
 
   const openReviewDialog = (submission: LibrarySubmission) => {
@@ -97,7 +92,6 @@ export function AdminSubmissionsClient({
         description: `Submission has been ${action}d.`,
       });
       setIsDialogOpen(false);
-      // This forces a server-side data refresh
       router.refresh();
     } catch (error: any) {
       toast({
@@ -111,7 +105,7 @@ export function AdminSubmissionsClient({
   };
 
   return (
-    <>
+    <TooltipProvider>
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -187,9 +181,18 @@ export function AdminSubmissionsClient({
                       <div className="text-sm text-muted-foreground">{sub.user?.email}</div>
                     </TableCell>
                     <TableCell className="hidden sm:table-cell">
-                      {isValidDate(sub.submitted_at)
-                        ? formatDistanceToNow(new Date(sub.submitted_at), { addSuffix: true })
-                        : 'Invalid date'}
+                      {isValidDate(sub.submitted_at) ? (
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <span className="cursor-default">{format(new Date(sub.submitted_at), 'MMM d, yyyy')}</span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{formatDistanceToNow(new Date(sub.submitted_at), { addSuffix: true })}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        'Invalid date'
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge
@@ -220,6 +223,6 @@ export function AdminSubmissionsClient({
           )}
         </CardContent>
       </Card>
-    </>
+    </TooltipProvider>
   );
 }
