@@ -92,12 +92,14 @@ export function PromptForgeClient() {
   const {
     userNeeds, setUserNeeds,
     currentPrompt, setCurrentPrompt,
+    contextualPrompt,
     iterationComments, setIterationComments,
     suggestions, setSuggestions,
     selectedSuggestions, setSelectedSuggestions,
     evaluationResult, setEvaluationResult,
     processingState, setProcessingState,
     taskStatusUrl, setTaskStatusUrl,
+    uploadedFiles,
   } = usePromptForge();
 
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
@@ -295,10 +297,12 @@ export function PromptForgeClient() {
     const action: ActionType = 'evaluate';
     setProcessingState({ activeAction: action, statusText: 'Starting evaluation task...' });
     setEvaluationResult(null);
+
+    const docContext = uploadedFiles.map(f => `## Document: ${f.name}\n\n${f.content}`).join('\n\n');
+    const needsWithContext = `${userNeeds}\n\n--- [DOCUMENT CONTEXT] ---\n${docContext}`;
+
     try {
-      // Pass the full current prompt as the user_needs for evaluation,
-      // as it contains both the base needs and the added context.
-      const task = await handleEvaluatePrompt({ prompt: currentPrompt, user_needs: currentPrompt });
+      const task = await handleEvaluatePrompt({ prompt: currentPrompt, user_needs: needsWithContext });
       setTaskStatusUrl(task.status_url);
       setProcessingState(prev => ({ ...prev, statusText: 'Task initiated, awaiting evaluation...' }));
       pollTaskStatus(task.status_url, action);
@@ -361,7 +365,7 @@ Selected Suggestions:
       toast({ variant: 'destructive', title: 'Error', description: 'Please generate a prompt first.' });
       return;
     }
-    copyToClipboard(currentPrompt);
+    copyToClipboard(contextualPrompt);
     window.open('https://assistant.ai.it.ufl.edu/admin/assistants/new', '_blank', 'noopener,noreferrer');
     toast({
       title: 'Prompt Copied!',
@@ -429,19 +433,19 @@ Selected Suggestions:
                   <Textarea
                     id="system-prompt"
                     placeholder="Your generated or refined prompt will appear here."
-                    value={currentPrompt}
+                    value={contextualPrompt}
                     onChange={(e) => setCurrentPrompt(e.target.value)}
                     className="min-h-[200px] pr-12"
                     disabled={!!processingState.activeAction}
                   />
-                  {currentPrompt && (
+                  {contextualPrompt && (
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
                           variant="ghost"
                           size="icon"
                           className="absolute top-3 right-3 h-8 w-8"
-                          onClick={() => copyToClipboard(currentPrompt)}
+                          onClick={() => copyToClipboard(contextualPrompt)}
                           aria-label="Copy generated prompt"
                         >
                           {copied ? <Check className="text-primary" /> : <Clipboard />}
