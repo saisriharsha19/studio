@@ -421,6 +421,8 @@ async def get_library_submissions(
     response_submissions = []
     for submission in submissions:
         submission_response = LibrarySubmissionResponse.model_validate(submission)
+        if submission.user:
+            submission_response.user = UserResponse.model_validate(submission.user)
         response_submissions.append(submission_response)
     
     return response_submissions
@@ -802,5 +804,3 @@ async def get_task_status(task_id: uuid.UUID, db: AsyncSession = Depends(get_db)
             response_data["result"] = LibraryPromptResponse.model_validate(task.library_prompt)
 
     return TaskStatusResponse(**response_data)
-
-    

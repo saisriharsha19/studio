@@ -198,5 +198,3 @@ export function AdminSubmissionsClient({
     </>
   );
 }
-
-    

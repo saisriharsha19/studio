@@ -58,7 +58,7 @@ export type LibrarySubmission = {
     status: 'PENDING' | 'APPROVED' | 'REJECTED';
     submitted_at: string;
     admin_notes?: string;
-    user?: User; 
+    user?: Partial<User>; 
 };
 
 

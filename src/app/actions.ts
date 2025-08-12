@@ -368,8 +368,15 @@ export async function getAdminLibrarySubmissions(status: 'PENDING' | 'APPROVED' 
     const submissions: LibrarySubmission[] = (await response.json()).map((s: any) => ({
       ...s,
       user: {
-        ...s.user,
+        id: s.user_id, // assuming user_id is sent
         email: s.user_email,
+        full_name: s.user?.full_name || 'N/A', // Safely access full_name
+        // Add other user fields if available and needed, with defaults
+        username: s.user?.username || '',
+        is_admin: s.user?.is_admin || false,
+        is_active: s.user?.is_active || true,
+        created_at: s.user?.created_at || new Date().toISOString(),
+        updated_at: s.user?.updated_at || new Date().toISOString(),
       }
     }));
     return submissions;
