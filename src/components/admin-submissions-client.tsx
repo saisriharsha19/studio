@@ -2,8 +2,8 @@
 'use client';
 
 import * as React from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import { LibrarySubmission } from '@/hooks/use-prompts';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import type { LibrarySubmission } from '@/hooks/use-prompts';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -24,27 +24,42 @@ import { ThumbsUp, ThumbsDown, Eye, FileClock } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 
 type ReviewAction = 'approve' | 'reject';
+type Status = 'PENDING' | 'APPROVED' | 'REJECTED';
 
 export function AdminSubmissionsClient({
-  initialSubmissions,
   initialStatus,
+  pendingSubmissions,
+  approvedSubmissions,
+  rejectedSubmissions,
 }: {
-  initialSubmissions: LibrarySubmission[];
-  initialStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+  initialStatus: Status;
+  pendingSubmissions: LibrarySubmission[];
+  approvedSubmissions: LibrarySubmission[];
+  rejectedSubmissions: LibrarySubmission[];
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
 
+  const [status, setStatus] = React.useState<Status>(initialStatus);
   const [selectedSubmission, setSelectedSubmission] = React.useState<LibrarySubmission | null>(null);
   const [reviewNotes, setReviewNotes] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
-  const handleStatusChange = (status: string) => {
+  const submissionsMap: Record<Status, LibrarySubmission[]> = {
+    PENDING: pendingSubmissions,
+    APPROVED: approvedSubmissions,
+    REJECTED: rejectedSubmissions,
+  };
+
+  const currentSubmissions = submissionsMap[status] || [];
+
+  const handleStatusChange = (newStatus: string) => {
+    const validStatus = newStatus as Status;
+    setStatus(validStatus);
     const params = new URLSearchParams(window.location.search);
-    params.set('status', status);
-    // Use router.push to trigger a re-fetch of server component data
+    params.set('status', newStatus);
     router.push(`${pathname}?${params.toString()}`);
   };
 
@@ -64,9 +79,9 @@ export function AdminSubmissionsClient({
         title: 'Success',
         description: `Submission has been ${action}d.`,
       });
-      // Refresh the current view by re-navigating
-      handleStatusChange(initialStatus);
+      // This will close the dialog and refresh the entire page data on next load
       setIsDialogOpen(false);
+      router.refresh(); // Invalidate the cache and refetch server data
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -115,14 +130,14 @@ export function AdminSubmissionsClient({
               onClick={() => handleReview('reject')}
               disabled={isSubmitting}
             >
-              <ThumbsDown className="mr-2" /> Reject
+              <ThumbsDown className="mr-2 h-4 w-4" /> Reject
             </Button>
             <Button 
                 onClick={() => handleReview('approve')} 
                 disabled={isSubmitting}
                 className="bg-green-600 hover:bg-green-700 text-white"
             >
-              <ThumbsUp className="mr-2" /> Approve
+              <ThumbsUp className="mr-2 h-4 w-4" /> Approve
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -130,16 +145,16 @@ export function AdminSubmissionsClient({
 
       <Card>
         <CardHeader>
-          <Tabs defaultValue={initialStatus} onValueChange={handleStatusChange}>
+          <Tabs value={status} onValueChange={handleStatusChange}>
             <TabsList>
-              <TabsTrigger value="PENDING">Pending</TabsTrigger>
-              <TabsTrigger value="APPROVED">Approved</TabsTrigger>
-              <TabsTrigger value="REJECTED">Rejected</TabsTrigger>
+              <TabsTrigger value="PENDING">Pending ({pendingSubmissions.length})</TabsTrigger>
+              <TabsTrigger value="APPROVED">Approved ({approvedSubmissions.length})</TabsTrigger>
+              <TabsTrigger value="REJECTED">Rejected ({rejectedSubmissions.length})</TabsTrigger>
             </TabsList>
           </Tabs>
         </CardHeader>
         <CardContent>
-          {initialSubmissions.length > 0 ? (
+          {currentSubmissions.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -150,7 +165,7 @@ export function AdminSubmissionsClient({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {initialSubmissions.map((sub) => (
+                {currentSubmissions.map((sub) => (
                   <TableRow key={sub.id}>
                     <TableCell>
                       <div className="font-medium">{sub.user?.full_name || 'N/A'}</div>
@@ -185,7 +200,7 @@ export function AdminSubmissionsClient({
             <div className="flex flex-col items-center justify-center p-8 text-center">
               <FileClock className="h-12 w-12 text-muted-foreground" />
               <p className="mt-4 font-semibold">No submissions found</p>
-              <p className="text-sm text-muted-foreground">There are no submissions with the status "{initialStatus}".</p>
+              <p className="text-sm text-muted-foreground">There are no submissions with the status "{status}".</p>
             </div>
           )}
         </CardContent>
