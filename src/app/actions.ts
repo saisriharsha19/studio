@@ -145,7 +145,13 @@ export async function getHistoryPromptsFromDB(userId: string): Promise<Prompt[]>
         throw new Error(errorData.detail || 'Failed to fetch user history.');
     }
 
-    const prompts: Prompt[] = await response.json();
+    const rawPrompts: any[] = await response.json();
+    const prompts: Prompt[] = rawPrompts.map(p => ({
+      id: p.id,
+      userId: p.user_id,
+      text: p.prompt_text,
+      createdAt: p.created_at,
+    }));
     return prompts;
   } catch (error) {
     console.error('Failed to get history prompts:', error);
@@ -209,7 +215,10 @@ export async function getLibraryPromptsFromDB(userId: string | null): Promise<Pr
       throw new Error(errorData.detail || `API request failed with status ${response.status}`);
     }
     
-    const prompts: Prompt[] = await response.json();
+    const prompts: Prompt[] = (await response.json()).map((p: any) => ({
+      ...p,
+      isStarredByUser: p.is_starred_by_user,
+    }));
     return prompts;
   } catch (error) {
     console.error(`API call for library prompts failed: ${getErrorMessage(error)}`);
@@ -283,7 +292,6 @@ export async function toggleStarForPrompt(promptId: string, request: { user_id: 
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${MOCK_AUTH_TOKEN}`,
         },
         body: JSON.stringify(request),
     });
@@ -322,10 +330,10 @@ export async function getAdminStats(): Promise<PlatformStats> {
     console.error('Error fetching admin stats:', error);
     // Return a default/empty stats object on error
     return {
-      total_users: 0,
-      total_prompts_in_history: 0,
-      total_prompts_in_library: 0,
-      pending_submissions: 0,
+      users: { total: 0, active: 0, admins: 0 },
+      prompts: { user_prompts: 0, library_prompts: 0 },
+      submissions: { pending: 0 },
+      tasks: { total: 0, successful: 0, success_rate: 0 },
     };
   }
 }
@@ -338,7 +346,11 @@ export async function getAdminUsers(): Promise<User[]> {
       cache: 'no-store',
     });
     if (!response.ok) throw new Error('Failed to fetch users.');
-    return await response.json();
+    const users: User[] = (await response.json()).map((u: any) => ({
+      ...u,
+      prompt_count: u.prompt_count || 0,
+    }));
+    return users;
   } catch (error) {
     console.error('Error fetching users:', error);
     return [];
@@ -353,7 +365,14 @@ export async function getAdminLibrarySubmissions(status: 'PENDING' | 'APPROVED' 
       cache: 'no-store',
     });
     if (!response.ok) throw new Error('Failed to fetch library submissions.');
-    return await response.json();
+    const submissions: LibrarySubmission[] = (await response.json()).map((s: any) => ({
+      ...s,
+      user: {
+        ...s.user,
+        email: s.user_email,
+      }
+    }));
+    return submissions;
   } catch (error) {
     console.error('Error fetching library submissions:', error);
     return [];
