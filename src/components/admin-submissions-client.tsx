@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import type { LibrarySubmission } from '@/hooks/use-prompts';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -26,6 +26,13 @@ import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 type ReviewAction = 'approve' | 'reject';
 type Status = 'PENDING' | 'APPROVED' | 'REJECTED';
 
+// A more robust date validation function
+const isValidDate = (date: any) => {
+  if (!date) return false;
+  const parsedDate = new Date(date);
+  return !isNaN(parsedDate.getTime());
+};
+
 export function AdminSubmissionsClient({
   initialStatus,
   pendingSubmissions,
@@ -38,7 +45,7 @@ export function AdminSubmissionsClient({
   rejectedSubmissions: LibrarySubmission[];
 }) {
   const router = useRouter();
-  const pathname = usePathname();
+  const pathname = useSearchParams(); // Corrected hook
   const { toast } = useToast();
 
   const [status, setStatus] = React.useState<Status>(initialStatus);
@@ -47,20 +54,30 @@ export function AdminSubmissionsClient({
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
-  const submissionsMap: Record<Status, LibrarySubmission[]> = {
+  // Map submissions to their statuses
+  const submissionsMap: Record<Status, LibrarySubmission[]> = React.useMemo(() => ({
     PENDING: pendingSubmissions,
     APPROVED: approvedSubmissions,
     REJECTED: rejectedSubmissions,
-  };
+  }), [pendingSubmissions, approvedSubmissions, rejectedSubmissions]);
 
+  // The list of submissions to display is now derived from the status
   const currentSubmissions = submissionsMap[status] || [];
+
+  // This effect ensures the component state is in sync with the URL's search param
+  React.useEffect(() => {
+    const currentUrlStatus = (pathname.get('status') as Status) || 'PENDING';
+    if (currentUrlStatus !== status) {
+      setStatus(currentUrlStatus);
+    }
+  }, [pathname, status]);
 
   const handleStatusChange = (newStatus: string) => {
     const validStatus = newStatus as Status;
-    setStatus(validStatus);
-    const params = new URLSearchParams(window.location.search);
-    params.set('status', newStatus);
-    router.push(`${pathname}?${params.toString()}`);
+    // Update the URL, which will cause the parent page to re-render with new props
+    // if the logic is server-based, or just update the client state for filtering
+    router.push(`/admin/submissions?status=${validStatus}`);
+    setStatus(validStatus); // Also update local state to reflect change immediately
   };
 
   const openReviewDialog = (submission: LibrarySubmission) => {
@@ -79,9 +96,9 @@ export function AdminSubmissionsClient({
         title: 'Success',
         description: `Submission has been ${action}d.`,
       });
-      // This will close the dialog and refresh the entire page data on next load
       setIsDialogOpen(false);
-      router.refresh(); // Invalidate the cache and refetch server data
+      // This forces a server-side data refresh
+      router.refresh();
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -92,8 +109,6 @@ export function AdminSubmissionsClient({
       setIsSubmitting(false);
     }
   };
-
-  const isValidDate = (date: any) => date && !isNaN(new Date(date).getTime());
 
   return (
     <>

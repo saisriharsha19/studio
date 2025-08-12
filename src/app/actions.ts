@@ -365,19 +365,26 @@ export async function getAdminLibrarySubmissions(status: 'PENDING' | 'APPROVED' 
       cache: 'no-store',
     });
     if (!response.ok) throw new Error('Failed to fetch library submissions.');
+    
+    // Map the raw response to the LibrarySubmission type
     const submissions: LibrarySubmission[] = (await response.json()).map((s: any) => ({
-      ...s,
+      id: s.id,
+      prompt_text: s.prompt_text,
+      user_id: s.user_id,
+      status: s.status,
+      submitted_at: s.created_at, // Map created_at to submitted_at
+      admin_notes: s.admin_notes,
       user: {
-        id: s.user_id, // assuming user_id is sent
-        email: s.user_email,
-        full_name: s.user?.full_name || 'N/A', // Safely access full_name
-        // Add other user fields if available and needed, with defaults
+        id: s.user_id,
+        email: s.user_email || 'Unknown Email',
+        full_name: s.user?.full_name || 'Unknown User',
+        // Provide default values for other User fields
         username: s.user?.username || '',
         is_admin: s.user?.is_admin || false,
         is_active: s.user?.is_active || true,
         created_at: s.user?.created_at || new Date().toISOString(),
         updated_at: s.user?.updated_at || new Date().toISOString(),
-      }
+      },
     }));
     return submissions;
   } catch (error) {
